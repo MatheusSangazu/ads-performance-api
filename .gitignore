@@ -1,0 +1,34 @@
+# Dependências
+node_modules/
+
+# Variáveis sensíveis (O mais importante!)
+.env
+
+# Arquivos gerados pela API (Dados de Clientes)
+*.xlsx
+*.pdf
+*.csv
+
+# Build e Saída
+dist/
+build/
+out/
+
+# Logs e arquivos de erro
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+logs/
+*.log
+
+# Arquivos do sistema (Mac/Windows/Linux)
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Configurações de IDE
+.vscode/
+.idea/
+*.swp
+*.sublime-project
+*.sublime-workspace

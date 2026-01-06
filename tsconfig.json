@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    /* Configurações de Linguagem */
+    "target": "ES2022",                                  /* Versão do JS final (moderna) */
+    "module": "NodeNext",                                /* Padrão de módulos para Node moderno */
+    "moduleResolution": "NodeNext",
+    
+    /* Organização de Pastas */
+    "rootDir": "./src",                                  /* Onde estão seus arquivos .ts */
+    "outDir": "./dist",                                  /* Onde o código compilado .js vai cair */
+    
+    /* Rigor no Código (Bom para o Mestrado!) */
+    "strict": true,                                      /* Ativa todas as verificações de tipo */
+    "noImplicitAny": true,                               /* Impede que você esqueça de tipar variáveis */
+    "esModuleInterop": true,                             /* Melhora a compatibilidade com bibliotecas JS */
+    "skipLibCheck": true,                                /* Pula checagem de tipos de bibliotecas (mais rápido) */
+    "forceConsistentCasingInFileNames": true,            /* Evita erros entre Windows (case insensitive) e Linux */
+
+    /* Extras */
+    "sourceMap": true,                                   /* Ajuda no debug (mostra o erro no .ts, não no .js) */
+    "declaration": false                                 /* Não precisamos criar arquivos .d.ts por enquanto */
+  },
+  "include": ["src/**/*"],                               /* Compila tudo dentro de src */
+  "exclude": ["node_modules", "dist"]                    /* Ignora essas pastas */
+}
