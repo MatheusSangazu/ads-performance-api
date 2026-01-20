@@ -20,4 +20,4 @@ RUN npm run build
 EXPOSE 3001
 
 # Comando para rodar a API
-CMD ["node", "dist/server.js"]
+CMD ["node", "dist/app.js"]
