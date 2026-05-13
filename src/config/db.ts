@@ -1,25 +1,23 @@
-import mysql from 'mysql2/promise';
-import dotenv from 'dotenv';
+import { PrismaMariaDb } from '@prisma/adapter-mariadb';
+import { PrismaClient } from '../generated/prisma/client.js';
+import 'dotenv/config';
 
-dotenv.config();
-
-const pool = mysql.createPool({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
+const adapter = new PrismaMariaDb({
+  host: process.env.DB_HOST!,
   port: 3306,
-  waitForConnections: true,
+  user: process.env.DB_USER!,
+  password: process.env.DB_PASSWORD!,
+  database: process.env.DB_NAME!,
   connectionLimit: 10,
-  queueLimit: 0
 });
 
-// Teste de conexão automático
-pool.getConnection()
-  .then(conn => {
-    console.log('✅ MySQL conectado via TypeScript!');
-    conn.release();
-  })
-  .catch(err => console.error('❌ Erro de conexão no MySQL:', err.message));
+const prisma = new PrismaClient({ adapter });
 
-export default pool;
+prisma.$connect()
+  .then(() => console.log('✅ Prisma conectado ao MySQL!'))
+  .catch((err: unknown) => {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('❌ Erro de conexão Prisma:', message);
+  });
+
+export default prisma;

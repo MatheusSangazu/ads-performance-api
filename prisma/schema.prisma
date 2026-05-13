@@ -1,0 +1,65 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum ClientStatus {
+  active
+  inactive
+}
+
+model Client {
+  id              Int          @id @default(autoincrement())
+  clientName      String       @map("client_name") @db.VarChar(100)
+  actId           String       @unique @map("act_id") @db.VarChar(50)
+  accessToken     String       @map("access_token") @db.Text
+  customEventId   String?      @map("custom_event_id") @db.VarChar(100)
+  isEcommerce     Boolean?     @default(false) @map("is_ecommerce")
+  status          ClientStatus @default(active)
+  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamp(0)
+
+  adsPerformance  AdPerformance[]
+
+  @@map("clients_config")
+}
+
+model AdPerformance {
+  id                    BigInt   @id @default(autoincrement())
+  date                  DateTime @db.Date
+  clientId              String   @map("client_id") @db.VarChar(50)
+  adId                  String   @map("ad_id") @db.VarChar(50)
+  adName                String?  @map("ad_name") @db.VarChar(255)
+  campaignName          String?  @map("campaign_name") @db.VarChar(255)
+  campaignId            String?  @map("campaign_id") @db.VarChar(50)
+  reach                 Int?     @default(0)
+  impressions           Int?     @default(0)
+  spend                 Decimal? @default(0.0000) @db.Decimal(15, 4)
+  linkClicks            Int?     @default(0) @map("link_clicks")
+  ctr                   Decimal? @default(0.0000) @db.Decimal(10, 4)
+  messagingConversations Int?    @default(0) @map("messaging_conversations")
+  leads                 Int?     @default(0)
+  leadsForm             Int?     @default(0) @map("leads_form")
+  pageViews             Int?     @default(0) @map("page_views")
+  addToCart             Int?     @default(0) @map("add_to_cart")
+  initiateCheckout      Int?     @default(0) @map("initiate_checkout")
+  purchases             Int?     @default(0)
+  purchaseValue         Decimal? @default(0.0000) @db.Decimal(15, 4) @map("purchase_value")
+  customConversionCount Int?     @default(0) @map("custom_conversion_count")
+  customConversionValue Decimal? @default(0.0000) @db.Decimal(15, 4) @map("custom_conversion_value")
+  previewLink           String?  @map("preview_link") @db.Text
+  adStatus              String?  @map("ad_status") @db.VarChar(50)
+  campaignStatus        String?  @map("campaign_status") @db.VarChar(50)
+  totalConversionValue  Decimal? @default(0.0000) @db.Decimal(15, 4) @map("total_conversion_value")
+  roas                  Decimal? @default(0.0000) @db.Decimal(10, 4)
+
+  client                Client   @relation(fields: [clientId], references: [actId])
+
+  @@unique([date, adId], map: "unique_ad_date")
+  @@index([clientId], map: "idx_client")
+  @@index([date], map: "idx_date")
+  @@map("meta_ads_performance")
+}

@@ -1,94 +1,89 @@
-# Internal Performance Monitoring Tool (IPMT)
+# Growth Ads API
 
-## 1. Visão Geral do Projeto
-
-O **Internal Performance Monitoring Tool (IPMT)** é uma ferramenta proprietária de backend desenvolvida para automatizar a **agregação de dados de performance de marketing** provenientes do **Meta Ads** e , futuramente, **Google Ads**.
-
-Os dados são consolidados em um **banco de dados MySQL centralizado**, permitindo análises de **Business Intelligence (BI)** e geração de **relatórios consolidados** em Excel.
+API para coleta e armazenamento de dados de performance do **Meta Ads** em banco MySQL, com geração de relatórios Excel.
 
 ---
 
-## 2. Guia de Utilização (Passo a Passo)
+## Tecnologias
 
-Para executar o projeto do zero, siga as etapas abaixo:
+- **Runtime:** Node.js + TypeScript
+- **Framework:** Express 5
+- **ORM:** Prisma 7
+- **Banco de Dados:** MySQL
+- **Relatórios:** ExcelJS
+- **Integração:** Meta Ads API (Graph API v23.0)
 
-### 2.1 Clonar o repositório
+---
+
+## Setup
+
+### 1. Clonar e instalar
 
 ```bash
 git clone https://github.com/MatheusSangazu/ads-performance-api.git
-```
-
-### 2.2 Instalar as dependências
-
-```bash
+cd growth-ads-api
 npm install
 ```
 
-### 2.3 Configurar o ambiente
+### 2. Configurar `.env`
 
-Crie um arquivo `.env` na raiz do projeto seguindo o modelo do `.env.example`.
+Criar um arquivo `.env` na raiz com:
 
-Inclua:
+```env
+DB_HOST=seu_host
+DB_USER=seu_usuario
+DB_PASSWORD=sua_senha
+DB_NAME=growth_ads_db
 
-* Credenciais do banco de dados MySQL
-* Tokens de acesso das APIs (Meta Ads e Google Ads)
+DATABASE_URL="mysql://usuario:senha@host:3306/growth_ads_db"
 
-> ⚠️ **Nunca versionar o arquivo `.env` em repositórios públicos.**
+PORT=3001
+```
 
-### 2.4 Iniciar o servidor
+### 3. Gerar o Prisma Client
+
+```bash
+npx prisma generate
+```
+
+### 4. Rodar
 
 ```bash
 npm run dev
 ```
 
-### 2.5 Cadastrar um cliente
-
-Utilize o endpoint `POST /clients` para registrar uma conta de anúncios no sistema.
-
-### 2.6 Sincronizar os dados
-
-Utilize o endpoint `POST /sync/manual` para realizar a importação de dados históricos.
-
-### 2.7 Gerar e baixar o relatório
-
-Acesse a rota de download para obter o arquivo Excel consolidado.
-
 ---
 
-## 3. Endpoints e Documentação
+## Endpoints
 
-### 3.1 Criar Novo Cliente (Configuração)
+### `POST /clients`
 
-Registra uma nova conta de anúncios para monitoramento.
-
-* **Rota:** `POST /clients`
-* **Descrição:** Insere um novo registro na tabela `clients_config`
-
-**Corpo da Requisição (JSON):**
+Cadastra ou atualiza um cliente (conta de anúncios).
 
 ```json
 {
-  "client_name": "NOMECLIENTE",
-  "act_id": "act_IDCONTAANUNCIO",
-  "access_token": "TOKEN_DO_FACEBOOK_AQUI",
-  "is_active": 1,
-  "is_ecommerce": 1
+  "name": "Nome do Cliente",
+  "act_id": "act_123456789",
+  "access_token": "token_meta_ads",
+  "custom_event_id": "opcional"
 }
 ```
 
----
+### `GET /clients`
 
-### 3.2 Sincronização Manual de Dados
+Lista todos os clientes cadastrados.
 
-Realiza a coleta de dados da API e grava no banco dentro de um intervalo de datas.
+### `GET /clients/:actId/download`
 
-* **Rota:** `POST /sync/manual`
+Gera e retorna um relatório Excel (.xlsx) com os dados de performance do cliente.
 
-**Corpo da Requisição (JSON):**
+### `POST /sync/manual`
+
+Sincroniza dados do Meta Ads para o banco dentro de um intervalo de datas.
 
 ```json
 {
-  "act_id": "act_IDCONTA",
+  "act_id": "act_123456789",
   "since": "2025-01-01",
   "until": "2025-05-23"
 }
@@ -96,63 +91,40 @@ Realiza a coleta de dados da API e grava no banco dentro de um intervalo de data
 
 ---
 
-### 3.3 Download de Relatório Excel
+## Scripts
 
-Gera e retorna uma planilha Excel formatada com métricas de funil, ROAS e links de preview.
+| Comando | Descrição |
+|---|---|
+| `npm run dev` | Servidor de desenvolvimento (tsx watch) |
+| `npm run build` | Compila TypeScript para `dist/` |
+| `npm start` | Roda a API compilada |
 
-* **Rota:** `GET /clients/:actId/download`
+---
 
-**Exemplo:**
+## Estrutura
 
 ```
-http://localhost:3001/clients/IDCONTA/download
+src/
+├── config/
+│   └── db.ts                  # Prisma Client + adapter MySQL
+├── generated/
+│   └── prisma/                # Código gerado pelo Prisma
+├── routes/
+│   ├── clientRoutes.ts        # Rotas de clientes e download
+│   └── syncRoutes.ts          # Rota de sincronização
+├── services/
+│   ├── clientService.ts       # CRUD de clientes
+│   ├── reportService.ts       # Geração de Excel
+│   └── syncService.ts         # Sync com Meta Ads API
+└── app.ts                     # Entry point Express
+
+prisma/
+└── schema.prisma              # Schema do banco (modelos Client e AdPerformance)
 ```
 
-* **Resposta:** Arquivo `.xlsx` para download direto
-
 ---
 
-## 4. Tecnologias Utilizadas
+## Segurança
 
-* **Runtime:** Node.js + TypeScript
-* **Framework:** Express
-* **Banco de Dados:** MySQL
-* **Relatórios:** exceljs
-* **Integrações:**
-
-  * Meta Ads API
-  * Google Ads API
-
----
-
-## 5. Segurança
-
-* O acesso aos endpoints deve ser **restrito**
-* Em produção, utilizar:
-
-  * JWT **ou**
-  * API Key
-* Tokens e credenciais devem permanecer apenas no `.env`
-
----
-
-## 6. Histórico de Alterações
-
-### O que mudou?
-
-1. **Novo endpoint `POST /clients`**
-
-   * Adicionado à documentação
-   * Responsável por inserir dados na tabela `clients_config`
-
-2. **Padronização dos payloads**
-
-   * Estrutura dos corpos de requisição definida claramente em JSON
-
-3. **Checklist de início do projeto**
-
-   * Facilita a instalação e o onboarding de novos desenvolvedores
-
----
-
-📌 Documento preparado para uso interno, versionamento e compartilhamento técnico.
+- Tokens e credenciais devem ficar apenas no `.env` (nunca versionar)
+- Em produção, adicionar autenticação (JWT ou API Key)

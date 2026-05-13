@@ -1,17 +1,17 @@
-import pool from '../config/db.js';
+import prisma from '../config/db.js';
+import type { AdPerformanceModel } from '../generated/prisma/models/AdPerformance.js';
 import ExcelJS from 'exceljs';
 
 class ReportService {
   public async generateExcel(actId: string) {
-    const [rows]: any = await pool.query(
-      'SELECT * FROM meta_ads_performance WHERE client_id = ? ORDER BY date DESC',
-      [actId]
-    );
+    const rows: AdPerformanceModel[] = await prisma.adPerformance.findMany({
+      where: { clientId: actId },
+      orderBy: { date: 'desc' },
+    });
 
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Relatório Full Domus');
 
-    // 1. Definição de TODAS as colunas do seu banco
     worksheet.columns = [
       { header: 'Data', key: 'date', width: 12 },
       { header: 'Status Ad', key: 'ad_status', width: 12 },
@@ -36,7 +36,6 @@ class ReportService {
       { header: 'Link de Preview', key: 'preview_link', width: 40 },
     ];
 
-    // 2. Estilização do Cabeçalho (Azul Domus/Facebook)
     const headerRow = worksheet.getRow(1);
     headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
     headerRow.fill = {
@@ -45,26 +44,36 @@ class ReportService {
       fgColor: { argb: 'FF4267B2' },
     };
 
-    // 3. Adicionando os dados com cálculos extras
-    rows.forEach((row: any) => {
-      // Cálculo da Taxa de Conexão: (Page Views / Cliques) * 100
-      const linkClicks = parseInt(row.link_clicks) || 0;
-      const pageViews = parseInt(row.page_views) || 0;
-      const taxaConexao = linkClicks > 0 ? (pageViews / linkClicks) : 0;
+    rows.forEach((row) => {
+      const linkClicks = row.linkClicks ?? 0;
+      const pageViews = row.pageViews ?? 0;
+      const taxaConexao = linkClicks > 0 ? pageViews / linkClicks : 0;
 
       worksheet.addRow({
-        ...row,
         date: row.date.toISOString().split('T')[0],
-        spend: parseFloat(row.spend),
-        ctr: parseFloat(row.ctr) / 100, // Ajuste para formato de % no Excel
+        ad_status: row.adStatus,
+        ad_name: row.adName,
+        campaign_name: row.campaignName,
+        spend: Number(row.spend ?? 0),
+        reach: row.reach,
+        impressions: row.impressions,
+        ctr: Number(row.ctr ?? 0) / 100,
+        link_clicks: row.linkClicks,
+        page_views: row.pageViews,
         taxa_conexao: taxaConexao,
-        purchase_value: parseFloat(row.purchase_value),
-        total_conversion_value: parseFloat(row.total_conversion_value),
-        roas: parseFloat(row.roas)
+        add_to_cart: row.addToCart,
+        initiate_checkout: row.initiateCheckout,
+        messaging_conversations: row.messagingConversations,
+        leads: row.leads,
+        purchases: row.purchases,
+        purchase_value: Number(row.purchaseValue ?? 0),
+        custom_conversion_count: row.customConversionCount,
+        total_conversion_value: Number(row.totalConversionValue ?? 0),
+        roas: Number(row.roas ?? 0),
+        preview_link: row.previewLink,
       });
     });
 
-    // 4. Formatação de Células (Dinheiro e Porcentagem)
     worksheet.getColumn('spend').numFmt = '"R$" #,##0.00';
     worksheet.getColumn('purchase_value').numFmt = '"R$" #,##0.00';
     worksheet.getColumn('total_conversion_value').numFmt = '"R$" #,##0.00';
