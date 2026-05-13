@@ -32,4 +32,4 @@ desktop.ini
 *.swp
 *.sublime-project
 *.sublime-workspace
-/src/generated/prisma
+/server/src/generated/prisma

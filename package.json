@@ -1,14 +1,14 @@
 {
   "name": "growth-ads-api",
   "version": "1.0.0",
-  "main": "dist/app.js",
+  "main": "server/dist/app.js",
   "type": "module",
   "scripts": {
-    "dev": "concurrently -n api,front -c blue,green \"tsx watch src/app.ts\" \"npm run dev --prefix client\"",
-    "dev:api": "tsx watch src/app.ts",
+    "dev": "concurrently -n api,front -c blue,green \"tsx watch server/src/app.ts\" \"npm run dev --prefix client\"",
+    "dev:api": "tsx watch server/src/app.ts",
     "dev:client": "npm run dev --prefix client",
-    "build": "tsc",
-    "start": "node dist/app.js",
+    "build": "tsc -p server/tsconfig.json",
+    "start": "node server/dist/app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

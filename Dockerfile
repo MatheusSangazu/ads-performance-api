@@ -5,14 +5,15 @@ RUN apk add --no-cache openssl
 WORKDIR /app
 
 COPY package*.json ./
-COPY prisma ./prisma/
-COPY prisma.config.ts ./
+
+COPY server/prisma ./server/prisma/
+COPY server/prisma.config.ts ./server/
 
 RUN npm ci
 
-COPY . .
+COPY server/ ./server/
 
-RUN npx prisma generate
+RUN npx prisma generate --schema=server/prisma/schema.prisma
 
 RUN npm run build
 
@@ -32,13 +33,13 @@ WORKDIR /app
 
 COPY --from=base /app/package*.json ./
 COPY --from=base /app/node_modules ./node_modules
-COPY --from=base /app/dist ./dist
-COPY --from=base /app/prisma ./prisma
-COPY --from=base /app/prisma.config.ts ./
-COPY --from=base /app/src/generated ./src/generated
+COPY --from=base /app/server/dist ./server/dist
+COPY --from=base /app/server/prisma ./server/prisma
+COPY --from=base /app/server/prisma.config.ts ./server/
+COPY --from=base /app/server/src/generated ./server/src/generated
 COPY --from=base /app/client/dist ./client/dist
 
 ENV NODE_ENV=production
 EXPOSE 3001
 
-CMD ["node", "dist/app.js"]
+CMD ["node", "server/dist/app.js"]

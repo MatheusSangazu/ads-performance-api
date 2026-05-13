@@ -157,11 +157,9 @@ export default function Clients() {
               key={client.actId}
               client={client}
               downloading={downloading}
-              syncing={syncing}
               onDownload={handleDownload}
               onTokenUpdated={fetchClients}
               onDelete={handleDelete}
-              onSync={async () => {}}
               onError={(msg) => setMessage({ type: 'error', text: msg })}
               onSuccess={(msg) => setMessage({ type: 'success', text: msg })}
             />

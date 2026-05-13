@@ -5,11 +5,9 @@ import { clientApi, syncApi, type Client } from '../lib/api';
 interface ClientCardProps {
   client: Client;
   downloading: string | null;
-  syncing: string | null;
   onDownload: (actId: string) => void;
   onTokenUpdated: () => void;
   onDelete: (actId: string) => Promise<void>;
-  onSync: (actId: string) => Promise<void>;
   onError: (msg: string) => void;
   onSuccess: (msg: string) => void;
 }
@@ -18,10 +16,11 @@ function getToday(): string {
   return new Date().toISOString().split('T')[0];
 }
 
-export default function ClientCard({ client, downloading, syncing, onDownload, onTokenUpdated, onDelete, onSync, onError, onSuccess }: ClientCardProps) {
+export default function ClientCard({ client, downloading, onDownload, onTokenUpdated, onDelete, onError, onSuccess }: Omit<ClientCardProps, 'syncing' | 'onSync'>) {
   const [showTokenEdit, setShowTokenEdit] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [newToken, setNewToken] = useState('');
+  const [quickSyncing, setQuickSyncing] = useState(false);
 
   const handleUpdateToken = async () => {
     if (!newToken.trim()) return;
@@ -45,6 +44,7 @@ export default function ClientCard({ client, downloading, syncing, onDownload, o
   };
 
   const handleQuickSync = async () => {
+    setQuickSyncing(true);
     try {
       const today = getToday();
       const res = await syncApi.manual({
@@ -53,13 +53,12 @@ export default function ClientCard({ client, downloading, syncing, onDownload, o
         until: today,
       });
       onSuccess(`${client.clientName}: ${res.data.records} registros sincronizados (hoje).`);
-      await onSync(client.actId);
     } catch {
       onError(`Erro ao sincronizar ${client.clientName}.`);
+    } finally {
+      setQuickSyncing(false);
     }
   };
-
-  const isSyncing = syncing === client.actId;
 
   return (
     <div className="rounded-xl border border-gray-800 bg-gray-900 p-5">
@@ -128,11 +127,11 @@ export default function ClientCard({ client, downloading, syncing, onDownload, o
       <div className="flex gap-2">
         <button
           onClick={handleQuickSync}
-          disabled={isSyncing}
+          disabled={quickSyncing}
           className="flex items-center gap-1 rounded-lg bg-green-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-600 disabled:opacity-50"
         >
-          {isSyncing ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
-          {isSyncing ? 'Syncing...' : 'Sync'}
+          {quickSyncing ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+          {quickSyncing ? 'Syncing...' : 'Sync'}
         </button>
         <button
           onClick={() => { setShowTokenEdit(!showTokenEdit); setShowDeleteConfirm(false); }}
@@ -143,7 +142,7 @@ export default function ClientCard({ client, downloading, syncing, onDownload, o
         </button>
         <button
           onClick={() => onDownload(client.actId)}
-          disabled={!!downloading}
+          disabled={downloading === client.actId}
           className="flex items-center gap-1 rounded-lg bg-gray-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-600 disabled:opacity-50"
         >
           {downloading === client.actId ? (
