@@ -9,10 +9,11 @@ Plataforma de coleta e visualização de dados de performance do **Meta Ads**, c
 ### API
 - **Runtime:** Node.js + TypeScript (ESM)
 - **Framework:** Express 5
-- **ORM:** Prisma 7
+- **ORM:** Prisma 7 (`@prisma/adapter-mariadb`)
 - **Banco de Dados:** MySQL
 - **Relatórios:** ExcelJS
 - **Validação:** Zod
+- **Scheduler:** node-cron (auto-sync diário)
 - **Integração:** Meta Ads API (Graph API v23.0)
 
 ### Front
@@ -76,6 +77,9 @@ npm run dev:client    # só o front
 
 ## Endpoints
 
+> Em desenvolvimento, as rotas são acessadas diretamente (ex: `POST /sync/manual`).
+> Em produção (Docker), todas as rotas da API ficam sob o prefixo `/api` (ex: `POST /api/sync/manual`).
+
 ### Clientes
 
 | Método | Rota | Descrição |
@@ -83,21 +87,24 @@ npm run dev:client    # só o front
 | `POST` | `/clients` | Cadastra ou atualiza um cliente |
 | `GET` | `/clients` | Lista todos os clientes |
 | `PATCH` | `/clients/:actId/token` | Atualiza o token de um cliente |
-| `DELETE` | `/clients/:actId` | Remove um cliente e seus dados |
+| `DELETE` | `/clients/:actId` | Remove um cliente e seus dados de performance |
 | `GET` | `/clients/:actId/download` | Download do relatório Excel |
 
 ### Sync
 
 | Método | Rota | Descrição |
 |--------|------|-----------|
-| `POST` | `/sync/manual` | Sincroniza dados do Meta Ads |
+| `POST` | `/sync/manual` | Sincroniza dados do Meta Ads por período |
 
 ### Configurações
 
 | Método | Rota | Descrição |
 |--------|------|-----------|
-| `GET` | `/settings/global-token` | Retorna o token global |
+| `GET` | `/settings/global-token` | Retorna o token global configurado |
 | `PUT` | `/settings/global-token` | Salva/atualiza o token global |
+| `GET` | `/settings/auto-sync` | Retorna status do auto-sync (on/off) |
+| `PUT` | `/settings/auto-sync` | Ativa/desativa o auto-sync |
+| `POST` | `/settings/sync-all` | Dispara sincronização de todos os clientes |
 
 ### Exemplos
 
@@ -133,6 +140,15 @@ PUT /settings/global-token
 }
 ```
 
+**Ativar auto-sync diário:**
+
+```json
+PUT /settings/auto-sync
+{
+  "enabled": true
+}
+```
+
 ---
 
 ## Scripts
@@ -147,6 +163,24 @@ PUT /settings/global-token
 
 ---
 
+## Deploy (Docker)
+
+Build multi-stage que compila API + Front em um único container:
+
+```bash
+docker compose up -d --build
+```
+
+O Dockerfile:
+1. Instala dependências e gera o Prisma Client
+2. Compila TypeScript (`dist/`)
+3. Build do React (`client/dist/`)
+4. Copia tudo para uma imagem slim de produção
+
+Em produção, o Express serve o front estático e as rotas da API ficam sob `/api`.
+
+---
+
 ## Estrutura (MVC)
 
 ```
@@ -156,20 +190,20 @@ growth-ads-api/
 │   │   ├── db.ts                     # Prisma Client + adapter MySQL
 │   │   └── env.ts                    # Validação de env vars (Zod)
 │   ├── controllers/
-│   │   ├── clientController.ts       # CRUD de clientes
-│   │   ├── settingsController.ts     # Token global
-│   │   └── syncController.ts         # Sincronização
+│   │   ├── clientController.ts       # CRUD de clientes + download
+│   │   ├── settingsController.ts     # Token global + auto-sync
+│   │   └── syncController.ts         # Sincronização manual
 │   ├── generated/
-│   │   └── prisma/                   # Código gerado pelo Prisma
+│   │   └── prisma/                   # Código gerado pelo Prisma 7
 │   ├── integrations/
-│   │   └── metaApi.ts                # Chamadas HTTP ao Meta Graph API
+│   │   └── metaApi.ts                # Chamadas HTTP ao Meta Graph API (com paginação)
 │   ├── middleware/
 │   │   ├── errorHandler.ts           # Error handler global
 │   │   └── validate.ts               # Validação Zod genérica
 │   ├── repositories/
-│   │   ├── adRepository.ts           # Queries de performance
-│   │   ├── clientRepository.ts       # Queries de clientes
-│   │   └── settingsRepository.ts     # Queries de settings
+│   │   ├── adRepository.ts           # Queries de performance (upsert)
+│   │   ├── clientRepository.ts       # Queries de clientes (cascade delete)
+│   │   └── settingsRepository.ts     # Queries de settings (key-value)
 │   ├── routes/
 │   │   ├── clientRoutes.ts           # Rotas de clientes
 │   │   ├── settingsRoutes.ts         # Rotas de settings
@@ -177,6 +211,7 @@ growth-ads-api/
 │   ├── services/
 │   │   ├── clientService.ts          # Lógica de negócio (clientes)
 │   │   ├── reportService.ts          # Geração de Excel
+│   │   ├── schedulerService.ts       # Cron job de auto-sync diário
 │   │   ├── settingsService.ts        # Lógica de negócio (settings)
 │   │   └── syncService.ts            # Sync com Meta Ads + resiliência
 │   ├── types/
@@ -189,12 +224,12 @@ growth-ads-api/
 ├── client/                           # Front React
 │   └── src/
 │       ├── components/
-│       │   ├── ClientCard.tsx        # Card do cliente (token, excel, delete)
+│       │   ├── ClientCard.tsx        # Card (sync, token, excel, delete)
 │       │   ├── ClientForm.tsx        # Formulário de cadastro
 │       │   ├── SyncForm.tsx          # Formulário de sync com pré-filtros
 │       │   ├── Layout.tsx            # Layout com navegação
 │       │   └── ui/
-│       │       └── Message.tsx       # Componente de mensagem
+│       │       └── Message.tsx       # Componente de mensagem reutilizável
 │       ├── hooks/
 │       │   └── useClients.ts         # Custom hooks (useClients, useSync, useDownload)
 │       ├── lib/
@@ -202,14 +237,17 @@ growth-ads-api/
 │       ├── pages/
 │       │   ├── Dashboard.tsx         # Dashboard
 │       │   ├── Clients.tsx           # Gestão de clientes
-│       │   └── Settings.tsx          # Token global
+│       │   └── Settings.tsx          # Token global + auto-sync
 │       ├── App.tsx                   # Router
 │       ├── main.tsx                  # Entry point
 │       └── index.css                 # Tailwind
 │
 ├── prisma/
 │   └── schema.prisma                 # Schema (Client, AdPerformance, AppSettings)
-└── prisma.config.ts                  # Configuração do Prisma CLI
+├── prisma.config.ts                  # Configuração do Prisma CLI
+├── Dockerfile                        # Build multi-stage (API + Front)
+├── docker-compose.yml                # Orquestração de container
+└── tsconfig.json                     # TypeScript config
 ```
 
 ---
@@ -218,14 +256,21 @@ growth-ads-api/
 
 ### Token Management
 - **Token por cliente:** Cada cliente pode ter seu próprio token
-- **Token global:** Fallback automático quando um cliente não tem token
-- **Atualização fácil:** Botão "Token" no card do cliente para trocar sem recriar
+- **Token global:** Fallback automático quando um cliente não tem token próprio
+- **Atualização fácil:** Botão "Token" no card do cliente para trocar inline
+
+### Auto-Sync (Scheduler)
+- **Sync diário automático:** Roda às 02:00 da manhã (configurável via cron)
+- **Toggle on/off:** Pode ser ativado/desativado pela tela de Settings
+- **Sync manual de todos:** Botão "Sincronizar Todos Agora" disponível
+- **Quick Sync por cliente:** Botão "Sync" no card puxa os dados do dia atual
+- **Resiliência por cliente:** Se um cliente falhar, os demais continuam
 
 ### Sync resiliente
-- **Paginação automática:** Busca todas as páginas da Meta API (sem limite de 500)
-- **Retry com backoff:** 3 tentativas com delay exponencial em caso de falha
+- **Paginação automática:** Segue os cursores `paging.next` da Meta API até buscar todas as páginas
+- **Retry com backoff:** 3 tentativas com delay exponencial em caso de falha de rede
 - **Resiliência por registro:** Se um registro falhar, os demais continuam salvando
-- **Relatório detalhado:** Retorna contagem de salvos, erros e detalhes por período
+- **Upsert sem duplicatas:** Chave única `date_adId` garante idempotência
 
 ### Pré-filtros de data
 - Botões rápidos: Hoje, 7 dias, 30 dias, 90 dias, 6 meses, 1 ano, 2 anos
@@ -234,7 +279,7 @@ growth-ads-api/
 ### CRUD completo de clientes
 - Cadastro com validação (Zod frontend + backend)
 - Edição de token inline
-- Exclusão com confirmação (remove dados de performance juntos)
+- Exclusão com confirmação (cascade: remove dados de performance juntos)
 - Download de relatório Excel por cliente
 
 ---
@@ -242,6 +287,7 @@ growth-ads-api/
 ## Segurança
 
 - Tokens e credenciais devem ficar apenas no `.env` (nunca versionar)
-- Variáveis de ambiente validadas no startup com Zod
+- Variáveis de ambiente validadas no startup com Zod (`src/config/env.ts`)
 - Validação de input no backend com Zod (nunca confie só no frontend)
+- Error handler global que não vaza stack traces em produção
 - Em produção, adicionar autenticação (JWT ou API Key)
