@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -12,10 +13,16 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>;
 
+export interface SyncFormBreakdowns {
+  audience: boolean;
+  placement: boolean;
+  region: boolean;
+}
+
 interface SyncFormProps {
   clients: Client[];
   syncing: string | null;
-  onSubmit: (data: FormData) => Promise<void>;
+  onSubmit: (data: FormData, breakdowns: SyncFormBreakdowns) => Promise<void>;
 }
 
 function getDateRange(preset: string): { since: string; until: string } {
@@ -88,17 +95,31 @@ export default function SyncForm({ clients, syncing, onSubmit }: SyncFormProps) 
     },
   });
 
+  const [breakdowns, setBreakdowns] = useState<SyncFormBreakdowns>({
+    audience: false,
+    placement: false,
+    region: false,
+  });
+
+  const toggleBreakdown = (key: keyof SyncFormBreakdowns) => {
+    setBreakdowns((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
   const handlePreset = (preset: string) => {
     const { since, until } = getDateRange(preset);
     setValue('since', since);
     setValue('until', until);
   };
 
+  const handleFormSubmit = (data: FormData) => {
+    onSubmit(data, breakdowns);
+  };
+
   return (
     <div className="mb-8">
       <h3 className="mb-4 text-lg font-semibold">Sincronizar Dados</h3>
       <form
-        onSubmit={handleSubmit(onSubmit)}
+        onSubmit={handleSubmit(handleFormSubmit)}
         className="rounded-xl border border-gray-800 bg-gray-900 p-6"
       >
         <div className="mb-4 flex flex-wrap gap-2">
@@ -154,6 +175,37 @@ export default function SyncForm({ clients, syncing, onSubmit }: SyncFormProps) 
             {syncing ? <Loader2 size={18} className="animate-spin" /> : <RefreshCw size={18} />}
             {syncing ? 'Sincronizando...' : 'Sincronizar'}
           </button>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-gray-800 pt-4">
+          <span className="text-xs text-gray-500">Segmentações adicionais:</span>
+          <label className="flex cursor-pointer items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={breakdowns.audience}
+              onChange={() => toggleBreakdown('audience')}
+              className="accent-blue-500"
+            />
+            <span className="text-gray-300">Público (sexo × idade)</span>
+          </label>
+          <label className="flex cursor-pointer items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={breakdowns.placement}
+              onChange={() => toggleBreakdown('placement')}
+              className="accent-blue-500"
+            />
+            <span className="text-gray-300">Plataforma</span>
+          </label>
+          <label className="flex cursor-pointer items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={breakdowns.region}
+              onChange={() => toggleBreakdown('region')}
+              className="accent-blue-500"
+            />
+            <span className="text-gray-300">Região</span>
+          </label>
         </div>
       </form>
     </div>

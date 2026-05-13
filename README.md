@@ -1,6 +1,6 @@
 # Growth Ads
 
-Plataforma de coleta e visualização de dados de performance do **Meta Ads**, com API Node.js (MVC) e front React.
+Plataforma de coleta e visualização de dados de performance do **Meta Ads**, com API Node.js (MVC) e front React. Dados prontos para consumo em **Looker** e **Metabase**.
 
 ---
 
@@ -11,7 +11,7 @@ Plataforma de coleta e visualização de dados de performance do **Meta Ads**, c
 - **Framework:** Express 5
 - **ORM:** Prisma 7 (`@prisma/adapter-mariadb`)
 - **Banco de Dados:** MySQL
-- **Relatórios:** ExcelJS
+- **Relatórios:** ExcelJS 
 - **Validação:** Zod
 - **Scheduler:** node-cron (auto-sync diário)
 - **Integração:** Meta Ads API (Graph API v23.0)
@@ -87,14 +87,16 @@ npm run dev:client    # só o front
 | `POST` | `/clients` | Cadastra ou atualiza um cliente |
 | `GET` | `/clients` | Lista todos os clientes |
 | `PATCH` | `/clients/:actId/token` | Atualiza o token de um cliente |
-| `DELETE` | `/clients/:actId` | Remove um cliente e seus dados de performance |
+| `DELETE` | `/clients/:actId` | Remove um cliente e todos seus dados (cascade) |
 | `GET` | `/clients/:actId/download` | Download do relatório Excel |
 
 ### Sync
 
 | Método | Rota | Descrição |
 |--------|------|-----------|
-| `POST` | `/sync/manual` | Sincroniza dados do Meta Ads por período |
+| `POST` | `/sync/manual` | Sincroniza dados gerais do Meta Ads por período |
+| `POST` | `/sync/breakdown` | Sincroniza dados segmentados (público, plataforma ou região) |
+| `POST` | `/sync/breakdown/all` | Sincroniza todas as segmentações de uma vez |
 
 ### Configurações
 
@@ -120,10 +122,35 @@ POST /clients
 }
 ```
 
-**Sincronizar dados:**
+**Sincronizar dados gerais:**
 
 ```json
 POST /sync/manual
+{
+  "act_id": "act_123456789",
+  "since": "2025-01-01",
+  "until": "2025-05-23"
+}
+```
+
+**Sincronizar breakdown individual:**
+
+```json
+POST /sync/breakdown
+{
+  "act_id": "act_123456789",
+  "since": "2025-01-01",
+  "until": "2025-05-23",
+  "type": "audience"
+}
+```
+
+Tipos disponíveis: `audience` (sexo × idade), `placement` (plataforma), `region` (região)
+
+**Sincronizar todos os breakdowns:**
+
+```json
+POST /sync/breakdown/all
 {
   "act_id": "act_123456789",
   "since": "2025-01-01",
@@ -192,26 +219,30 @@ growth-ads-api/
 │   ├── controllers/
 │   │   ├── clientController.ts       # CRUD de clientes + download
 │   │   ├── settingsController.ts     # Token global + auto-sync
-│   │   └── syncController.ts         # Sincronização manual
+│   │   └── syncController.ts         # Sync manual + breakdowns
 │   ├── generated/
 │   │   └── prisma/                   # Código gerado pelo Prisma 7
 │   ├── integrations/
-│   │   └── metaApi.ts                # Chamadas HTTP ao Meta Graph API (com paginação)
+│   │   └── metaApi.ts                # Chamadas HTTP ao Meta Graph API (com paginação + breakdowns)
 │   ├── middleware/
 │   │   ├── errorHandler.ts           # Error handler global
 │   │   └── validate.ts               # Validação Zod genérica
 │   ├── repositories/
-│   │   ├── adRepository.ts           # Queries de performance (upsert)
+│   │   ├── adRepository.ts           # Queries de performance geral (upsert)
+│   │   ├── audienceRepository.ts     # Queries de performance por público (sexo × idade)
 │   │   ├── clientRepository.ts       # Queries de clientes (cascade delete)
+│   │   ├── placementRepository.ts    # Queries de performance por plataforma
+│   │   ├── regionRepository.ts       # Queries de performance por região
 │   │   └── settingsRepository.ts     # Queries de settings (key-value)
 │   ├── routes/
 │   │   ├── clientRoutes.ts           # Rotas de clientes
 │   │   ├── settingsRoutes.ts         # Rotas de settings
-│   │   └── syncRoutes.ts             # Rota de sync
+│   │   └── syncRoutes.ts             # Rotas de sync (manual + breakdowns)
 │   ├── services/
+│   │   ├── breakdownSyncService.ts   # Sync de breakdowns (audience, placement, region)
 │   │   ├── clientService.ts          # Lógica de negócio (clientes)
 │   │   ├── reportService.ts          # Geração de Excel
-│   │   ├── schedulerService.ts       # Cron job de auto-sync diário
+│   │   ├── schedulerService.ts       # Cron job de auto-sync diário (com breakdowns)
 │   │   ├── settingsService.ts        # Lógica de negócio (settings)
 │   │   └── syncService.ts            # Sync com Meta Ads + resiliência
 │   ├── types/
@@ -243,12 +274,52 @@ growth-ads-api/
 │       └── index.css                 # Tailwind
 │
 ├── prisma/
-│   └── schema.prisma                 # Schema (Client, AdPerformance, AppSettings)
+│   └── schema.prisma                 # Schema (Client, AdPerformance, AdAudiencePerformance,
+│                                     #        AdPlacementPerformance, AdRegionPerformance, AppSettings)
 ├── prisma.config.ts                  # Configuração do Prisma CLI
 ├── Dockerfile                        # Build multi-stage (API + Front)
 ├── docker-compose.yml                # Orquestração de container
 └── tsconfig.json                     # TypeScript config
 ```
+
+---
+
+## Banco de Dados
+
+### Tabelas
+
+| Tabela | Descrição | Chave única |
+|--------|-----------|-------------|
+| `clients_config` | Cadastro de clientes (act_id, token, etc.) | `act_id` |
+| `meta_ads_performance` | Performance geral por anúncio/dia | `date + ad_id` |
+| `ad_audience_performance` | Performance por sexo × idade | `date + ad_id + gender + age_range` |
+| `ad_placement_performance` | Performance por plataforma (Facebook, Instagram, etc.) | `date + ad_id + platform` |
+| `ad_region_performance` | Performance por região geográfica | `date + ad_id + region` |
+| `app_settings` | Configurações da aplicação (key-value) | `key` |
+
+### Métricas por tabela
+
+Todas as tabelas de performance compartilham as mesmas métricas:
+
+| Métrica | Campo | Tipo |
+|---------|-------|------|
+| Alcance | `reach` | Int |
+| Impressões | `impressions` | Int |
+| Investimento | `spend` | Decimal |
+| Cliques no link | `linkClicks` | Int |
+| CTR | `ctr` | Decimal |
+| Conversas (messaging) | `messagingConversations` | Int |
+| Leads | `leads` | Int |
+| Leads via formulário | `leadsForm` | Int |
+| Page views | `pageViews` | Int |
+| Adições ao carrinho | `addToCart` | Int |
+| Inícios de checkout | `initiateCheckout` | Int |
+| Compras | `purchases` | Int |
+| Valor de compras | `purchaseValue` | Decimal |
+| Conversão customizada (qtd) | `customConversionCount` | Int |
+| Conversão customizada (valor) | `customConversionValue` | Decimal |
+| Valor total de conversão | `totalConversionValue` | Decimal |
+| ROAS | `roas` | Decimal |
 
 ---
 
@@ -258,6 +329,13 @@ growth-ads-api/
 - **Token por cliente:** Cada cliente pode ter seu próprio token
 - **Token global:** Fallback automático quando um cliente não tem token próprio
 - **Atualização fácil:** Botão "Token" no card do cliente para trocar inline
+
+### Breakdowns (Segmentação de público)
+- **Público (sexo × idade):** Performance por gênero e faixa etária
+- **Plataforma:** Performance por Facebook, Instagram, Messenger, etc.
+- **Região:** Performance por estado/região geográfica
+- **Sync independente:** Cada breakdown tem sua própria chamada à Meta API
+- **Auto-sync integrado:** Breakdowns são sincronizados junto com o sync diário
 
 ### Auto-Sync (Scheduler)
 - **Sync diário automático:** Roda às 02:00 da manhã (configurável via cron)
@@ -270,7 +348,7 @@ growth-ads-api/
 - **Paginação automática:** Segue os cursores `paging.next` da Meta API até buscar todas as páginas
 - **Retry com backoff:** 3 tentativas com delay exponencial em caso de falha de rede
 - **Resiliência por registro:** Se um registro falhar, os demais continuam salvando
-- **Upsert sem duplicatas:** Chave única `date_adId` garante idempotência
+- **Upsert sem duplicatas:** Chaves únicas por tabela garantem idempotência
 
 ### Pré-filtros de data
 - Botões rápidos: Hoje, 7 dias, 30 dias, 90 dias, 6 meses, 1 ano, 2 anos
@@ -279,8 +357,13 @@ growth-ads-api/
 ### CRUD completo de clientes
 - Cadastro com validação (Zod frontend + backend)
 - Edição de token inline
-- Exclusão com confirmação (cascade: remove dados de performance juntos)
+- Exclusão com confirmação (cascade: remove todas as tabelas de performance)
 - Download de relatório Excel por cliente
+
+### Integração com BI (Looker / Metabase)
+- Tabelas denormalizadas (uma por dimensão) para queries simples
+- Cada tabela contém métricas completas (sem necessidade de JOINs para métricas)
+- JOIN possível por `client_id + ad_id + date` entre tabelas
 
 ---
 

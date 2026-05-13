@@ -23,6 +23,10 @@ export interface SyncPayload {
   until: string;
 }
 
+export interface BreakdownSyncPayload extends SyncPayload {
+  type: 'audience' | 'placement' | 'region';
+}
+
 export const clientApi = {
   list: () => api.get<Client[]>('/clients'),
   create: (data: CreateClientPayload) => api.post('/clients', data),
@@ -35,6 +39,8 @@ export const clientApi = {
 
 export const syncApi = {
   manual: (data: SyncPayload) => api.post('/sync/manual', data),
+  breakdown: (data: BreakdownSyncPayload) => api.post('/sync/breakdown', data),
+  breakdownAll: (data: SyncPayload) => api.post('/sync/breakdown/all', data),
 };
 
 export const settingsApi = {

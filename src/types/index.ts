@@ -15,6 +15,10 @@ export interface MetaInsight {
   ctr?: string;
   actions?: MetaAction[];
   action_values?: MetaAction[];
+  gender?: string;
+  age?: string;
+  publisher_platform?: string;
+  region?: string;
 }
 
 export interface MetaApiPaging {
@@ -38,3 +42,5 @@ export interface SyncResult {
   errors: number;
   details: string[];
 }
+
+export type BreakdownType = 'audience' | 'placement' | 'region';

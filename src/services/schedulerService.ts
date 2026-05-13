@@ -1,6 +1,7 @@
 import cron from 'node-cron';
 import clientRepository from '../repositories/clientRepository.js';
 import syncService from './syncService.js';
+import breakdownSyncService from './breakdownSyncService.js';
 import settingsRepository from '../repositories/settingsRepository.js';
 
 class SchedulerService {
@@ -54,6 +55,16 @@ class SchedulerService {
         } else {
           failed++;
           details.push(`⚠️ ${client.clientName}: ${result.records} salvos, ${result.errors} erros`);
+        }
+
+        try {
+          const breakdownResults = await breakdownSyncService.syncAllBreakdowns(client.actId, dateStr, dateStr);
+          for (const [type, br] of Object.entries(breakdownResults)) {
+            details.push(`   📊 ${type}: ${br.records} registros${br.errors > 0 ? `, ${br.errors} erros` : ''}`);
+          }
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          details.push(`   ⚠️ Breakdown falhou para ${client.clientName}: ${msg}`);
         }
       } catch (err) {
         failed++;

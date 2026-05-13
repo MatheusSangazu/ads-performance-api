@@ -22,7 +22,10 @@ model Client {
   status          ClientStatus @default(active)
   createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamp(0)
 
-  adsPerformance  AdPerformance[]
+  adsPerformance         AdPerformance[]
+  audiencePerformance    AdAudiencePerformance[]
+  placementPerformance   AdPlacementPerformance[]
+  regionPerformance      AdRegionPerformance[]
 
   @@map("clients_config")
 }
@@ -62,6 +65,112 @@ model AdPerformance {
   @@index([clientId], map: "idx_client")
   @@index([date], map: "idx_date")
   @@map("meta_ads_performance")
+}
+
+model AdAudiencePerformance {
+  id                     BigInt   @id @default(autoincrement())
+  date                   DateTime @db.Date
+  clientId               String   @map("client_id") @db.VarChar(50)
+  adId                   String   @map("ad_id") @db.VarChar(50)
+  adName                 String?  @map("ad_name") @db.VarChar(255)
+  campaignName           String?  @map("campaign_name") @db.VarChar(255)
+  campaignId             String?  @map("campaign_id") @db.VarChar(50)
+  gender                 String   @db.VarChar(20)
+  ageRange               String   @map("age_range") @db.VarChar(10)
+  reach                  Int?     @default(0)
+  impressions            Int?     @default(0)
+  spend                  Decimal? @default(0.0000) @db.Decimal(15, 4)
+  linkClicks             Int?     @default(0) @map("link_clicks")
+  ctr                    Decimal? @default(0.0000) @db.Decimal(10, 4)
+  messagingConversations Int?     @default(0) @map("messaging_conversations")
+  leads                  Int?     @default(0)
+  leadsForm              Int?     @default(0) @map("leads_form")
+  pageViews              Int?     @default(0) @map("page_views")
+  addToCart              Int?     @default(0) @map("add_to_cart")
+  initiateCheckout       Int?     @default(0) @map("initiate_checkout")
+  purchases              Int?     @default(0)
+  purchaseValue          Decimal? @default(0.0000) @db.Decimal(15, 4) @map("purchase_value")
+  customConversionCount  Int?     @default(0) @map("custom_conversion_count")
+  customConversionValue  Decimal? @default(0.0000) @db.Decimal(15, 4) @map("custom_conversion_value")
+  totalConversionValue   Decimal? @default(0.0000) @db.Decimal(15, 4) @map("total_conversion_value")
+  roas                   Decimal? @default(0.0000) @db.Decimal(10, 4)
+
+  client                 Client   @relation(fields: [clientId], references: [actId])
+
+  @@unique([date, adId, gender, ageRange], map: "unique_audience_ad_date")
+  @@index([clientId], map: "idx_audience_client")
+  @@index([date], map: "idx_audience_date")
+  @@map("ad_audience_performance")
+}
+
+model AdPlacementPerformance {
+  id                     BigInt   @id @default(autoincrement())
+  date                   DateTime @db.Date
+  clientId               String   @map("client_id") @db.VarChar(50)
+  adId                   String   @map("ad_id") @db.VarChar(50)
+  adName                 String?  @map("ad_name") @db.VarChar(255)
+  campaignName           String?  @map("campaign_name") @db.VarChar(255)
+  campaignId             String?  @map("campaign_id") @db.VarChar(50)
+  platform               String   @db.VarChar(50)
+  reach                  Int?     @default(0)
+  impressions            Int?     @default(0)
+  spend                  Decimal? @default(0.0000) @db.Decimal(15, 4)
+  linkClicks             Int?     @default(0) @map("link_clicks")
+  ctr                    Decimal? @default(0.0000) @db.Decimal(10, 4)
+  messagingConversations Int?     @default(0) @map("messaging_conversations")
+  leads                  Int?     @default(0)
+  leadsForm              Int?     @default(0) @map("leads_form")
+  pageViews              Int?     @default(0) @map("page_views")
+  addToCart              Int?     @default(0) @map("add_to_cart")
+  initiateCheckout       Int?     @default(0) @map("initiate_checkout")
+  purchases              Int?     @default(0)
+  purchaseValue          Decimal? @default(0.0000) @db.Decimal(15, 4) @map("purchase_value")
+  customConversionCount  Int?     @default(0) @map("custom_conversion_count")
+  customConversionValue  Decimal? @default(0.0000) @db.Decimal(15, 4) @map("custom_conversion_value")
+  totalConversionValue   Decimal? @default(0.0000) @db.Decimal(15, 4) @map("total_conversion_value")
+  roas                   Decimal? @default(0.0000) @db.Decimal(10, 4)
+
+  client                 Client   @relation(fields: [clientId], references: [actId])
+
+  @@unique([date, adId, platform], map: "unique_placement_ad_date")
+  @@index([clientId], map: "idx_placement_client")
+  @@index([date], map: "idx_placement_date")
+  @@map("ad_placement_performance")
+}
+
+model AdRegionPerformance {
+  id                     BigInt   @id @default(autoincrement())
+  date                   DateTime @db.Date
+  clientId               String   @map("client_id") @db.VarChar(50)
+  adId                   String   @map("ad_id") @db.VarChar(50)
+  adName                 String?  @map("ad_name") @db.VarChar(255)
+  campaignName           String?  @map("campaign_name") @db.VarChar(255)
+  campaignId             String?  @map("campaign_id") @db.VarChar(50)
+  region                 String   @db.VarChar(100)
+  reach                  Int?     @default(0)
+  impressions            Int?     @default(0)
+  spend                  Decimal? @default(0.0000) @db.Decimal(15, 4)
+  linkClicks             Int?     @default(0) @map("link_clicks")
+  ctr                    Decimal? @default(0.0000) @db.Decimal(10, 4)
+  messagingConversations Int?     @default(0) @map("messaging_conversations")
+  leads                  Int?     @default(0)
+  leadsForm              Int?     @default(0) @map("leads_form")
+  pageViews              Int?     @default(0) @map("page_views")
+  addToCart              Int?     @default(0) @map("add_to_cart")
+  initiateCheckout       Int?     @default(0) @map("initiate_checkout")
+  purchases              Int?     @default(0)
+  purchaseValue          Decimal? @default(0.0000) @db.Decimal(15, 4) @map("purchase_value")
+  customConversionCount  Int?     @default(0) @map("custom_conversion_count")
+  customConversionValue  Decimal? @default(0.0000) @db.Decimal(15, 4) @map("custom_conversion_value")
+  totalConversionValue   Decimal? @default(0.0000) @db.Decimal(15, 4) @map("total_conversion_value")
+  roas                   Decimal? @default(0.0000) @db.Decimal(10, 4)
+
+  client                 Client   @relation(fields: [clientId], references: [actId])
+
+  @@unique([date, adId, region], map: "unique_region_ad_date")
+  @@index([clientId], map: "idx_region_client")
+  @@index([date], map: "idx_region_date")
+  @@map("ad_region_performance")
 }
 
 model AppSettings {

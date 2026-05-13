@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Plus } from 'lucide-react';
-import { clientApi } from '../lib/api';
+import { clientApi, syncApi } from '../lib/api';
+import type { SyncFormBreakdowns } from '../components/SyncForm';
 import { useClients, useSync, useDownload } from '../hooks/useClients';
 import Message from '../components/ui/Message';
 import ClientForm from '../components/ClientForm';
@@ -25,7 +26,10 @@ export default function Clients() {
     fetchClients();
   };
 
-  const handleSync = async (data: { act_id: string; since: string; until: string }) => {
+  const handleSync = async (
+    data: { act_id: string; since: string; until: string },
+    breakdowns: SyncFormBreakdowns,
+  ) => {
     await syncAccount(
       data.act_id,
       data.since,
@@ -33,6 +37,45 @@ export default function Clients() {
       (msg) => setMessage({ type: 'success', text: msg }),
       (msg) => setMessage({ type: 'error', text: msg }),
     );
+
+    const hasBreakdown = breakdowns.audience || breakdowns.placement || breakdowns.region;
+    if (!hasBreakdown) return;
+
+    const activeBreakdowns = (
+      ['audience', 'placement', 'region'] as const
+    ).filter((t) => breakdowns[t]);
+
+    if (activeBreakdowns.length === 3) {
+      try {
+        const res = await syncApi.breakdownAll({
+          act_id: data.act_id,
+          since: data.since,
+          until: data.until,
+        });
+        const results = res.data as Record<string, { records: number; errors: number }>;
+        const total = Object.values(results).reduce((s, r) => s + r.records, 0);
+        setMessage({ type: 'success', text: `Segmentações: ${total} registros sincronizados.` });
+      } catch {
+        setMessage({ type: 'error', text: 'Erro ao sincronizar segmentações.' });
+      }
+    } else {
+      for (const type of activeBreakdowns) {
+        try {
+          const res = await syncApi.breakdown({
+            act_id: data.act_id,
+            since: data.since,
+            until: data.until,
+            type,
+          });
+          setMessage({
+            type: 'success',
+            text: `Segmentação ${type}: ${res.data.records} registros sincronizados.`,
+          });
+        } catch {
+          setMessage({ type: 'error', text: `Erro ao sincronizar segmentação ${type}.` });
+        }
+      }
+    }
   };
 
   const handleDownload = (actId: string) => {

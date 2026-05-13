@@ -48,6 +48,9 @@ class ClientRepository {
   }
 
   public async deleteByActId(actId: string) {
+    await prisma.adAudiencePerformance.deleteMany({ where: { clientId: actId } });
+    await prisma.adPlacementPerformance.deleteMany({ where: { clientId: actId } });
+    await prisma.adRegionPerformance.deleteMany({ where: { clientId: actId } });
     await prisma.adPerformance.deleteMany({ where: { clientId: actId } });
     return prisma.client.delete({ where: { actId } });
   }

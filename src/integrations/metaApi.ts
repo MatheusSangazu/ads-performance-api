@@ -9,6 +9,7 @@ export async function fetchAllInsights(
   accessToken: string,
   since: string,
   until: string,
+  breakdowns?: string[],
 ): Promise<{ data: import('../types/index.js').MetaInsight[] }> {
   const allInsights: import('../types/index.js').MetaInsight[] = [];
 
@@ -22,6 +23,10 @@ export async function fetchAllInsights(
     action_report_time: 'conversion',
     limit: '500',
   };
+
+  if (breakdowns && breakdowns.length > 0) {
+    params.breakdowns = JSON.stringify(breakdowns);
+  }
 
   let page = 1;
 

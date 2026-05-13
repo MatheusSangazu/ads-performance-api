@@ -11,8 +11,20 @@ const syncSchema = z.object({
   until: z.string().min(1, 'Data fim é obrigatória'),
 });
 
+const breakdownSchema = syncSchema.extend({
+  type: z.enum(['audience', 'placement', 'region']),
+});
+
 router.post('/manual', validate(syncSchema), (req, res, next) => {
   syncController.manualSync(req, res).catch(next);
+});
+
+router.post('/breakdown', validate(breakdownSchema), (req, res, next) => {
+  syncController.syncBreakdown(req, res).catch(next);
+});
+
+router.post('/breakdown/all', validate(syncSchema), (req, res, next) => {
+  syncController.syncAllBreakdowns(req, res).catch(next);
 });
 
 export default router;
