@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import clientService from '../services/clientService.js';
 import reportService from '../services/reportService.js';
+import dashboardRepository from '../repositories/dashboardRepository.js';
 
 class ClientController {
   public async create(req: Request, res: Response): Promise<void> {
@@ -18,6 +19,11 @@ class ClientController {
   public async list(_req: Request, res: Response): Promise<void> {
     const clients = await clientService.listClients();
     res.json(clients);
+  }
+
+  public async metrics(_req: Request, res: Response): Promise<void> {
+    const data = await dashboardRepository.getOverview();
+    res.json(data);
   }
 
   public async updateToken(req: Request, res: Response): Promise<void> {

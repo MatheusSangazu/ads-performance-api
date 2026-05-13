@@ -2,7 +2,7 @@ import axios from 'axios';
 import type { MetaApiResponse, MetaPreviewResponse } from '../types/index.js';
 import { retry } from '../utils/retry.js';
 
-const META_API_BASE = 'https://graph.facebook.com/v23.0';
+const META_API_BASE = 'https://graph.facebook.com/v25.0';
 
 export async function fetchAllInsights(
   actId: string,
@@ -25,14 +25,19 @@ export async function fetchAllInsights(
   };
 
   if (breakdowns && breakdowns.length > 0) {
-    params.breakdowns = JSON.stringify(breakdowns);
+    params.breakdowns = breakdowns.join(',');
   }
 
   let page = 1;
 
   while (url) {
     const response = await retry(() =>
-      axios.get<MetaApiResponse>(url!, { params }),
+      axios.get<MetaApiResponse>(url!, { params }).catch((err) => {
+        if (err.response) {
+          console.error(`   ❌ Meta API ${err.response.status}:`, JSON.stringify(err.response.data, null, 2));
+        }
+        throw err;
+      }),
     );
 
     const insights = response.data.data || [];

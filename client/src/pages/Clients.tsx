@@ -1,18 +1,63 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Plus } from 'lucide-react';
-import { clientApi, syncApi } from '../lib/api';
+import { clientApi, syncApi, createProgressStream } from '../lib/api';
 import type { SyncFormBreakdowns } from '../components/SyncForm';
+import type { LogEntry } from '../components/SyncProgressModal';
 import { useClients, useSync, useDownload } from '../hooks/useClients';
 import Message from '../components/ui/Message';
 import ClientForm from '../components/ClientForm';
 import SyncForm from '../components/SyncForm';
 import ClientCard from '../components/ClientCard';
+import SyncProgressModal from '../components/SyncProgressModal';
 
 export default function Clients() {
   const { clients, loading, message, setMessage, fetchClients } = useClients();
   const { syncing, syncAccount } = useSync();
   const { downloading, downloadReport } = useDownload();
   const [showForm, setShowForm] = useState(false);
+
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalMinimized, setModalMinimized] = useState(false);
+  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [progress, setProgress] = useState(0);
+  const [isDone, setIsDone] = useState(false);
+  const [totalRecords, setTotalRecords] = useState(0);
+  const [totalErrors, setTotalErrors] = useState(0);
+
+  const closeStreamRef = useRef<(() => void) | null>(null);
+
+  const openModal = () => {
+    setLogs([]);
+    setProgress(0);
+    setIsDone(false);
+    setTotalRecords(0);
+    setTotalErrors(0);
+    setModalOpen(true);
+    setModalMinimized(false);
+
+    if (closeStreamRef.current) closeStreamRef.current();
+
+    closeStreamRef.current = createProgressStream((event) => {
+      const entry: LogEntry = { ...event, timestamp: new Date() };
+      setLogs((prev) => [...prev, entry]);
+
+      if (event.progress !== undefined) setProgress(event.progress);
+
+      if (event.type === 'done') {
+        setTotalRecords((prev) => prev + (event.records || 0));
+        setTotalErrors((prev) => prev + (event.errors || 0));
+      }
+    });
+  };
+
+  const closeModal = () => {
+    setModalOpen(false);
+    setModalMinimized(false);
+    if (closeStreamRef.current) {
+      closeStreamRef.current();
+      closeStreamRef.current = null;
+    }
+  };
 
   const handleCreate = async (data: {
     name: string;
@@ -30,52 +75,40 @@ export default function Clients() {
     data: { act_id: string; since: string; until: string },
     breakdowns: SyncFormBreakdowns,
   ) => {
-    await syncAccount(
-      data.act_id,
-      data.since,
-      data.until,
-      (msg) => setMessage({ type: 'success', text: msg }),
-      (msg) => setMessage({ type: 'error', text: msg }),
-    );
+    openModal();
+
+    await syncAccount(data.act_id, data.since, data.until).catch(() => {});
 
     const hasBreakdown = breakdowns.audience || breakdowns.placement || breakdowns.region;
-    if (!hasBreakdown) return;
+    if (hasBreakdown) {
+      const activeBreakdowns = (
+        ['audience', 'placement', 'region'] as const
+      ).filter((t) => breakdowns[t]);
 
-    const activeBreakdowns = (
-      ['audience', 'placement', 'region'] as const
-    ).filter((t) => breakdowns[t]);
-
-    if (activeBreakdowns.length === 3) {
-      try {
-        const res = await syncApi.breakdownAll({
-          act_id: data.act_id,
-          since: data.since,
-          until: data.until,
-        });
-        const results = res.data as Record<string, { records: number; errors: number }>;
-        const total = Object.values(results).reduce((s, r) => s + r.records, 0);
-        setMessage({ type: 'success', text: `Segmentações: ${total} registros sincronizados.` });
-      } catch {
-        setMessage({ type: 'error', text: 'Erro ao sincronizar segmentações.' });
-      }
-    } else {
-      for (const type of activeBreakdowns) {
+      if (activeBreakdowns.length === 3) {
         try {
-          const res = await syncApi.breakdown({
+          await syncApi.breakdownAll({
             act_id: data.act_id,
             since: data.since,
             until: data.until,
-            type,
           });
-          setMessage({
-            type: 'success',
-            text: `Segmentação ${type}: ${res.data.records} registros sincronizados.`,
-          });
-        } catch {
-          setMessage({ type: 'error', text: `Erro ao sincronizar segmentação ${type}.` });
+        } catch { /* errors shown in modal via SSE */ }
+      } else {
+        for (const type of activeBreakdowns) {
+          try {
+            await syncApi.breakdown({
+              act_id: data.act_id,
+              since: data.since,
+              until: data.until,
+              type,
+            });
+          } catch { /* errors shown in modal via SSE */ }
         }
       }
     }
+
+    setIsDone(true);
+    setProgress(100);
   };
 
   const handleDownload = (actId: string) => {
@@ -106,11 +139,7 @@ export default function Clients() {
         </button>
       </div>
 
-      {message && (
-        <Message type={message.type}>
-          {message.text}
-        </Message>
-      )}
+      {message && <Message type={message.type}>{message.text}</Message>}
 
       {form.form(showForm)}
 
@@ -139,6 +168,19 @@ export default function Clients() {
           ))}
         </div>
       )}
+
+      <SyncProgressModal
+        logs={logs}
+        progress={progress}
+        isOpen={modalOpen}
+        isMinimized={modalMinimized}
+        onClose={closeModal}
+        onMinimize={() => setModalMinimized(true)}
+        onRestore={() => setModalMinimized(false)}
+        isDone={isDone}
+        totalRecords={totalRecords}
+        totalErrors={totalErrors}
+      />
     </div>
   );
 }

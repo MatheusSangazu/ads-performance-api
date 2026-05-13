@@ -27,6 +27,65 @@ export interface BreakdownSyncPayload extends SyncPayload {
   type: 'audience' | 'placement' | 'region';
 }
 
+export interface SyncProgressEvent {
+  type: 'start' | 'log' | 'progress' | 'done' | 'error';
+  message: string;
+  step?: string;
+  progress?: number;
+  records?: number;
+  errors?: number;
+}
+
+export interface DashboardMetrics {
+  totalClients: number;
+  totalSpend: number;
+  totalLeads: number;
+  totalClicks: number;
+  totalImpressions: number;
+  totalReach: number;
+  totalPurchases: number;
+  totalPurchaseValue: number;
+  totalConversionValue: number;
+  avgCpl: number;
+  avgCpc: number;
+  avgCpm: number;
+  avgCtr: number;
+  avgRoas: number;
+  clientMetrics: {
+    actId: string;
+    name: string;
+    spend: number;
+    leads: number;
+    conversionValue: number;
+    roas: number;
+  }[];
+  dailyMetrics: {
+    date: string;
+    spend: number;
+    leads: number;
+    clicks: number;
+    conversionValue: number;
+  }[];
+  period: { since: string; until: string };
+}
+
+export function createProgressStream(onEvent: (event: SyncProgressEvent) => void): () => void {
+  const es = new EventSource('/api/sync/progress');
+
+  es.onmessage = (e) => {
+    try {
+      const data = JSON.parse(e.data) as SyncProgressEvent;
+      onEvent(data);
+    } catch { /* ignore parse errors */ }
+  };
+
+  es.onerror = () => {
+    es.close();
+  };
+
+  return () => es.close();
+}
+
 export const clientApi = {
   list: () => api.get<Client[]>('/clients'),
   create: (data: CreateClientPayload) => api.post('/clients', data),
@@ -35,6 +94,7 @@ export const clientApi = {
   delete: (actId: string) => api.delete(`/clients/${actId}`),
   downloadReport: (actId: string) =>
     api.get(`/clients/${actId}/download`, { responseType: 'blob' }),
+  metrics: () => api.get<DashboardMetrics>('/clients/metrics'),
 };
 
 export const syncApi = {

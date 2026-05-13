@@ -30,19 +30,11 @@ export function useClients() {
 export function useSync() {
   const [syncing, setSyncing] = useState<string | null>(null);
 
-  const syncAccount = async (
-    actId: string,
-    since: string,
-    until: string,
-    onSuccess: (msg: string) => void,
-    onError: (msg: string) => void,
-  ) => {
+  const syncAccount = async (actId: string, since: string, until: string) => {
     setSyncing(actId);
     try {
       const res = await syncApi.manual({ act_id: actId, since, until });
-      onSuccess(`Sync concluído! ${res.data.records} registros.`);
-    } catch {
-      onError('Erro na sincronização.');
+      return res.data;
     } finally {
       setSyncing(null);
     }

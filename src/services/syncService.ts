@@ -5,6 +5,7 @@ import settingsRepository from '../repositories/settingsRepository.js';
 import { fetchAllInsights, fetchPreviewLink } from '../integrations/metaApi.js';
 import { splitDates } from '../utils/dateUtils.js';
 import type { MetaInsight, MetaAction, SyncResult } from '../types/index.js';
+import syncProgress from './syncProgress.js';
 
 class SyncService {
   private previewCache: Map<string, string> = new Map();
@@ -69,11 +70,14 @@ class SyncService {
     const client = await clientRepository.findByActId(actId);
     if (!client) throw new Error(`Cliente ${actId} não encontrado.`);
 
-    const accessToken = client.accessToken || (await settingsRepository.get('global_access_token'));
-    if (!accessToken) throw new Error(`Nenhum token disponível para o cliente ${actId}. Defina um token para o cliente ou configure o token global.`);
+    const clientToken = client.accessToken?.trim();
+    const globalToken = (await settingsRepository.get('global_access_token'))?.trim();
+    const accessToken = clientToken || globalToken;
+    if (!accessToken) throw new Error(`Nenhum token disponível para o cliente ${actId}.`);
+    console.log(`🔑 Token usado: ${clientToken ? 'token do cliente' : 'token global'}`);
 
     const dateChunks = splitDates(dateSince, dateUntil);
-    console.log(`🚀 Iniciando Sync: ${client.clientName} | ${dateChunks.length} chunk(s) | ${dateSince} → ${dateUntil}`);
+    syncProgress.send({ type: 'start', message: `🚀 Sync: ${client.clientName} | ${dateChunks.length} chunk(s)`, step: 'main', progress: 0 });
     this.previewCache.clear();
 
     let totalRecords = 0;
@@ -82,17 +86,26 @@ class SyncService {
 
     for (let i = 0; i < dateChunks.length; i++) {
       const chunk = dateChunks[i];
-      console.log(`⏳ Chunk ${i + 1}/${dateChunks.length}: ${chunk.start} → ${chunk.end}`);
+      const chunkProgress = Math.round(((i) / dateChunks.length) * 100);
+
+      syncProgress.send({
+        type: 'progress',
+        message: `⏳ Chunk ${i + 1}/${dateChunks.length}: ${chunk.start} → ${chunk.end}`,
+        step: 'main',
+        progress: chunkProgress,
+      });
 
       try {
         const response = await fetchAllInsights(actId, accessToken, chunk.start, chunk.end);
         const insights: MetaInsight[] = response.data || [];
 
         if (insights.length === 0) {
-          console.log(`   ℹ️ Nenhum dado para ${chunk.start} → ${chunk.end}`);
+          syncProgress.send({ type: 'log', message: `   ℹ️ Nenhum dado para ${chunk.start} → ${chunk.end}`, step: 'main' });
           details.push(`${chunk.start} → ${chunk.end}: 0 registros`);
           continue;
         }
+
+        syncProgress.send({ type: 'log', message: `   📥 ${insights.length} registros encontrados`, step: 'main' });
 
         let chunkSaved = 0;
         let chunkErrors = 0;
@@ -106,7 +119,7 @@ class SyncService {
           } catch (err) {
             chunkErrors++;
             const msg = err instanceof Error ? err.message : String(err);
-            console.error(`   ❌ Erro ao salvar ad ${item.ad_id} (${item.date_start}): ${msg}`);
+            syncProgress.send({ type: 'error', message: `   ❌ Erro ao salvar ad ${item.ad_id}: ${msg}`, step: 'main' });
           }
         }
 
@@ -114,11 +127,11 @@ class SyncService {
         totalErrors += chunkErrors;
 
         const status = chunkErrors > 0 ? `⚠️ ${chunkSaved} salvos, ${chunkErrors} erros` : `✅ ${chunkSaved} salvos`;
-        console.log(`   ${status}`);
+        syncProgress.send({ type: 'log', message: `   ${status}`, step: 'main' });
         details.push(`${chunk.start} → ${chunk.end}: ${chunkSaved} salvos${chunkErrors > 0 ? `, ${chunkErrors} erros` : ''}`);
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        console.error(`   ❌ Falha no chunk ${chunk.start} → ${chunk.end}: ${msg}`);
+        syncProgress.send({ type: 'error', message: `   ❌ Falha no chunk ${chunk.start} → ${chunk.end}: ${msg}`, step: 'main' });
         details.push(`${chunk.start} → ${chunk.end}: FALHA - ${msg}`);
         totalErrors++;
       }
@@ -126,14 +139,16 @@ class SyncService {
       await new Promise((r) => setTimeout(r, 1000));
     }
 
-    console.log(`🏁 Sync concluído: ${totalRecords} registros salvos, ${totalErrors} erros`);
-
-    return {
-      success: totalErrors === 0,
+    syncProgress.send({
+      type: 'done',
+      message: `🏁 Sync concluído: ${totalRecords} registros, ${totalErrors} erros`,
+      step: 'main',
+      progress: 100,
       records: totalRecords,
       errors: totalErrors,
-      details,
-    };
+    });
+
+    return { success: totalErrors === 0, records: totalRecords, errors: totalErrors, details };
   }
 }
 

@@ -14,7 +14,7 @@ Plataforma de coleta e visualização de dados de performance do **Meta Ads**, c
 - **Relatórios:** ExcelJS 
 - **Validação:** Zod
 - **Scheduler:** node-cron (auto-sync diário)
-- **Integração:** Meta Ads API (Graph API v23.0)
+- **Integração:** Meta Ads API (Graph API v25.0)
 
 ### Front
 - **React 19 + Vite + TypeScript**
@@ -88,6 +88,7 @@ npm run dev:client    # só o front
 | `GET` | `/clients` | Lista todos os clientes |
 | `PATCH` | `/clients/:actId/token` | Atualiza o token de um cliente |
 | `DELETE` | `/clients/:actId` | Remove um cliente e todos seus dados (cascade) |
+| `GET` | `/clients/metrics` | Métricas agregadas do Dashboard (últimos 30 dias) |
 | `GET` | `/clients/:actId/download` | Download do relatório Excel |
 
 ### Sync
@@ -97,6 +98,7 @@ npm run dev:client    # só o front
 | `POST` | `/sync/manual` | Sincroniza dados gerais do Meta Ads por período |
 | `POST` | `/sync/breakdown` | Sincroniza dados segmentados (público, plataforma ou região) |
 | `POST` | `/sync/breakdown/all` | Sincroniza todas as segmentações de uma vez |
+| `GET` | `/sync/progress` | SSE — stream de progresso do sync em tempo real |
 
 ### Configurações
 
@@ -231,6 +233,7 @@ growth-ads-api/
 │   │   ├── adRepository.ts           # Queries de performance geral (upsert)
 │   │   ├── audienceRepository.ts     # Queries de performance por público (sexo × idade)
 │   │   ├── clientRepository.ts       # Queries de clientes (cascade delete)
+│   │   ├── dashboardRepository.ts    # Queries agregadas para o Dashboard
 │   │   ├── placementRepository.ts    # Queries de performance por plataforma
 │   │   ├── regionRepository.ts       # Queries de performance por região
 │   │   └── settingsRepository.ts     # Queries de settings (key-value)
@@ -244,6 +247,7 @@ growth-ads-api/
 │   │   ├── reportService.ts          # Geração de Excel
 │   │   ├── schedulerService.ts       # Cron job de auto-sync diário (com breakdowns)
 │   │   ├── settingsService.ts        # Lógica de negócio (settings)
+│   │   ├── syncProgress.ts           # EventEmitter singleton para SSE progress
 │   │   └── syncService.ts            # Sync com Meta Ads + resiliência
 │   ├── types/
 │   │   └── index.ts                  # Interfaces compartilhadas
@@ -257,7 +261,8 @@ growth-ads-api/
 │       ├── components/
 │       │   ├── ClientCard.tsx        # Card (sync, token, excel, delete)
 │       │   ├── ClientForm.tsx        # Formulário de cadastro
-│       │   ├── SyncForm.tsx          # Formulário de sync com pré-filtros
+│       │   ├── SyncForm.tsx          # Formulário de sync com pré-filtros + checkboxes de breakdown
+│       │   ├── SyncProgressModal.tsx # Modal de progresso do sync em tempo real (SSE)
 │       │   ├── Layout.tsx            # Layout com navegação
 │       │   └── ui/
 │       │       └── Message.tsx       # Componente de mensagem reutilizável
@@ -324,6 +329,21 @@ Todas as tabelas de performance compartilham as mesmas métricas:
 ---
 
 ## Funcionalidades
+
+### Dashboard
+- **Métricas agregadas:** Cards com total de clientes, investimento, leads, cliques, impressões, ROAS, CPL e CTR
+- **Período automático:** Últimos 30 dias
+- **Gráfico de tendência:** Área com investimento e leads por dia (Recharts)
+- **Performance por cliente:** Gráfico de barras comparando clientes
+- **Ranking:** Tabela ordenada por investimento com CPL e ROAS por cliente
+
+### Sync Progress (Tempo Real)
+- **Modal de progresso:** Aparece automaticamente ao iniciar um sync
+- **Logs em tempo real:** Streaming via SSE (Server-Sent Events)
+- **Barra de progresso:** Porcentagem visual da sincronização
+- **Minimizar:** Reduz para um widget pequeno no canto inferior
+- **Fechar:** O sync continua no backend mesmo com o modal fechado
+- **Logs coloridos:** Erros em vermelho, sucesso em verde, início em azul
 
 ### Token Management
 - **Token por cliente:** Cada cliente pode ter seu próprio token

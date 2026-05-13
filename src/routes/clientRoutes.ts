@@ -25,6 +25,10 @@ router.get('/', (req, res, next) => {
   clientController.list(req, res).catch(next);
 });
 
+router.get('/metrics', (req, res, next) => {
+  clientController.metrics(req, res).catch(next);
+});
+
 router.patch('/:actId/token', validate(updateTokenSchema), (req, res, next) => {
   clientController.updateToken(req, res).catch(next);
 });

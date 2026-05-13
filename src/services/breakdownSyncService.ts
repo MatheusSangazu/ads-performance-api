@@ -6,6 +6,7 @@ import regionRepository from '../repositories/regionRepository.js';
 import { fetchAllInsights } from '../integrations/metaApi.js';
 import { splitDates } from '../utils/dateUtils.js';
 import type { MetaInsight, MetaAction, SyncResult, BreakdownType } from '../types/index.js';
+import syncProgress from './syncProgress.js';
 
 const BREAKDOWN_CONFIG: Record<BreakdownType, { param: string[]; label: string }> = {
   audience: { param: ['gender', 'age'], label: 'Público (sexo × idade)' },
@@ -63,26 +64,42 @@ class BreakdownSyncService {
     const client = await clientRepository.findByActId(actId);
     if (!client) throw new Error(`Cliente ${actId} não encontrado.`);
 
-    const accessToken = client.accessToken || (await settingsRepository.get('global_access_token'));
+    const clientToken = client.accessToken?.trim();
+    const globalToken = (await settingsRepository.get('global_access_token'))?.trim();
+    const accessToken = clientToken || globalToken;
     if (!accessToken) throw new Error(`Nenhum token disponível para o cliente ${actId}.`);
 
     const config = BREAKDOWN_CONFIG[type];
     const dateChunks = splitDates(dateSince, dateUntil);
-    console.log(`🔍 Sync ${config.label}: ${client.clientName} | ${dateChunks.length} chunk(s)`);
+
+    syncProgress.send({ type: 'start', message: `🔍 ${config.label}: ${client.clientName} | ${dateChunks.length} chunk(s)`, step: type, progress: 0 });
 
     let totalRecords = 0;
     let totalErrors = 0;
     const details: string[] = [];
 
-    for (const chunk of dateChunks) {
+    for (let i = 0; i < dateChunks.length; i++) {
+      const chunk = dateChunks[i];
+      const chunkProgress = Math.round(((i) / dateChunks.length) * 100);
+
+      syncProgress.send({
+        type: 'progress',
+        message: `⏳ ${config.label} chunk ${i + 1}/${dateChunks.length}: ${chunk.start} → ${chunk.end}`,
+        step: type,
+        progress: chunkProgress,
+      });
+
       try {
         const response = await fetchAllInsights(actId, accessToken, chunk.start, chunk.end, config.param);
         const insights = response.data || [];
 
         if (insights.length === 0) {
+          syncProgress.send({ type: 'log', message: `   ℹ️ ${config.label}: nenhum dado para ${chunk.start} → ${chunk.end}`, step: type });
           details.push(`${chunk.start} → ${chunk.end}: 0 registros`);
           continue;
         }
+
+        syncProgress.send({ type: 'log', message: `   📥 ${insights.length} registros de ${config.label}`, step: type });
 
         let chunkSaved = 0;
         let chunkErrors = 0;
@@ -101,37 +118,28 @@ class BreakdownSyncService {
             };
 
             if (type === 'audience') {
-              await audienceRepository.upsert({
-                ...base,
-                gender: item.gender || 'unknown',
-                ageRange: item.age || 'unknown',
-              });
+              await audienceRepository.upsert({ ...base, gender: item.gender || 'unknown', ageRange: item.age || 'unknown' });
             } else if (type === 'placement') {
-              await placementRepository.upsert({
-                ...base,
-                platform: item.publisher_platform || 'unknown',
-              });
+              await placementRepository.upsert({ ...base, platform: item.publisher_platform || 'unknown' });
             } else if (type === 'region') {
-              await regionRepository.upsert({
-                ...base,
-                region: item.region || 'unknown',
-              });
+              await regionRepository.upsert({ ...base, region: item.region || 'unknown' });
             }
 
             chunkSaved++;
           } catch (err) {
             chunkErrors++;
             const msg = err instanceof Error ? err.message : String(err);
-            console.error(`   ❌ Erro ao salvar breakdown ${item.ad_id}: ${msg}`);
+            syncProgress.send({ type: 'error', message: `   ❌ Erro breakdown ${item.ad_id}: ${msg}`, step: type });
           }
         }
 
         totalRecords += chunkSaved;
         totalErrors += chunkErrors;
+        syncProgress.send({ type: 'log', message: `   ✅ ${config.label}: ${chunkSaved} salvos${chunkErrors > 0 ? `, ${chunkErrors} erros` : ''}`, step: type });
         details.push(`${chunk.start} → ${chunk.end}: ${chunkSaved} salvos${chunkErrors > 0 ? `, ${chunkErrors} erros` : ''}`);
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        console.error(`   ❌ Falha no chunk ${chunk.start} → ${chunk.end}: ${msg}`);
+        syncProgress.send({ type: 'error', message: `   ❌ Falha ${config.label} ${chunk.start} → ${chunk.end}: ${msg}`, step: type });
         details.push(`${chunk.start} → ${chunk.end}: FALHA - ${msg}`);
         totalErrors++;
       }
@@ -139,7 +147,15 @@ class BreakdownSyncService {
       await new Promise((r) => setTimeout(r, 1000));
     }
 
-    console.log(`🏁 ${config.label} concluído: ${totalRecords} registros, ${totalErrors} erros`);
+    syncProgress.send({
+      type: 'done',
+      message: `🏁 ${config.label} concluído: ${totalRecords} registros, ${totalErrors} erros`,
+      step: type,
+      progress: 100,
+      records: totalRecords,
+      errors: totalErrors,
+    });
+
     return { success: totalErrors === 0, records: totalRecords, errors: totalErrors, details };
   }
 
