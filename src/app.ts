@@ -5,6 +5,8 @@ import syncRoutes from './routes/syncRoutes.js';
 import clientRoutes from './routes/clientRoutes.js';
 import settingsRoutes from './routes/settingsRoutes.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import schedulerService from './services/schedulerService.js';
+import settingsRepository from './repositories/settingsRepository.js';
 import './config/env.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -29,6 +31,11 @@ if (process.env.NODE_ENV === 'production') {
 
 app.use(errorHandler);
 
-app.listen(port, () => {
+app.listen(port, async () => {
   console.log(`✅ Servidor rodando em http://localhost:${port}`);
+
+  const autoSync = await settingsRepository.get('auto_sync_enabled');
+  if (autoSync === 'true') {
+    schedulerService.start();
+  }
 });

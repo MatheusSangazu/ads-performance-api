@@ -1,26 +1,30 @@
 import { useState } from 'react';
-import { Download, Key, Loader2, Trash2, X } from 'lucide-react';
-import { clientApi, type Client } from '../lib/api';
+import { Download, Key, Loader2, RefreshCw, Trash2, X } from 'lucide-react';
+import { clientApi, syncApi, type Client } from '../lib/api';
 
 interface ClientCardProps {
   client: Client;
   downloading: string | null;
+  syncing: string | null;
   onDownload: (actId: string) => void;
   onTokenUpdated: () => void;
   onDelete: (actId: string) => Promise<void>;
+  onSync: (actId: string) => Promise<void>;
   onError: (msg: string) => void;
+  onSuccess: (msg: string) => void;
 }
 
-export default function ClientCard({ client, downloading, onDownload, onTokenUpdated, onDelete, onError }: ClientCardProps) {
+function getToday(): string {
+  return new Date().toISOString().split('T')[0];
+}
+
+export default function ClientCard({ client, downloading, syncing, onDownload, onTokenUpdated, onDelete, onSync, onError, onSuccess }: ClientCardProps) {
   const [showTokenEdit, setShowTokenEdit] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [newToken, setNewToken] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
 
   const handleUpdateToken = async () => {
     if (!newToken.trim()) return;
-    setSaving(true);
     try {
       await clientApi.updateToken(client.actId, newToken);
       setShowTokenEdit(false);
@@ -28,22 +32,34 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
       onTokenUpdated();
     } catch {
       onError('Erro ao atualizar token.');
-    } finally {
-      setSaving(false);
     }
   };
 
   const handleDelete = async () => {
-    setDeleting(true);
     try {
       await onDelete(client.actId);
     } catch {
       onError('Erro ao remover cliente.');
-    } finally {
-      setDeleting(false);
-      setShowDeleteConfirm(false);
+    }
+    setShowDeleteConfirm(false);
+  };
+
+  const handleQuickSync = async () => {
+    try {
+      const today = getToday();
+      const res = await syncApi.manual({
+        act_id: client.actId,
+        since: today,
+        until: today,
+      });
+      onSuccess(`${client.clientName}: ${res.data.records} registros sincronizados (hoje).`);
+      await onSync(client.actId);
+    } catch {
+      onError(`Erro ao sincronizar ${client.clientName}.`);
     }
   };
+
+  const isSyncing = syncing === client.actId;
 
   return (
     <div className="rounded-xl border border-gray-800 bg-gray-900 p-5">
@@ -70,10 +86,9 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
           <div className="flex gap-2">
             <button
               onClick={handleUpdateToken}
-              disabled={saving || !newToken.trim()}
+              disabled={!newToken.trim()}
               className="flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
             >
-              {saving ? <Loader2 size={12} className="animate-spin" /> : null}
               Salvar
             </button>
             <button
@@ -95,10 +110,9 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
           <div className="flex gap-2">
             <button
               onClick={handleDelete}
-              disabled={deleting}
-              className="flex items-center gap-1 rounded-lg bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50"
+              className="flex items-center gap-1 rounded-lg bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700"
             >
-              {deleting ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
+              <Trash2 size={12} />
               Confirmar
             </button>
             <button
@@ -113,7 +127,15 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
 
       <div className="flex gap-2">
         <button
-          onClick={() => { setShowTokenEdit(false); setShowDeleteConfirm(false); }}
+          onClick={handleQuickSync}
+          disabled={isSyncing}
+          className="flex items-center gap-1 rounded-lg bg-green-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-600 disabled:opacity-50"
+        >
+          {isSyncing ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+          {isSyncing ? 'Syncing...' : 'Sync'}
+        </button>
+        <button
+          onClick={() => { setShowTokenEdit(!showTokenEdit); setShowDeleteConfirm(false); }}
           className="flex items-center gap-1 rounded-lg bg-gray-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-600"
         >
           <Key size={14} />

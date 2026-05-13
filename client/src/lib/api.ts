@@ -40,6 +40,9 @@ export const syncApi = {
 export const settingsApi = {
   getGlobalToken: () => api.get<{ globalToken: string | null }>('/settings/global-token'),
   setGlobalToken: (token: string) => api.put('/settings/global-token', { token }),
+  getAutoSync: () => api.get<{ enabled: boolean; schedulerRunning: boolean }>('/settings/auto-sync'),
+  setAutoSync: (enabled: boolean) => api.put('/settings/auto-sync', { enabled }),
+  syncAll: () => api.post('/settings/sync-all'),
 };
 
 export default api;

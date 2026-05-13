@@ -17,9 +17,10 @@
     "forceConsistentCasingInFileNames": true,            /* Evita erros entre Windows (case insensitive) e Linux */
 
     /* Extras */
-    "sourceMap": true,                                   /* Ajuda no debug (mostra o erro no .ts, não no .js) */
-    "declaration": false                                 /* Não precisamos criar arquivos .d.ts por enquanto */
+    "sourceMap": true,
+    "declaration": false,
+    "types": ["node"]
   },
-  "include": ["src/**/*"],                               /* Compila tudo dentro de src */
+  "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]                    /* Ignora essas pastas */
 }
