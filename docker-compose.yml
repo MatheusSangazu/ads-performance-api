@@ -1,10 +1,14 @@
-version: '3.8'
 services:
-  ads-api:
+  app:
     build: .
-    container_name: ads-performance-api
     ports:
-      - "3001:3001"
-    env_file:
-      - .env
-    restart: always
+      - "${PORT:-3001}:3001"
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=${DB_HOST}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - DATABASE_URL=${DATABASE_URL}
+      - PORT=3001
+    restart: unless-stopped

@@ -1,13 +1,13 @@
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
 import { PrismaClient } from '../generated/prisma/client.js';
-import 'dotenv/config';
+import { env } from './env.js';
 
 const adapter = new PrismaMariaDb({
-  host: process.env.DB_HOST!,
+  host: env.DB_HOST,
   port: 3306,
-  user: process.env.DB_USER!,
-  password: process.env.DB_PASSWORD!,
-  database: process.env.DB_NAME!,
+  user: env.DB_USER,
+  password: env.DB_PASSWORD,
+  database: env.DB_NAME,
   connectionLimit: 10,
 });
 

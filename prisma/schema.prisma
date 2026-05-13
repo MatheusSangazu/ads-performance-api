@@ -63,3 +63,11 @@ model AdPerformance {
   @@index([date], map: "idx_date")
   @@map("meta_ads_performance")
 }
+
+model AppSettings {
+  key       String @id @db.VarChar(100)
+  value     String @db.Text
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  @@map("app_settings")
+}

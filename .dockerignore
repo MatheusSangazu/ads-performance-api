@@ -1,0 +1,10 @@
+node_modules
+dist
+client/dist
+client/node_modules
+src/generated
+.git
+.env
+*.md
+.vscode
+.idea

@@ -1,23 +1,44 @@
-# Usa uma imagem estável do Node.js
-FROM node:20
+FROM node:20-alpine AS base
 
-# Cria a pasta do app dentro da máquina virtual
-WORKDIR /usr/src/app
+RUN apk add --no-cache openssl
 
-# Copia os arquivos de dependências
+WORKDIR /app
+
 COPY package*.json ./
+COPY prisma ./prisma/
+COPY prisma.config.ts ./
 
-# Instala as dependências
-RUN npm install
+RUN npm ci
 
-# Copia o restante do código
 COPY . .
 
-# Faz o build do TypeScript para JavaScript
+RUN npx prisma generate
+
 RUN npm run build
 
-# Expõe a porta que a sua API usa (3001)
+WORKDIR /app/client
+COPY client/package*.json ./
+RUN npm ci
+COPY client/ ./
+RUN npm run build
+
+WORKDIR /app
+
+FROM node:20-alpine AS runner
+
+RUN apk add --no-cache openssl
+
+WORKDIR /app
+
+COPY --from=base /app/package*.json ./
+COPY --from=base /app/node_modules ./node_modules
+COPY --from=base /app/dist ./dist
+COPY --from=base /app/prisma ./prisma
+COPY --from=base /app/prisma.config.ts ./
+COPY --from=base /app/src/generated ./src/generated
+COPY --from=base /app/client/dist ./client/dist
+
+ENV NODE_ENV=production
 EXPOSE 3001
 
-# Comando para rodar a API
 CMD ["node", "dist/app.js"]

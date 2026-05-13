@@ -1,13 +1,10 @@
-import prisma from '../config/db.js';
+import adRepository from '../repositories/adRepository.js';
 import type { AdPerformanceModel } from '../generated/prisma/models/AdPerformance.js';
 import ExcelJS from 'exceljs';
 
 class ReportService {
   public async generateExcel(actId: string) {
-    const rows: AdPerformanceModel[] = await prisma.adPerformance.findMany({
-      where: { clientId: actId },
-      orderBy: { date: 'desc' },
-    });
+    const rows: AdPerformanceModel[] = await adRepository.findByClientId(actId);
 
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Relatório Full Domus');

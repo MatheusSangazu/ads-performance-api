@@ -4,7 +4,9 @@
   "main": "dist/app.js",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/app.ts",
+    "dev": "concurrently -n api,front -c blue,green \"tsx watch src/app.ts\" \"npm run dev --prefix client\"",
+    "dev:api": "tsx watch src/app.ts",
+    "dev:client": "npm run dev --prefix client",
     "build": "tsc",
     "start": "node dist/app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -20,11 +22,13 @@
     "dotenv": "^17.2.3",
     "exceljs": "^4.4.0",
     "express": "^5.2.1",
-    "prisma": "^7.8.0"
+    "prisma": "^7.8.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
     "@types/node": "^25.0.3",
+    "concurrently": "^9.2.1",
     "tsx": "^4.19.2",
     "typescript": "^5.9.3"
   }

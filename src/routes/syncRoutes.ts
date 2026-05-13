@@ -1,16 +1,18 @@
 import { Router } from 'express';
-import syncService from '../services/syncService.js';
+import { z } from 'zod';
+import syncController from '../controllers/syncController.js';
+import { validate } from '../middleware/validate.js';
 
 const router = Router();
 
-router.post('/manual', async (req, res) => {
-  const { act_id, since, until } = req.body;
-  try {
-    const result = await syncService.syncAccount(act_id, since, until);
-    res.json(result);
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
+const syncSchema = z.object({
+  act_id: z.string().min(1, 'Act ID é obrigatório'),
+  since: z.string().min(1, 'Data início é obrigatória'),
+  until: z.string().min(1, 'Data fim é obrigatória'),
+});
+
+router.post('/manual', validate(syncSchema), (req, res, next) => {
+  syncController.manualSync(req, res).catch(next);
 });
 
 export default router;

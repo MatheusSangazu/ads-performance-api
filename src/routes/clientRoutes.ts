@@ -1,56 +1,40 @@
 import { Router } from 'express';
-import clientService from '../services/clientService.js';
-import reportService from '../services/reportService.js';
+import { z } from 'zod';
+import clientController from '../controllers/clientController.js';
+import { validate } from '../middleware/validate.js';
 
 const router = Router();
 
-// Rota para cadastrar ou atualizar token
-router.post('/', async (req, res) => {
-  const { name, act_id, access_token, custom_event_id } = req.body;
-  
-  if (!name || !act_id || !access_token) {
-    return res.status(400).json({ error: 'Nome, act_id e access_token são obrigatórios.' });
-  }
-
-  try {
-    const result = await clientService.saveClient(name, act_id, access_token, custom_event_id);
-    res.json(result);
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
+const createClientSchema = z.object({
+  name: z.string().min(1, 'Nome é obrigatório'),
+  act_id: z.string().min(1, 'Act ID é obrigatório'),
+  access_token: z.string().min(1, 'Access Token é obrigatório'),
+  custom_event_id: z.string().optional(),
+  is_ecommerce: z.boolean().optional(),
 });
 
-// Rota para listar clientes
-router.get('/', async (req, res) => {
-  try {
-    const clients = await clientService.listClients();
-    res.json(clients);
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
+const updateTokenSchema = z.object({
+  access_token: z.string().min(1, 'Access Token é obrigatório'),
 });
 
-router.get('/:actId/download', async (req, res) => {
-  const { actId } = req.params;
+router.post('/', validate(createClientSchema), (req, res, next) => {
+  clientController.create(req, res).catch(next);
+});
 
-  try {
-    const workbook = await reportService.generateExcel(actId);
-    
-    // Configura os headers para o navegador entender que é um download de arquivo
-    res.setHeader(
-      'Content-Type',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    );
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename=relatorio_${actId}.xlsx`
-    );
+router.get('/', (req, res, next) => {
+  clientController.list(req, res).catch(next);
+});
 
-    await workbook.xlsx.write(res);
-    res.end();
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
+router.patch('/:actId/token', validate(updateTokenSchema), (req, res, next) => {
+  clientController.updateToken(req, res).catch(next);
+});
+
+router.delete('/:actId', (req, res, next) => {
+  clientController.remove(req, res).catch(next);
+});
+
+router.get('/:actId/download', (req, res, next) => {
+  clientController.downloadReport(req, res).catch(next);
 });
 
 export default router;
