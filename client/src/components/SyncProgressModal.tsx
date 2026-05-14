@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { X, Minimize2, CheckCircle, AlertCircle } from 'lucide-react';
+import { X, Minimize2, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 
 export interface LogEntry {
   type: 'start' | 'log' | 'progress' | 'done' | 'error';
@@ -81,7 +81,17 @@ export default function SyncProgressModal({
       <div className="flex max-h-[80vh] w-full max-w-2xl flex-col rounded-2xl border border-gray-700 bg-gray-900 shadow-2xl">
         <div className="flex items-center justify-between border-b border-gray-800 px-6 py-4">
           <h3 className="text-lg font-semibold text-white">
-            {isDone ? '✅ Sincronização Concluída' : '🔄 Sincronizando...'}
+            {isDone ? (
+              <span className="flex items-center gap-2">
+                <CheckCircle size={20} className="text-green-400" />
+                Sincronização Concluída
+              </span>
+            ) : (
+              <span className="flex items-center gap-2">
+                <Loader2 size={20} className="animate-spin text-blue-400" />
+                Sincronizando...
+              </span>
+            )}
           </h3>
           <div className="flex items-center gap-2">
             <button

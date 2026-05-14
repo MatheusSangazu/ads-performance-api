@@ -23,6 +23,8 @@ export default function Clients() {
   const [isDone, setIsDone] = useState(false);
   const [totalRecords, setTotalRecords] = useState(0);
   const [totalErrors, setTotalErrors] = useState(0);
+  const stepsRef = useRef<string[]>([]);
+  const currentStepIdxRef = useRef(0);
 
   const closeStreamRef = useRef<(() => void) | null>(null);
 
@@ -32,6 +34,8 @@ export default function Clients() {
     setIsDone(false);
     setTotalRecords(0);
     setTotalErrors(0);
+    stepsRef.current = [];
+    currentStepIdxRef.current = 0;
     setModalOpen(true);
     setModalMinimized(false);
 
@@ -41,7 +45,19 @@ export default function Clients() {
       const entry: LogEntry = { ...event, timestamp: new Date() };
       setLogs((prev) => [...prev, entry]);
 
-      if (event.progress !== undefined) setProgress(event.progress);
+      if (event.type === 'start' && event.step) {
+        if (!stepsRef.current.includes(event.step)) {
+          stepsRef.current.push(event.step);
+        }
+        currentStepIdxRef.current = stepsRef.current.indexOf(event.step);
+      }
+
+      if (event.progress !== undefined) {
+        const totalSteps = Math.max(stepsRef.current.length, 1);
+        const stepIdx = currentStepIdxRef.current;
+        const globalProgress = Math.round(((stepIdx + event.progress / 100) / totalSteps) * 100);
+        setProgress(Math.min(globalProgress, 100));
+      }
 
       if (event.type === 'done') {
         setTotalRecords((prev) => prev + (event.records || 0));

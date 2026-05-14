@@ -1,9 +1,9 @@
 import clientRepository from '../repositories/clientRepository.js';
 import adRepository from '../repositories/adRepository.js';
 import type { UpsertInsightData } from '../repositories/adRepository.js';
-import settingsRepository from '../repositories/settingsRepository.js';
 import { fetchAllInsights, fetchPreviewLink } from '../integrations/metaApi.js';
 import { splitDates } from '../utils/dateUtils.js';
+import { resolveToken } from '../utils/tokenUtils.js';
 import type { MetaInsight, MetaAction, SyncResult } from '../types/index.js';
 import syncProgress from './syncProgress.js';
 
@@ -12,13 +12,6 @@ class SyncService {
 
   private extractActionValue(actions: MetaAction[] | undefined, type: string): number {
     return parseInt(actions?.find((a) => a.action_type === type)?.value || '0');
-  }
-
-  private async getPreviewLink(adId: string, accessToken: string): Promise<string> {
-    if (this.previewCache.has(adId)) return this.previewCache.get(adId)!;
-    const link = await fetchPreviewLink(adId, accessToken);
-    this.previewCache.set(adId, link);
-    return link;
   }
 
   private buildInsightData(
@@ -66,18 +59,40 @@ class SyncService {
     };
   }
 
+  private async fetchPreviewLinks(adIds: string[], accessToken: string): Promise<Map<string, string>> {
+    const linkMap = new Map<string, string>();
+    const uniqueIds = [...new Set(adIds.filter((id) => !this.previewCache.has(id)))];
+    const batchSize = 50;
+
+    for (let i = 0; i < uniqueIds.length; i += batchSize) {
+      const batch = uniqueIds.slice(i, i + batchSize);
+      const promises = batch.map(async (adId) => {
+        try {
+          const link = await fetchPreviewLink(adId, accessToken);
+          linkMap.set(adId, link);
+        } catch {
+          linkMap.set(adId, '');
+        }
+      });
+      await Promise.all(promises);
+      syncProgress.send({ type: 'log', message: `   [LINK] Preview links: ${Math.min(i + batchSize, uniqueIds.length)}/${uniqueIds.length}`, step: 'main' });
+    }
+
+    for (const [adId, link] of linkMap) {
+      this.previewCache.set(adId, link);
+    }
+    return linkMap;
+  }
+
   public async syncAccount(actId: string, dateSince: string, dateUntil: string): Promise<SyncResult> {
     const client = await clientRepository.findByActId(actId);
     if (!client) throw new Error(`Cliente ${actId} não encontrado.`);
 
-    const clientToken = client.accessToken?.trim();
-    const globalToken = (await settingsRepository.get('global_access_token'))?.trim();
-    const accessToken = clientToken || globalToken;
-    if (!accessToken) throw new Error(`Nenhum token disponível para o cliente ${actId}.`);
-    console.log(`🔑 Token usado: ${clientToken ? 'token do cliente' : 'token global'}`);
+    const { accessToken, source } = await resolveToken(actId);
+    console.log(`[TOKEN] Token usado: ${source}`);
 
     const dateChunks = splitDates(dateSince, dateUntil);
-    syncProgress.send({ type: 'start', message: `🚀 Sync: ${client.clientName} | ${dateChunks.length} chunk(s)`, step: 'main', progress: 0 });
+    syncProgress.send({ type: 'start', message: `[SYNC] Sync: ${client.clientName} | ${dateChunks.length} chunk(s)`, step: 'main', progress: 0 });
     this.previewCache.clear();
 
     let totalRecords = 0;
@@ -90,7 +105,7 @@ class SyncService {
 
       syncProgress.send({
         type: 'progress',
-        message: `⏳ Chunk ${i + 1}/${dateChunks.length}: ${chunk.start} → ${chunk.end}`,
+        message: `[CHUNK] Chunk ${i + 1}/${dateChunks.length}: ${chunk.start} → ${chunk.end}`,
         step: 'main',
         progress: chunkProgress,
       });
@@ -100,48 +115,45 @@ class SyncService {
         const insights: MetaInsight[] = response.data || [];
 
         if (insights.length === 0) {
-          syncProgress.send({ type: 'log', message: `   ℹ️ Nenhum dado para ${chunk.start} → ${chunk.end}`, step: 'main' });
+          syncProgress.send({ type: 'log', message: `   [INFO] Nenhum dado para ${chunk.start} → ${chunk.end}`, step: 'main' });
           details.push(`${chunk.start} → ${chunk.end}: 0 registros`);
           continue;
         }
 
-        syncProgress.send({ type: 'log', message: `   📥 ${insights.length} registros encontrados`, step: 'main' });
+        syncProgress.send({ type: 'log', message: `   [DATA] ${insights.length} registros encontrados`, step: 'main' });
 
-        let chunkSaved = 0;
-        let chunkErrors = 0;
+        const adIds = insights.map((item) => item.ad_id);
+        syncProgress.send({ type: 'log', message: `   [LINK] Buscando preview links...`, step: 'main' });
+        await this.fetchPreviewLinks(adIds, accessToken);
 
-        for (const item of insights) {
-          try {
-            const previewLink = await this.getPreviewLink(item.ad_id, accessToken);
-            const insightData = this.buildInsightData(item, actId, client.customEventId, previewLink);
-            await adRepository.upsertInsight(insightData);
-            chunkSaved++;
-          } catch (err) {
-            chunkErrors++;
-            const msg = err instanceof Error ? err.message : String(err);
-            syncProgress.send({ type: 'error', message: `   ❌ Erro ao salvar ad ${item.ad_id}: ${msg}`, step: 'main' });
-          }
+        syncProgress.send({ type: 'progress', message: `   [SAVE] Salvando ${insights.length} registros em lote...`, step: 'main', progress: Math.round(((i + 0.5) / dateChunks.length) * 100) });
+
+        const allData = insights.map((item) =>
+          this.buildInsightData(item, actId, client.customEventId, this.previewCache.get(item.ad_id) || ''),
+        );
+
+        try {
+          await adRepository.batchUpsert(allData);
+          totalRecords += allData.length;
+          syncProgress.send({ type: 'log', message: `   [OK] ${allData.length} salvos em lote`, step: 'main' });
+          details.push(`${chunk.start} → ${chunk.end}: ${allData.length} salvos`);
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          totalErrors++;
+          syncProgress.send({ type: 'error', message: `   [ERROR] Erro ao salvar lote: ${msg}`, step: 'main' });
+          details.push(`${chunk.start} → ${chunk.end}: FALHA - ${msg}`);
         }
-
-        totalRecords += chunkSaved;
-        totalErrors += chunkErrors;
-
-        const status = chunkErrors > 0 ? `⚠️ ${chunkSaved} salvos, ${chunkErrors} erros` : `✅ ${chunkSaved} salvos`;
-        syncProgress.send({ type: 'log', message: `   ${status}`, step: 'main' });
-        details.push(`${chunk.start} → ${chunk.end}: ${chunkSaved} salvos${chunkErrors > 0 ? `, ${chunkErrors} erros` : ''}`);
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        syncProgress.send({ type: 'error', message: `   ❌ Falha no chunk ${chunk.start} → ${chunk.end}: ${msg}`, step: 'main' });
+        syncProgress.send({ type: 'error', message: `   [ERROR] Falha no chunk ${chunk.start} → ${chunk.end}: ${msg}`, step: 'main' });
         details.push(`${chunk.start} → ${chunk.end}: FALHA - ${msg}`);
         totalErrors++;
       }
-
-      await new Promise((r) => setTimeout(r, 1000));
     }
 
     syncProgress.send({
       type: 'done',
-      message: `🏁 Sync concluído: ${totalRecords} registros, ${totalErrors} erros`,
+      message: `[DONE] Sync concluído: ${totalRecords} registros, ${totalErrors} erros`,
       step: 'main',
       progress: 100,
       records: totalRecords,

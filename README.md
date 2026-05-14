@@ -107,10 +107,11 @@ Build multi-stage que compila API + Front em um único container. Em produção,
 
 - **Dashboard:** Métricas agregadas, gráficos de tendência, ranking por cliente
 - **Sync em tempo real:** Modal com logs via SSE, barra de progresso, minimizar
+- **Sync otimizado:** Batch upsert via raw SQL, preview links em paralelo (50 concurrent), cache em memória
 - **Breakdowns:** Público (sexo × idade), plataforma, região
 - **Auto-Sync:** Cron job diário com toggle on/off
-- **Token Management:** Token por cliente + fallback global
-- **CRUD de clientes:** Cadastro, edição de token, exclusão cascade, download Excel
+- **Token Management:** Token por cliente + fallback global automático (testa client token, usa global se falhar) + botão "Usar global" no card
+- **CRUD de clientes:** Cadastro, edição de token, limpar token (usar global), exclusão cascade, download Excel
 - **BI-ready:** Tabelas denormalizadas para Looker e Metabase
 
 ---

@@ -26,13 +26,13 @@ if (process.env.NODE_ENV === 'production') {
     res.sendFile(path.join(clientDist, 'index.html'));
   });
 } else {
-  app.get('/', (_req, res) => res.send('🚀 API Growth Ads Online!'));
+  app.get('/', (_req, res) => res.send('[GROWTH-ADS] API Online!'));
 }
 
 app.use(errorHandler);
 
 app.listen(port, async () => {
-  console.log(`✅ Servidor rodando em http://localhost:${port}`);
+  console.log(`[SERVER] Servidor rodando em http://localhost:${port}`);
 
   const autoSync = await settingsRepository.get('auto_sync_enabled');
   if (autoSync === 'true') {

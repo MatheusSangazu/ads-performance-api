@@ -1,10 +1,10 @@
 import clientRepository from '../repositories/clientRepository.js';
-import settingsRepository from '../repositories/settingsRepository.js';
 import audienceRepository from '../repositories/audienceRepository.js';
 import placementRepository from '../repositories/placementRepository.js';
 import regionRepository from '../repositories/regionRepository.js';
 import { fetchAllInsights } from '../integrations/metaApi.js';
 import { splitDates } from '../utils/dateUtils.js';
+import { resolveToken } from '../utils/tokenUtils.js';
 import type { MetaInsight, MetaAction, SyncResult, BreakdownType } from '../types/index.js';
 import syncProgress from './syncProgress.js';
 
@@ -64,15 +64,12 @@ class BreakdownSyncService {
     const client = await clientRepository.findByActId(actId);
     if (!client) throw new Error(`Cliente ${actId} não encontrado.`);
 
-    const clientToken = client.accessToken?.trim();
-    const globalToken = (await settingsRepository.get('global_access_token'))?.trim();
-    const accessToken = clientToken || globalToken;
-    if (!accessToken) throw new Error(`Nenhum token disponível para o cliente ${actId}.`);
+    const { accessToken } = await resolveToken(actId);
 
     const config = BREAKDOWN_CONFIG[type];
     const dateChunks = splitDates(dateSince, dateUntil);
 
-    syncProgress.send({ type: 'start', message: `🔍 ${config.label}: ${client.clientName} | ${dateChunks.length} chunk(s)`, step: type, progress: 0 });
+    syncProgress.send({ type: 'start', message: `[SYNC] ${config.label}: ${client.clientName} | ${dateChunks.length} chunk(s)`, step: type, progress: 0 });
 
     let totalRecords = 0;
     let totalErrors = 0;
@@ -84,7 +81,7 @@ class BreakdownSyncService {
 
       syncProgress.send({
         type: 'progress',
-        message: `⏳ ${config.label} chunk ${i + 1}/${dateChunks.length}: ${chunk.start} → ${chunk.end}`,
+        message: `[CHUNK] ${config.label} chunk ${i + 1}/${dateChunks.length}: ${chunk.start} → ${chunk.end}`,
         step: type,
         progress: chunkProgress,
       });
@@ -94,62 +91,60 @@ class BreakdownSyncService {
         const insights = response.data || [];
 
         if (insights.length === 0) {
-          syncProgress.send({ type: 'log', message: `   ℹ️ ${config.label}: nenhum dado para ${chunk.start} → ${chunk.end}`, step: type });
+          syncProgress.send({ type: 'log', message: `   [INFO] ${config.label}: nenhum dado para ${chunk.start} → ${chunk.end}`, step: type });
           details.push(`${chunk.start} → ${chunk.end}: 0 registros`);
           continue;
         }
 
-        syncProgress.send({ type: 'log', message: `   📥 ${insights.length} registros de ${config.label}`, step: type });
+        syncProgress.send({ type: 'log', message: `   [DATA] ${insights.length} registros de ${config.label}`, step: type });
 
-        let chunkSaved = 0;
-        let chunkErrors = 0;
+        syncProgress.send({ type: 'progress', message: `   [SAVE] Salvando ${insights.length} registros de ${config.label} em lote...`, step: type, progress: Math.round(((i + 0.5) / dateChunks.length) * 100) });
 
-        for (const item of insights) {
-          try {
-            const metrics = this.buildMetrics(item, client.customEventId);
-            const base = {
-              date: new Date(item.date_start),
-              clientId: actId,
-              adId: item.ad_id,
-              adName: item.ad_name,
-              campaignName: item.campaign_name,
-              campaignId: item.campaign_id,
-              ...metrics,
-            };
+        const allBaseData = insights.map((item) => {
+          const metrics = this.buildMetrics(item, client.customEventId);
+          return {
+            date: new Date(item.date_start),
+            clientId: actId,
+            adId: item.ad_id,
+            adName: item.ad_name,
+            campaignName: item.campaign_name,
+            campaignId: item.campaign_id,
+            ...metrics,
+          };
+        });
 
-            if (type === 'audience') {
-              await audienceRepository.upsert({ ...base, gender: item.gender || 'unknown', ageRange: item.age || 'unknown' });
-            } else if (type === 'placement') {
-              await placementRepository.upsert({ ...base, platform: item.publisher_platform || 'unknown' });
-            } else if (type === 'region') {
-              await regionRepository.upsert({ ...base, region: item.region || 'unknown' });
-            }
-
-            chunkSaved++;
-          } catch (err) {
-            chunkErrors++;
-            const msg = err instanceof Error ? err.message : String(err);
-            syncProgress.send({ type: 'error', message: `   ❌ Erro breakdown ${item.ad_id}: ${msg}`, step: type });
+        try {
+          if (type === 'audience') {
+            const audienceData = allBaseData.map((d) => ({ ...d, gender: (insights[allBaseData.indexOf(d)] as MetaInsight).gender || 'unknown', ageRange: (insights[allBaseData.indexOf(d)] as MetaInsight).age || 'unknown' }));
+            await audienceRepository.batchUpsert(audienceData);
+          } else if (type === 'placement') {
+            const placementData = allBaseData.map((d, idx) => ({ ...d, platform: insights[idx].publisher_platform || 'unknown' }));
+            await placementRepository.batchUpsert(placementData);
+          } else if (type === 'region') {
+            const regionData = allBaseData.map((d, idx) => ({ ...d, region: insights[idx].region || 'unknown' }));
+            await regionRepository.batchUpsert(regionData);
           }
-        }
 
-        totalRecords += chunkSaved;
-        totalErrors += chunkErrors;
-        syncProgress.send({ type: 'log', message: `   ✅ ${config.label}: ${chunkSaved} salvos${chunkErrors > 0 ? `, ${chunkErrors} erros` : ''}`, step: type });
-        details.push(`${chunk.start} → ${chunk.end}: ${chunkSaved} salvos${chunkErrors > 0 ? `, ${chunkErrors} erros` : ''}`);
+          totalRecords += insights.length;
+          syncProgress.send({ type: 'log', message: `   [OK] ${config.label}: ${insights.length} salvos em lote`, step: type });
+          details.push(`${chunk.start} → ${chunk.end}: ${insights.length} salvos`);
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          totalErrors++;
+          syncProgress.send({ type: 'error', message: `   [ERROR] Erro ao salvar lote ${config.label}: ${msg}`, step: type });
+          details.push(`${chunk.start} → ${chunk.end}: FALHA - ${msg}`);
+        }
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        syncProgress.send({ type: 'error', message: `   ❌ Falha ${config.label} ${chunk.start} → ${chunk.end}: ${msg}`, step: type });
+        syncProgress.send({ type: 'error', message: `   [ERROR] Falha ${config.label} ${chunk.start} → ${chunk.end}: ${msg}`, step: type });
         details.push(`${chunk.start} → ${chunk.end}: FALHA - ${msg}`);
         totalErrors++;
       }
-
-      await new Promise((r) => setTimeout(r, 1000));
     }
 
     syncProgress.send({
       type: 'done',
-      message: `🏁 ${config.label} concluído: ${totalRecords} registros, ${totalErrors} erros`,
+      message: `[DONE] ${config.label} concluído: ${totalRecords} registros, ${totalErrors} erros`,
       step: type,
       progress: 100,
       records: totalRecords,

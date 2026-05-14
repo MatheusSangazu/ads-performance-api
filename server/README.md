@@ -60,7 +60,8 @@ server/
 │   │   └── index.ts                  # Interfaces compartilhadas
 │   ├── utils/
 │   │   ├── dateUtils.ts              # splitDates, formatDate
-│   │   └── retry.ts                  # Retry com backoff exponencial
+│   │   ├── retry.ts                  # Retry com backoff exponencial
+│   │   └── tokenUtils.ts             # resolveToken — fallback automático (client → global)
 │   └── app.ts                        # Entry point Express
 │
 ├── prisma/
@@ -232,7 +233,9 @@ Todas as tabelas de performance compartilham as mesmas métricas:
 
 ### Token Management
 - **Token por cliente:** Cada cliente pode ter seu próprio token
-- **Token global:** Fallback automático quando um cliente não tem token próprio (`clientToken.trim() || globalToken.trim()`)
+- **Token global:** Fallback automático quando o token do cliente falha ou não existe
+- **Fallback inteligente:** `resolveToken()` testa o token do cliente; se a Meta API rejeitar, usa o global automaticamente
+- **Limpar token individual:** PATCH `/clients/:actId/token` com `access_token: ""` faz o cliente usar o global
 - **Atualização fácil:** PATCH `/clients/:actId/token`
 
 ### Breakdowns (Segmentação de público)
@@ -253,6 +256,8 @@ Todas as tabelas de performance compartilham as mesmas métricas:
 - **Retry com backoff:** 3 tentativas com delay exponencial em caso de falha de rede
 - **Resiliência por registro:** Se um registro falhar, os demais continuam salvando
 - **Upsert sem duplicatas:** Chaves únicas por tabela garantem idempotência
+- **Batch upsert:** `INSERT ... ON DUPLICATE KEY UPDATE` via raw SQL para inserção em lote (placeholders gerados dinamicamente a partir do array de colunas)
+- **Preview links em paralelo:** Busca links de preview em lotes de 50 com `Promise.all` e cache em memória
 
 ### Relatórios Excel
 - GET `/clients/:actId/download` gera um relatório Excel com os dados de performance do cliente

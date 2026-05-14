@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Download, Key, Loader2, RefreshCw, Trash2, X } from 'lucide-react';
+import { Download, Key, Loader2, RefreshCw, Trash2, X, Globe } from 'lucide-react';
 import { clientApi, syncApi, type Client } from '../lib/api';
 
 interface ClientCardProps {
@@ -34,6 +34,18 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
     }
   };
 
+  const handleClearToken = async () => {
+    try {
+      await clientApi.updateToken(client.actId, '');
+      setShowTokenEdit(false);
+      setNewToken('');
+      onTokenUpdated();
+      onSuccess(`Token individual removido. ${client.clientName} usará o token global.`);
+    } catch {
+      onError('Erro ao remover token.');
+    }
+  };
+
   const handleDelete = async () => {
     try {
       await onDelete(client.actId);
@@ -52,7 +64,16 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
         since: today,
         until: today,
       });
-      onSuccess(`${client.clientName}: ${res.data.records} registros sincronizados (hoje).`);
+      const breakdownRes = await syncApi.breakdownAll({
+        act_id: client.actId,
+        since: today,
+        until: today,
+      }).catch(() => null);
+      const mainRecords = res.data.records || 0;
+      const breakdownRecords = breakdownRes
+        ? Object.values(breakdownRes.data).reduce((sum: number, r: any) => sum + (r.records || 0), 0)
+        : 0;
+      onSuccess(`${client.clientName}: ${mainRecords + breakdownRecords} registros sincronizados (hoje).`);
     } catch {
       onError(`Erro ao sincronizar ${client.clientName}.`);
     } finally {
@@ -89,6 +110,13 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
               className="flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
             >
               Salvar
+            </button>
+            <button
+              onClick={handleClearToken}
+              className="flex items-center gap-1 rounded-lg bg-amber-600 px-3 py-1 text-xs font-medium text-white hover:bg-amber-700"
+            >
+              <Globe size={12} />
+              Usar global
             </button>
             <button
               onClick={() => { setShowTokenEdit(false); setNewToken(''); }}

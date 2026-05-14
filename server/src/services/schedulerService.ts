@@ -14,14 +14,14 @@ class SchedulerService {
       await this.runDailySync();
     });
 
-    console.log('⏰ Scheduler iniciado: sync diário às 02:00');
+    console.log('[SCHEDULER] Scheduler iniciado: sync diário às 02:00');
   }
 
   public stop() {
     if (this.task) {
       this.task.stop();
       this.task = null;
-      console.log('⏰ Scheduler parado.');
+      console.log('[SCHEDULER] Scheduler parado.');
     }
   }
 
@@ -44,48 +44,48 @@ class SchedulerService {
     yesterday.setDate(yesterday.getDate() - 1);
     const dateStr = yesterday.toISOString().split('T')[0];
 
-    console.log(`🔄 Auto-sync: ${clients.length} cliente(s) | Data: ${dateStr}`);
+    console.log(`[SCHEDULER] Auto-sync: ${clients.length} cliente(s) | Data: ${dateStr}`);
 
     for (const client of clients) {
       try {
         const result = await syncService.syncAccount(client.actId, dateStr, dateStr);
         if (result.success) {
           success++;
-          details.push(`✅ ${client.clientName}: ${result.records} registros`);
+          details.push(`[OK] ${client.clientName}: ${result.records} registros`);
         } else {
           failed++;
-          details.push(`⚠️ ${client.clientName}: ${result.records} salvos, ${result.errors} erros`);
+          details.push(`[WARN] ${client.clientName}: ${result.records} salvos, ${result.errors} erros`);
         }
 
         try {
           const breakdownResults = await breakdownSyncService.syncAllBreakdowns(client.actId, dateStr, dateStr);
           for (const [type, br] of Object.entries(breakdownResults)) {
-            details.push(`   📊 ${type}: ${br.records} registros${br.errors > 0 ? `, ${br.errors} erros` : ''}`);
+            details.push(`   [DATA] ${type}: ${br.records} registros${br.errors > 0 ? `, ${br.errors} erros` : ''}`);
           }
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
-          details.push(`   ⚠️ Breakdown falhou para ${client.clientName}: ${msg}`);
+          details.push(`   [WARN] Breakdown falhou para ${client.clientName}: ${msg}`);
         }
       } catch (err) {
         failed++;
         const msg = err instanceof Error ? err.message : String(err);
-        details.push(`❌ ${client.clientName}: ${msg}`);
-        console.error(`❌ Auto-sync falhou para ${client.clientName}: ${msg}`);
+        details.push(`[ERROR] ${client.clientName}: ${msg}`);
+        console.error(`[ERROR] Auto-sync falhou para ${client.clientName}: ${msg}`);
       }
     }
 
-    console.log(`🏁 Auto-sync concluído: ${success} OK, ${failed} falhas`);
+    console.log(`[DONE] Auto-sync concluído: ${success} OK, ${failed} falhas`);
     return { total: clients.length, success, failed, details };
   }
 
   private async runDailySync() {
     const enabled = await settingsRepository.get('auto_sync_enabled');
     if (enabled !== 'true') {
-      console.log('⏰ Auto-sync pulado (desativado nas configurações).');
+      console.log('[SCHEDULER] Auto-sync pulado (desativado nas configurações).');
       return;
     }
 
-    console.log('⏰ Iniciando auto-sync diário...');
+    console.log('[SCHEDULER] Iniciando auto-sync diário...');
     await this.syncAllClients();
   }
 }

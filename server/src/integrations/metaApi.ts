@@ -34,7 +34,7 @@ export async function fetchAllInsights(
     const response = await retry(() =>
       axios.get<MetaApiResponse>(url!, { params }).catch((err) => {
         if (err.response) {
-          console.error(`   ❌ Meta API ${err.response.status}:`, JSON.stringify(err.response.data, null, 2));
+          console.error(`   [ERROR] Meta API ${err.response.status}:`, JSON.stringify(err.response.data, null, 2));
         }
         throw err;
       }),

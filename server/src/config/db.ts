@@ -14,10 +14,10 @@ const adapter = new PrismaMariaDb({
 const prisma = new PrismaClient({ adapter });
 
 prisma.$connect()
-  .then(() => console.log('✅ Prisma conectado ao MySQL!'))
+  .then(() => console.log('[DB] Prisma conectado ao MySQL!'))
   .catch((err: unknown) => {
     const message = err instanceof Error ? err.message : String(err);
-    console.error('❌ Erro de conexão Prisma:', message);
+    console.error('[DB] Erro de conexão Prisma:', message);
   });
 
 export default prisma;

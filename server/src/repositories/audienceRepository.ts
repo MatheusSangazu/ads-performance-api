@@ -81,6 +81,44 @@ class AudienceRepository {
     });
   }
 
+  public async batchUpsert(dataList: UpsertAudienceData[]) {
+    if (dataList.length === 0) return;
+
+    const METRIC_COLS = [
+      'ad_name', 'campaign_name', 'campaign_id', 'reach', 'impressions', 'spend',
+      'link_clicks', 'ctr', 'messaging_conversations', 'leads', 'leads_form', 'page_views',
+      'add_to_cart', 'initiate_checkout', 'purchases', 'purchase_value',
+      'custom_conversion_count', 'custom_conversion_value', 'total_conversion_value', 'roas',
+    ];
+    const setClauses = METRIC_COLS.map((c) => `${c} = VALUES(${c})`).join(', ');
+
+    const cols = [
+      'date', 'client_id', 'ad_id', 'ad_name', 'campaign_name', 'campaign_id',
+      'gender', 'age_range', 'reach', 'impressions', 'spend', 'link_clicks', 'ctr',
+      'messaging_conversations', 'leads', 'leads_form', 'page_views',
+      'add_to_cart', 'initiate_checkout', 'purchases', 'purchase_value',
+      'custom_conversion_count', 'custom_conversion_value', 'total_conversion_value', 'roas',
+    ];
+    const placeholders = `(${cols.map(() => '?').join(',')})`;
+    const colCount = cols.length;
+    const BATCH_SIZE = Math.floor(65000 / colCount);
+
+    for (let i = 0; i < dataList.length; i += BATCH_SIZE) {
+      const batch = dataList.slice(i, i + BATCH_SIZE);
+      await prisma.$executeRawUnsafe(
+        `INSERT INTO ad_audience_performance (${cols.join(',')}) VALUES ${batch.map(() => placeholders).join(',')}
+        ON DUPLICATE KEY UPDATE ${setClauses}`,
+        ...batch.flatMap((d) => [
+          d.date, d.clientId, d.adId, d.adName, d.campaignName, d.campaignId,
+          d.gender, d.ageRange, d.reach, d.impressions, d.spend, d.linkClicks, d.ctr,
+          d.messagingConversations, d.leads, d.leadsForm, d.pageViews,
+          d.addToCart, d.initiateCheckout, d.purchases, d.purchaseValue,
+          d.customConversionCount, d.customConversionValue, d.totalConversionValue, d.roas,
+        ]),
+      );
+    }
+  }
+
   public async deleteByClientId(actId: string) {
     return prisma.adAudiencePerformance.deleteMany({ where: { clientId: actId } });
   }

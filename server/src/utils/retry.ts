@@ -12,7 +12,7 @@ export async function retry<T>(
       const delay = baseDelayMs * Math.pow(2, attempt - 1);
       const message = err instanceof Error ? err.message : String(err);
       console.warn(
-        `⚠️ Tentativa ${attempt}/${maxRetries} falhou: ${message}. Retentando em ${delay}ms...`,
+        `[RETRY] Tentativa ${attempt}/${maxRetries} falhou: ${message}. Retentando em ${delay}ms...`,
       );
       await new Promise((r) => setTimeout(r, delay));
     }
