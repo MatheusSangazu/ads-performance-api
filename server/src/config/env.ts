@@ -9,6 +9,11 @@ const envSchema = z.object({
   DB_DIALECT: z.string().optional(),
   PORT: z.coerce.number().default(3001),
   DATABASE_URL: z.string().min(1),
+  JWT_SECRET: z.string().min(1),
+  JWT_EXPIRES_IN: z.string().default('15m'),
+  JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
+  ADMIN_EMAIL: z.string().default('admin@growthads.com'),
+  ADMIN_PASSWORD: z.string().default('changeme123'),
 });
 
 const parsed = envSchema.safeParse(process.env);

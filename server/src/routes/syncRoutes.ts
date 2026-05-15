@@ -3,6 +3,7 @@ import { z } from 'zod';
 import syncController from '../controllers/syncController.js';
 import syncProgress from '../services/syncProgress.js';
 import { validate } from '../middleware/validate.js';
+import { authMiddleware } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -31,15 +32,15 @@ router.get('/progress', (req, res) => {
   });
 });
 
-router.post('/manual', validate(syncSchema), (req, res, next) => {
+router.post('/manual', authMiddleware, validate(syncSchema), (req, res, next) => {
   syncController.manualSync(req, res).catch(next);
 });
 
-router.post('/breakdown', validate(breakdownSchema), (req, res, next) => {
+router.post('/breakdown', authMiddleware, validate(breakdownSchema), (req, res, next) => {
   syncController.syncBreakdown(req, res).catch(next);
 });
 
-router.post('/breakdown/all', validate(syncSchema), (req, res, next) => {
+router.post('/breakdown/all', authMiddleware, validate(syncSchema), (req, res, next) => {
   syncController.syncAllBreakdowns(req, res).catch(next);
 });
 

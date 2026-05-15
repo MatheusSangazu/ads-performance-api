@@ -1,15 +1,22 @@
 import prisma from '../config/db.js';
 
 class DashboardRepository {
-  public async getOverview() {
-    const totalClients = await prisma.client.count();
+  public async getOverview(clientIds?: string[]) {
+    const clientFilter = clientIds ? { clientId: { in: clientIds } } : {};
+
+    const totalClients = clientIds
+      ? clientIds.length
+      : await prisma.client.count();
 
     const today = new Date();
     const thirtyDaysAgo = new Date(today);
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
     const performance = await prisma.adPerformance.findMany({
-      where: { date: { gte: thirtyDaysAgo, lte: today } },
+      where: {
+        date: { gte: thirtyDaysAgo, lte: today },
+        ...clientFilter,
+      },
       select: {
         spend: true,
         leads: true,
@@ -40,7 +47,10 @@ class DashboardRepository {
     const avgRoas = totalSpend > 0 ? totalConversionValue / totalSpend : 0;
 
     const clientMap = new Map<string, { name: string; spend: number; leads: number; conversionValue: number }>();
-    const clients = await prisma.client.findMany({ select: { actId: true, clientName: true } });
+    const clients = await prisma.client.findMany({
+      where: clientIds ? { actId: { in: clientIds } } : {},
+      select: { actId: true, clientName: true },
+    });
     const clientNames = new Map(clients.map((c) => [c.actId, c.clientName]));
 
     for (const p of performance) {

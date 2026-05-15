@@ -599,18 +599,18 @@ JOIN managers m ON mc.manager_id = m.id;
 
 ## Ordem de Implementação
 
-### Sprint 1 — Auth e Multi-Tenancy (Fase 1)
-1. Models Prisma (Manager, Invite, ManagerClient, RefreshToken)
-2. Auth service (hash, JWT, refresh)
-3. Auth middleware
-4. Rotas de auth (login, register, refresh, logout)
-5. Rotas de convites (admin)
-6. Rotas de gestores (admin)
-7. ClientAccess middleware + filtro em rotas existentes
-8. Seed do admin
-9. Frontend: Login, Register, AuthContext, ProtectedRoute
-10. Frontend: Admin pages (dashboard, managers, invites)
-11. Frontend: Atualizar rotas existentes com auth
+### Sprint 1 — Auth e Multi-Tenancy (Fase 1) [CONCLUIDA]
+1. ~~Models Prisma (Manager, Invite, ManagerClient, RefreshToken)~~
+2. ~~Auth service (hash, JWT, refresh)~~
+3. ~~Auth middleware~~
+4. ~~Rotas de auth (login, register, refresh, logout)~~
+5. ~~Rotas de convites (admin)~~
+6. ~~Rotas de gestores (admin)~~
+7. ~~ClientAccess middleware + filtro em rotas existentes~~
+8. ~~Seed do admin~~
+9. ~~Frontend: Login, Register, AuthContext, ProtectedRoute~~
+10. ~~Frontend: Admin pages (dashboard, managers, invites)~~
+11. ~~Frontend: Atualizar rotas existentes com auth~~
 
 ### Sprint 2 — Orçamento e Metas (Fase 2)
 1. Models Prisma (ClientBudget, ClientGoal)
@@ -655,3 +655,10 @@ JOIN managers m ON mc.manager_id = m.id;
 2. Integração com n8n ou código nativo
 3. Sugestões automáticas de otimização
 4. Chatbot no WhatsApp do gestor
+
+### Sprint 8 — Integração direta com Meta (Futuro)
+1. OAuth com Meta Business Suite — gestor autentica com sua conta Meta
+2. Listar automaticamente as contas de anúncio (ad accounts) vinculadas ao gestor
+3. Cadastro automático de clientes ao conectar a conta — sem preenchimento manual
+4. Sincronização bidirecional: alterações na plataforma refletem no Meta e vice-versa
+5. Permissões granulares via Meta Marketing API (leitura de métricas, sem acesso a edição de campanhas)

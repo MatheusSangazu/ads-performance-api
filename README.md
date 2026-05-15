@@ -1,6 +1,6 @@
 # Growth Ads
 
-Plataforma de coleta e visualização de dados de performance do **Meta Ads**, com API Node.js (MVC) e front React. Dados prontos para consumo em **Looker** e **Metabase**.
+Plataforma SaaS de coleta e visualização de dados de performance do **Meta Ads** para gestores de tráfego, com API Node.js (MVC) e front React. Dados prontos para consumo em **Looker** e **Metabase**.
 
 ---
 
@@ -10,6 +10,7 @@ Plataforma de coleta e visualização de dados de performance do **Meta Ads**, c
 |--------|-------|
 | **API** | Node.js + TypeScript (ESM), Express 5, Prisma 7, MySQL |
 | **Front** | React 19, Vite, Tailwind CSS 4, Recharts |
+| **Auth** | JWT (access + refresh tokens), bcrypt |
 | **Integração** | Meta Ads Graph API v25.0 |
 | **Relatórios** | ExcelJS |
 | **Validação** | Zod (frontend + backend) |
@@ -28,18 +29,30 @@ npm install
 ### Configurar `.env`
 
 ```env
+# Banco de Dados MySQL
 DB_HOST=seu_host
 DB_USER=seu_usuario
-DB_PASSWORD=sua_senha
+DB_PASSWORD="sua_senha"           # Aspas obrigatórias se conter # ou caracteres especiais
 DB_NAME=growth_ads_db
 DATABASE_URL="mysql://usuario:senha@host:3306/growth_ads_db"
 PORT=3001
+
+# Auth
+JWT_SECRET=sua_chave_secreta
+JWT_EXPIRES_IN=15m
+JWT_REFRESH_EXPIRES_IN=7d
+ADMIN_EMAIL=admin@exemplo.com
+ADMIN_PASSWORD="senha_do_admin"
 ```
 
-### Gerar o Prisma Client
+> Senhas com `#` no `.env` **devem** estar entre aspas para evitar truncamento pelo dotenv.
+
+### Gerar o Prisma Client + Migrations
 
 ```bash
-cd server && npx prisma generate
+cd server
+npx prisma generate
+npx prisma migrate dev --name init
 ```
 
 ### Rodar
@@ -50,6 +63,8 @@ npm run dev:api      # Só a API
 npm run dev:client   # Só o front
 ```
 
+O primeiro startup cria automaticamente o admin com base em `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
+
 ---
 
 ## Estrutura do Projeto
@@ -58,18 +73,29 @@ npm run dev:client   # Só o front
 growth-ads-api/
 ├── server/                  # API (Node.js + Express)
 │   ├── src/                 # Código-fonte TypeScript (MVC)
+│   │   ├── config/          # DB, env
+│   │   ├── controllers/     # Auth, Clients, Sync, Settings, Managers, Invites
+│   │   ├── middleware/      # Auth (JWT), AdminOnly, ClientAccess, Validate
+│   │   ├── repositories/    # Data access (Prisma + raw SQL)
+│   │   ├── routes/          # Express routes
+│   │   ├── services/        # Business logic
+│   │   └── ...
 │   ├── prisma/              # Schema + migrações
-│   ├── tsconfig.json
 │   ├── prisma.config.ts
 │   └── README.md            # Documentação completa da API
 │
 ├── client/                  # Front React
 │   └── src/
-│       ├── components/      # Componentes React
+│       ├── components/      # Componentes React (Layout, ClientCard, SyncModal, etc.)
+│       ├── contexts/        # AuthContext (login, logout, refresh)
 │       ├── hooks/           # Custom hooks
-│       ├── lib/             # Axios + tipos
-│       ├── pages/           # Páginas (Dashboard, Clients, Settings)
+│       ├── lib/             # Axios API client + tipos
+│       ├── pages/           # Login, Register, Dashboard, Clients, Settings, Managers, Invites
 │       └── ...
+│
+├── docs/                    # Documentação
+│   ├── funcionalidades.md  # Roadmap e especificações
+│   └── guia-desenvolvimento.md  # Guia para devs e IA
 │
 ├── Dockerfile               # Build multi-stage (API + Front)
 ├── docker-compose.yml
@@ -77,7 +103,7 @@ growth-ads-api/
 └── .env
 ```
 
-> 📄 Documentação completa da API: [server/README.md](server/README.md)
+> Documentação completa da API: [server/README.md](server/README.md)
 
 ---
 
@@ -105,20 +131,31 @@ Build multi-stage que compila API + Front em um único container. Em produção,
 
 ## Funcionalidades
 
+### Autenticação e Multi-Tenancy
+- **Login/JWT:** Access token (15min) + Refresh token (7d) com rotação
+- **Multi-gestor:** Admin gerencia gestores via convites; gestores só veem seus clientes
+- **Convites:** Admin cria convites com plano definido, novo gestor se registra via link
+- **Middleware de acesso:** `authMiddleware` (JWT) + `adminOnly` + `clientAccess` (multi-tenancy)
+- **Seed automático:** Admin criado no primeiro startup via `ADMIN_EMAIL` / `ADMIN_PASSWORD`
+
+### Dashboard e Dados
 - **Dashboard:** Métricas agregadas, gráficos de tendência, ranking por cliente
-- **Sync em tempo real:** Modal com logs via SSE, barra de progresso, minimizar
-- **Sync otimizado:** Batch upsert via raw SQL, preview links em paralelo (50 concurrent), cache em memória
-- **Breakdowns:** Público (sexo × idade), plataforma, região
+- **Sync em tempo real:** Modal com logs via SSE, barra de progresso global por fases, minimizar
+- **Sync otimizado:** Batch upsert via raw SQL com chunking automático (respeita limite MySQL de 65k placeholders)
+- **Breakdowns:** Público (sexo x idade), plataforma, região
 - **Auto-Sync:** Cron job diário com toggle on/off
 - **Token Management:** Token por cliente + fallback global automático (testa client token, usa global se falhar) + botão "Usar global" no card
-- **CRUD de clientes:** Cadastro, edição de token, limpar token (usar global), exclusão cascade, download Excel
+- **CRUD de clientes:** Cadastro, edição de token, limpar token, exclusão cascade, download Excel
 - **BI-ready:** Tabelas denormalizadas para Looker e Metabase
 
 ---
 
 ## Segurança
 
+- JWT com rotação de refresh tokens (antigo invalidado a cada renovação)
+- Senhas hasheadas com bcrypt (10 salt rounds)
 - Tokens e credenciais apenas no `.env` (nunca versionar)
 - Variáveis de ambiente validadas no startup com Zod
 - Validação de input no backend com Zod
 - Error handler global que não vaza stack traces em produção
+- Middleware de acesso por cliente (managers só acessam clientes vinculados)

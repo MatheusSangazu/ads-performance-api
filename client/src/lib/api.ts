@@ -4,6 +4,52 @@ const api = axios.create({
   baseURL: '/api',
 });
 
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('access_token');
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+api.interceptors.response.use(
+  (res) => res,
+  async (error) => {
+    const original = error.config;
+    if (error.response?.status === 401 && !original._retry) {
+      original._retry = true;
+      const refreshToken = localStorage.getItem('refresh_token');
+      if (refreshToken) {
+        try {
+          const { data } = await axios.post('/api/auth/refresh', { refreshToken });
+          localStorage.setItem('access_token', data.accessToken);
+          localStorage.setItem('refresh_token', data.refreshToken);
+          original.headers.Authorization = `Bearer ${data.accessToken}`;
+          return api(original);
+        } catch {
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('refresh_token');
+          window.location.href = '/login';
+        }
+      }
+    }
+    return Promise.reject(error);
+  },
+);
+
+export interface AuthUser {
+  id: string;
+  name: string;
+  email: string;
+  company: string | null;
+  role: 'admin' | 'manager';
+  plan: string;
+}
+
+export interface AuthResponse {
+  accessToken: string;
+  refreshToken: string;
+  manager: AuthUser;
+}
+
 export interface Client {
   clientName: string;
   actId: string;
@@ -109,6 +155,31 @@ export const settingsApi = {
   getAutoSync: () => api.get<{ enabled: boolean; schedulerRunning: boolean }>('/settings/auto-sync'),
   setAutoSync: (enabled: boolean) => api.put('/settings/auto-sync', { enabled }),
   syncAll: () => api.post('/settings/sync-all'),
+};
+
+export const authApi = {
+  login: (email: string, password: string) => api.post<AuthResponse>('/auth/login', { email, password }),
+  register: (token: string, name: string, email: string, password: string) =>
+    api.post<AuthResponse>(`/auth/register/${token}`, { name, email, password }),
+  refresh: (refreshToken: string) => api.post<{ accessToken: string; refreshToken: string }>('/auth/refresh', { refreshToken }),
+  logout: (refreshToken?: string) => api.post('/auth/logout', { refreshToken }),
+  me: () => api.get<AuthUser>('/auth/me'),
+  updateProfile: (data: { name?: string; company?: string; password?: string }) => api.put<AuthUser>('/auth/me', data),
+  verifyInvite: (token: string) => api.get<{ valid: boolean; invite: { plan: string; email?: string } }>(`/invites/verify/${token}`),
+};
+
+export const inviteApi = {
+  list: () => api.get('/invites'),
+  create: (data: { email?: string; plan: string }) => api.post('/invites', data),
+  revoke: (id: string) => api.delete(`/invites/${id}`),
+};
+
+export const managerApi = {
+  list: () => api.get('/managers'),
+  update: (id: string, data: { plan?: string; maxClients?: number; active?: boolean }) => api.put(`/managers/${id}`, data),
+  deactivate: (id: string) => api.delete(`/managers/${id}`),
+  linkClient: (id: string, actId: string) => api.post(`/managers/${id}/clients/${actId}`),
+  unlinkClient: (id: string, actId: string) => api.delete(`/managers/${id}/clients/${actId}`),
 };
 
 export default api;
