@@ -28,7 +28,9 @@ server/
 │   │   └── env.ts                    # Validação de env vars (Zod)
 │   ├── controllers/
 │   │   ├── authController.ts         # Login, register, refresh, logout, me, updateProfile
+│   │   ├── budgetController.ts       # Orçamento mensal por cliente
 │   │   ├── clientController.ts       # CRUD de clientes + métricas + download (multi-tenant)
+│   │   ├── goalController.ts         # Metas por métrica por cliente
 │   │   ├── inviteController.ts       # CRUD de convites (admin)
 │   │   ├── managerController.ts      # CRUD de gestores + vincular clientes (admin)
 │   │   ├── settingsController.ts     # Token global + auto-sync
@@ -44,8 +46,10 @@ server/
 │   ├── repositories/
 │   │   ├── adRepository.ts           # Queries de performance geral (upsert)
 │   │   ├── audienceRepository.ts     # Queries de performance por público (sexo x idade)
+│   │   ├── budgetRepository.ts       # Queries de orçamento mensal
 │   │   ├── clientRepository.ts       # Queries de clientes (cascade delete)
 │   │   ├── dashboardRepository.ts    # Queries agregadas para o Dashboard (filtro por gestor)
+│   │   ├── goalRepository.ts         # Queries de metas por métrica
 │   │   ├── inviteRepository.ts       # Queries de convites
 │   │   ├── managerRepository.ts      # Queries de gestores + vínculos
 │   │   ├── placementRepository.ts    # Queries de performance por plataforma
@@ -62,7 +66,9 @@ server/
 │   ├── services/
 │   │   ├── authService.ts            # Hash, JWT, refresh token rotation
 │   │   ├── breakdownSyncService.ts   # Sync de breakdowns (audience, placement, region)
+│   │   ├── budgetService.ts          # Lógica de orçamento mensal
 │   │   ├── clientService.ts          # Lógica de negócio (clientes)
+│   │   ├── goalService.ts            # Lógica de metas por métrica
 │   │   ├── inviteService.ts          # Geração/validação de convites
 │   │   ├── reportService.ts          # Geração de Excel
 │   │   ├── schedulerService.ts       # Cron job de auto-sync diário (com breakdowns)
@@ -109,6 +115,12 @@ server/
 | `POST` | `/clients` | Cadastra ou atualiza um cliente (auto-vincula ao manager) | JWT |
 | `GET` | `/clients` | Lista clientes (admin: todos, manager: só os vinculados) | JWT |
 | `GET` | `/clients/metrics` | Métricas do Dashboard (filtrado por gestor) | JWT |
+| `GET` | `/clients/:actId/budget` | Orçamento do mês atual | JWT |
+| `POST` | `/clients/:actId/budget` | Definir orçamento mensal | JWT |
+| `GET` | `/clients/:actId/budget/history` | Histórico de orçamentos (últimos 12 meses) | JWT |
+| `GET` | `/clients/:actId/goals` | Metas do mês atual | JWT |
+| `POST` | `/clients/:actId/goals` | Definir meta mensal por métrica | JWT |
+| `DELETE` | `/clients/:actId/goals/:id` | Remover meta | JWT |
 | `PATCH` | `/clients/:actId/token` | Atualiza o token de um cliente | JWT |
 | `DELETE` | `/clients/:actId` | Remove um cliente e todos seus dados (cascade) | JWT |
 | `GET` | `/clients/:actId/download` | Download do relatório Excel | JWT |
@@ -231,6 +243,8 @@ POST /invites
 | `invites` | Convites para novos gestores | `token` |
 | `manager_clients` | Vínculo N:N entre gestores e clientes | `manager_id + client_id` |
 | `refresh_tokens` | Refresh tokens JWT | `token_hash` |
+| `client_budgets` | Orçamento mensal por gestor+cliente | `manager_id + client_id + month` |
+| `client_goals` | Metas por métrica por gestor+cliente | `manager_id + client_id + metric + month` |
 
 ### Métricas por tabela
 

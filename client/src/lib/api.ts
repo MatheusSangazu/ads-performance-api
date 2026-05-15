@@ -132,6 +132,23 @@ export function createProgressStream(onEvent: (event: SyncProgressEvent) => void
   return () => es.close();
 }
 
+export interface Budget {
+  id: string;
+  managerId: string;
+  clientId: string;
+  month: string;
+  budgetAmount: number;
+}
+
+export interface Goal {
+  id: string;
+  managerId: string;
+  clientId: string;
+  metric: string;
+  targetValue: number;
+  month: string;
+}
+
 export const clientApi = {
   list: () => api.get<Client[]>('/clients'),
   create: (data: CreateClientPayload) => api.post('/clients', data),
@@ -141,6 +158,14 @@ export const clientApi = {
   downloadReport: (actId: string) =>
     api.get(`/clients/${actId}/download`, { responseType: 'blob' }),
   metrics: () => api.get<DashboardMetrics>('/clients/metrics'),
+  getBudget: (actId: string) => api.get<Budget | null>(`/clients/${actId}/budget`),
+  setBudget: (actId: string, month: string, budgetAmount: number) =>
+    api.post(`/clients/${actId}/budget`, { month, budgetAmount }),
+  getBudgetHistory: (actId: string) => api.get<Budget[]>(`/clients/${actId}/budget/history`),
+  getGoals: (actId: string) => api.get<Goal[]>(`/clients/${actId}/goals`),
+  setGoal: (actId: string, metric: string, targetValue: number, month: string) =>
+    api.post(`/clients/${actId}/goals`, { metric, targetValue, month }),
+  deleteGoal: (actId: string, id: string) => api.delete(`/clients/${actId}/goals/${id}`),
 };
 
 export const syncApi = {

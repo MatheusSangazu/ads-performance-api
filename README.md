@@ -148,6 +148,12 @@ Build multi-stage que compila API + Front em um único container. Em produção,
 - **CRUD de clientes:** Cadastro, edição de token, limpar token, exclusão cascade, download Excel
 - **BI-ready:** Tabelas denormalizadas para Looker e Metabase
 
+### Orçamento e Metas
+- **Orçamento mensal por cliente:** Gestor define o budget do mês; barra de progresso mostra % investido com cores (verde/amarelo/vermelho)
+- **Metas por métrica:** Gestor define metas mensais para leads, CPL, ROAS, CTR, cliques, impressões, compras, valor de compras
+- **Progresso visual:** Cada meta mostra valor atual vs. target com indicador de atingimento (CPL é inverso — menor é melhor)
+- **Isolamento por gestor:** Orçamentos e metas são por gestor+cliente, cada gestor pode ter suas próprias metas para o mesmo cliente
+
 ---
 
 ## Segurança

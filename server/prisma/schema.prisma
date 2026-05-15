@@ -17,6 +17,17 @@ enum ManagerRole {
   manager
 }
 
+enum GoalMetric {
+  leads
+  cpl
+  roas
+  ctr
+  clicks
+  impressions
+  purchases
+  purchase_value
+}
+
 model Manager {
   id           String       @id @db.Char(36)
   name         String       @db.VarChar(100)
@@ -33,6 +44,8 @@ model Manager {
   refreshTokens RefreshToken[]
   managerClients ManagerClient[]
   invites       Invite[]
+  budgets       ClientBudget[]
+  goals         ClientGoal[]
 
   @@map("managers")
 }
@@ -92,6 +105,8 @@ model Client {
   placementPerformance   AdPlacementPerformance[]
   regionPerformance      AdRegionPerformance[]
   managerClients         ManagerClient[]
+  budgets                ClientBudget[]
+  goals                  ClientGoal[]
 
   @@map("clients_config")
 }
@@ -245,4 +260,37 @@ model AppSettings {
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp(0)
 
   @@map("app_settings")
+}
+
+model ClientBudget {
+  id           String   @id @db.Char(36)
+  managerId    String   @map("manager_id") @db.Char(36)
+  clientId     String   @map("client_id") @db.VarChar(50)
+  month        DateTime @db.Date
+  budgetAmount Decimal  @map("budget_amount") @db.Decimal(15, 4)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  manager Manager @relation(fields: [managerId], references: [id])
+  client  Client  @relation(fields: [clientId], references: [actId])
+
+  @@unique([managerId, clientId, month])
+  @@map("client_budgets")
+}
+
+model ClientGoal {
+  id           String      @id @db.Char(36)
+  managerId    String      @map("manager_id") @db.Char(36)
+  clientId     String      @map("client_id") @db.VarChar(50)
+  metric       GoalMetric
+  targetValue  Decimal     @map("target_value") @db.Decimal(15, 4)
+  month        DateTime    @db.Date
+  createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt    DateTime    @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  manager Manager @relation(fields: [managerId], references: [id])
+  client  Client  @relation(fields: [clientId], references: [actId])
+
+  @@unique([managerId, clientId, metric, month])
+  @@map("client_goals")
 }

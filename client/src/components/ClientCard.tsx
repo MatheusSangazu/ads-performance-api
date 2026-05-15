@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Download, Key, Loader2, RefreshCw, Trash2, X, Globe } from 'lucide-react';
 import { clientApi, syncApi, type Client } from '../lib/api';
+import BudgetCard from './BudgetCard';
+import GoalCard from './GoalCard';
 
 interface ClientCardProps {
   client: Client;
@@ -16,11 +18,41 @@ function getToday(): string {
   return new Date().toISOString().split('T')[0];
 }
 
+function getMonthStart(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+}
+
 export default function ClientCard({ client, downloading, onDownload, onTokenUpdated, onDelete, onError, onSuccess }: Omit<ClientCardProps, 'syncing' | 'onSync'>) {
   const [showTokenEdit, setShowTokenEdit] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [newToken, setNewToken] = useState('');
   const [quickSyncing, setQuickSyncing] = useState(false);
+  const [currentSpend, setCurrentSpend] = useState(0);
+  const [currentMetrics, setCurrentMetrics] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    const fetchMetrics = async () => {
+      try {
+        const { data } = await clientApi.metrics();
+        const clientMetric = data.clientMetrics.find((c) => c.actId === client.actId);
+        if (clientMetric) {
+          setCurrentSpend(clientMetric.spend);
+          setCurrentMetrics({
+            leads: clientMetric.leads,
+            roas: clientMetric.roas,
+            clicks: data.totalClicks,
+            impressions: data.totalImpressions,
+            purchases: data.totalPurchases,
+            purchase_value: data.totalPurchaseValue,
+          });
+        }
+      } catch {
+        // silently fail
+      }
+    };
+    fetchMetrics();
+  }, [client.actId]);
 
   const handleUpdateToken = async () => {
     if (!newToken.trim()) return;
@@ -92,6 +124,11 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
       {client.customEventId && (
         <p className="mb-3 text-xs text-gray-500">Custom Event: {client.customEventId}</p>
       )}
+
+      <div className="mb-3 space-y-2">
+        <BudgetCard actId={client.actId} currentSpend={currentSpend} />
+        <GoalCard actId={client.actId} currentMetrics={currentMetrics} />
+      </div>
 
       {showTokenEdit && (
         <div className="mb-3 rounded-lg border border-gray-700 bg-gray-800 p-3">

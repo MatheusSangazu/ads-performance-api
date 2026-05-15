@@ -612,13 +612,13 @@ JOIN managers m ON mc.manager_id = m.id;
 10. ~~Frontend: Admin pages (dashboard, managers, invites)~~
 11. ~~Frontend: Atualizar rotas existentes com auth~~
 
-### Sprint 2 — Orçamento e Metas (Fase 2)
-1. Models Prisma (ClientBudget, ClientGoal)
-2. Repositories
-3. Services (budget, goals)
-4. Rotas API
-5. Frontend: BudgetCard, GoalCard, formulários
-6. Dashboard atualizado com metas e orçamento
+### Sprint 2 — Orçamento e Metas (Fase 2) [CONCLUIDA]
+1. ~~Models Prisma (ClientBudget, ClientGoal)~~
+2. ~~Repositories~~
+3. ~~Services (budget, goals)~~
+4. ~~Rotas API~~
+5. ~~Frontend: BudgetCard, GoalCard, formulários~~
+6. ~~Dashboard atualizado com metas e orçamento~~
 
 ### Sprint 3 — Alertas (Fase 3)
 1. Model Prisma (Alert)
