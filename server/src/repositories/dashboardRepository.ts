@@ -112,6 +112,114 @@ class DashboardRepository {
       });
     }
 
+    const topAdsRaw = await prisma.adPerformance.findMany({
+      where: {
+        date: { gte: since, lte: untilEnd },
+        ...clientFilter,
+      },
+      select: {
+        adId: true,
+        adName: true,
+        campaignName: true,
+        previewLink: true,
+        creativeUrl: true,
+        creativeType: true,
+        spend: true,
+        leads: true,
+        linkClicks: true,
+        impressions: true,
+        purchases: true,
+        totalConversionValue: true,
+        roas: true,
+        ctr: true,
+      },
+    });
+
+    const adAgg = new Map<string, {
+      adId: string; adName: string; campaignName: string; previewLink: string;
+      spend: number; leads: number; linkClicks: number; impressions: number;
+      purchases: number; totalConversionValue: number;
+    }>();
+    for (const r of topAdsRaw) {
+      const existing = adAgg.get(r.adId) || {
+        adId: r.adId, adName: r.adName || '', campaignName: r.campaignName || '',
+        previewLink: r.previewLink || '', creativeUrl: r.creativeUrl || '', creativeType: r.creativeType || '', spend: 0, leads: 0, linkClicks: 0,
+        impressions: 0, purchases: 0, totalConversionValue: 0,
+      };
+      existing.spend += Number(r.spend || 0);
+      existing.leads += r.leads || 0;
+      existing.linkClicks += r.linkClicks || 0;
+      existing.impressions += r.impressions || 0;
+      existing.purchases += r.purchases || 0;
+      existing.totalConversionValue += Number(r.totalConversionValue || 0);
+      if (!existing.previewLink && r.previewLink) existing.previewLink = r.previewLink;
+      adAgg.set(r.adId, existing);
+    }
+
+    const topAds = Array.from(adAgg.values()).map((a) => ({
+      ...a,
+      roas: a.spend > 0 ? a.totalConversionValue / a.spend : 0,
+      cpl: a.leads > 0 ? a.spend / a.leads : 0,
+      ctr: a.impressions > 0 ? (a.linkClicks / a.impressions) * 100 : 0,
+    }));
+
+    let audienceData: any[] = [];
+    let placementData: any[] = [];
+    let regionData: any[] = [];
+
+    if (filters?.specificClientId || clientIds) {
+      const breakdownFilter = {
+        date: { gte: since, lte: untilEnd },
+        ...(filters?.specificClientId
+          ? { clientId: filters.specificClientId }
+          : clientIds ? { clientId: { in: clientIds } } : {}),
+      };
+
+      const audienceRows = await prisma.adAudiencePerformance.findMany({
+        where: breakdownFilter,
+        select: { gender: true, ageRange: true, spend: true, leads: true, impressions: true },
+      });
+      const audienceAgg = new Map<string, { gender: string; ageRange: string; spend: number; leads: number; impressions: number }>();
+      for (const r of audienceRows) {
+        const key = `${r.gender}|${r.ageRange}`;
+        const existing = audienceAgg.get(key) || { gender: r.gender, ageRange: r.ageRange, spend: 0, leads: 0, impressions: 0 };
+        existing.spend += Number(r.spend || 0);
+        existing.leads += r.leads || 0;
+        existing.impressions += r.impressions || 0;
+        audienceAgg.set(key, existing);
+      }
+      audienceData = Array.from(audienceAgg.values());
+
+      const placementRows = await prisma.adPlacementPerformance.findMany({
+        where: breakdownFilter,
+        select: { platform: true, spend: true, leads: true, impressions: true },
+      });
+      const placementAgg = new Map<string, { platform: string; spend: number; leads: number; impressions: number }>();
+      for (const r of placementRows) {
+        const existing = placementAgg.get(r.platform) || { platform: r.platform, spend: 0, leads: 0, impressions: 0 };
+        existing.spend += Number(r.spend || 0);
+        existing.leads += r.leads || 0;
+        existing.impressions += r.impressions || 0;
+        placementAgg.set(r.platform, existing);
+      }
+      placementData = Array.from(placementAgg.values());
+
+      const regionRows = await prisma.adRegionPerformance.findMany({
+        where: breakdownFilter,
+        select: { region: true, spend: true, leads: true },
+      });
+      const regionAgg = new Map<string, { region: string; spend: number; leads: number }>();
+      for (const r of regionRows) {
+        const existing = regionAgg.get(r.region) || { region: r.region, spend: 0, leads: 0 };
+        existing.spend += Number(r.spend || 0);
+        existing.leads += r.leads || 0;
+        regionAgg.set(r.region, existing);
+      }
+      regionData = Array.from(regionAgg.values())
+        .sort((a, b) => b.spend - a.spend)
+        .slice(0, 10);
+    }
+
     return {
       totalClients,
       totalSpend,
@@ -130,6 +238,10 @@ class DashboardRepository {
       clientMetrics,
       dailyMetrics,
       goals,
+      topAds,
+      audienceData,
+      placementData,
+      regionData,
       period: { 
         since: since.toISOString().split('T')[0], 
         until: until.toISOString().split('T')[0] 

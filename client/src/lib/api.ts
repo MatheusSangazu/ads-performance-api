@@ -124,6 +124,41 @@ export interface DashboardMetrics {
     purchases: number;
   }[];
   goals: Goal[];
+  topAds: {
+    adId: string;
+    adName: string;
+    campaignName: string;
+    previewLink: string;
+    creativeUrl: string;
+    creativeType: string;
+    spend: number;
+    leads: number;
+    linkClicks: number;
+    impressions: number;
+    purchases: number;
+    totalConversionValue: number;
+    roas: number;
+    cpl: number;
+    ctr: number;
+  }[];
+  audienceData: {
+    gender: string;
+    ageRange: string;
+    spend: number;
+    leads: number;
+    impressions: number;
+  }[];
+  placementData: {
+    platform: string;
+    spend: number;
+    leads: number;
+    impressions: number;
+  }[];
+  regionData: {
+    region: string;
+    spend: number;
+    leads: number;
+  }[];
   period: { since: string; until: string };
 }
 

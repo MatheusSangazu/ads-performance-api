@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Bell, CheckCheck, X, AlertTriangle, Info, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { Bell, CheckCheck, AlertTriangle, Info, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { alertApi, type AlertItem } from '../lib/api';
 
 const severityConfig: Record<string, { icon: typeof Info; color: string; bg: string }> = {
@@ -13,7 +13,7 @@ export default function AlertDropdown() {
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
   const [unread, setUnread] = useState(0);
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   const fetchData = async () => {

@@ -1,16 +1,106 @@
 import clientRepository from '../repositories/clientRepository.js';
 import adRepository from '../repositories/adRepository.js';
 import type { UpsertInsightData } from '../repositories/adRepository.js';
-import { fetchAllInsights, fetchPreviewLink, validateAccount } from '../integrations/metaApi.js';
+import { fetchAllInsights, fetchPreviewLink, validateAccount, fetchAdMedia } from '../integrations/metaApi.js';
 import { splitDates } from '../utils/dateUtils.js';
 import { resolveToken } from '../utils/tokenUtils.js';
 import type { MetaInsight, MetaAction, SyncResult } from '../types/index.js';
 import syncProgress from './syncProgress.js';
 import alertService from './alertService.js';
 import healthCheckService from './healthCheckService.js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import axios from 'axios';
+import prisma from '../config/db.js';
 
 class SyncService {
   private previewCache: Map<string, string> = new Map();
+
+  private getCreativesDir(): string {
+    const __dirname = path.dirname(fileURLToPath(import.meta.url));
+    const dir = path.resolve(__dirname, '../../uploads/creatives');
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    return dir;
+  }
+
+  private async downloadCreatives(
+    actId: string,
+    accessToken: string,
+    adIds: string[],
+  ): Promise<void> {
+    if (adIds.length === 0) return;
+
+    const uniqueAdIds = [...new Set(adIds)];
+    syncProgress.send({ type: 'log', message: `   [CREATIVE] Buscando mídias de ${uniqueAdIds.length} anúncios...`, step: 'main' });
+
+    const mediaList = await fetchAdMedia(actId, accessToken, uniqueAdIds);
+    if (mediaList.length === 0) return;
+
+    const dir = this.getCreativesDir();
+    let downloaded = 0;
+
+    for (const media of mediaList) {
+      try {
+        let sourceUrl: string;
+        let ext: string;
+        let creativeType: string;
+
+        if (media.type === 'video' && media.videoUrl) {
+          sourceUrl = media.videoUrl;
+          ext = 'mp4';
+          creativeType = 'video';
+        } else if (media.imageUrl) {
+          sourceUrl = media.imageUrl;
+          creativeType = 'image';
+          ext = 'jpg';
+        } else {
+          continue;
+        }
+
+        const filename = `${actId}_${media.adId}.${ext}`;
+        const filePath = path.join(dir, filename);
+        const relativePath = `/creatives/${filename}`;
+
+        const imgRes = await axios.get(sourceUrl, {
+          responseType: 'arraybuffer',
+          timeout: 30000,
+          maxContentLength: 50 * 1024 * 1024,
+        });
+
+        if (creativeType === 'image') {
+          const contentType = imgRes.headers['content-type'] || '';
+          if (contentType.includes('png')) ext = 'png';
+          else if (contentType.includes('webp')) ext = 'webp';
+          const finalFilename = `${actId}_${media.adId}.${ext}`;
+          const finalPath = path.join(dir, finalFilename);
+          fs.writeFileSync(finalPath, imgRes.data);
+          await prisma.adPerformance.updateMany({
+            where: { clientId: actId, adId: media.adId },
+            data: { creativeUrl: `/creatives/${finalFilename}`, creativeType: 'image' },
+          });
+        } else {
+          fs.writeFileSync(filePath, imgRes.data);
+          if (media.thumbnailUrl) {
+            try {
+              const thumbRes = await axios.get(media.thumbnailUrl, { responseType: 'arraybuffer', timeout: 10000 });
+              fs.writeFileSync(path.join(dir, `${actId}_${media.adId}_thumb.jpg`), thumbRes.data);
+            } catch {}
+          }
+          await prisma.adPerformance.updateMany({
+            where: { clientId: actId, adId: media.adId },
+            data: { creativeUrl: relativePath, creativeType: 'video' },
+          });
+        }
+
+        downloaded++;
+      } catch (err: any) {
+        console.warn(`[CREATIVE] Failed to download ${media.adId}: ${err.message}`);
+      }
+    }
+
+    syncProgress.send({ type: 'log', message: `   [CREATIVE] ${downloaded}/${mediaList.length} mídias baixadas`, step: 'main' });
+  }
 
   private extractActionValue(actions: MetaAction[] | undefined, type: string): number {
     return parseInt(actions?.find((a) => a.action_type === type)?.value || '0');
@@ -174,6 +264,15 @@ class SyncService {
       records: totalRecords,
       errors: totalErrors,
     });
+
+    if (totalRecords > 0) {
+      const allAdIds = details
+        .filter(d => d.includes('salvos'))
+        .flatMap(() => Array.from(this.previewCache.keys()));
+      this.downloadCreatives(actId, accessToken, allAdIds).catch((err) => {
+        console.error('[CREATIVE] Erro ao baixar criativos:', err instanceof Error ? err.message : String(err));
+      });
+    }
 
     alertService.evaluate(actId).catch((err) => {
       console.error('[ALERT] Erro ao avaliar alertas:', err instanceof Error ? err.message : String(err));

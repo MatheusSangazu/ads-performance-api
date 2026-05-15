@@ -21,6 +21,9 @@ const port = process.env.PORT || 3001;
 
 app.use(express.json());
 
+const uploadsDir = path.join(__dirname, '..', 'uploads');
+app.use('/creatives', express.static(path.join(uploadsDir, 'creatives')));
+
 app.use('/api/auth', authRoutes);
 app.use('/api/invites', inviteRoutes);
 app.use('/api/managers', managerRoutes);

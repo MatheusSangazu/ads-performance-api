@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Target, Loader2, Pencil, Trash2, Plus, X, CheckCircle } from 'lucide-react';
+import { Target, Loader2, Trash2, Plus, X, CheckCircle } from 'lucide-react';
 import { clientApi, type Goal } from '../lib/api';
 import { METRIC_LABELS } from './BudgetCard';
 

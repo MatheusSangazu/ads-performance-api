@@ -9,6 +9,9 @@ node_modules/
 *.pdf
 *.csv
 
+# Uploads (criativos de anúncios)
+server/uploads/
+
 # Build e Saída
 dist/
 build/

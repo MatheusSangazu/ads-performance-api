@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Link } from 'react-router-dom';
-import { Users, DollarSign, Target, TrendingUp, MousePointerClick, Eye, BarChart3, Loader2, Calendar as CalendarIcon, Filter, CheckCircle2, AlertCircle } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
+import { Users, DollarSign, Target, TrendingUp, MousePointerClick, Eye, BarChart3, Loader2, Calendar as CalendarIcon, Filter, CheckCircle2, AlertCircle, ExternalLink, MapPin, Monitor, UserCircle, X, Play } from 'lucide-react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie, Legend } from 'recharts';
 import { clientApi, type DashboardMetrics, type Client } from '../lib/api';
 import DatePicker from '../components/DatePicker';
 
@@ -22,6 +21,9 @@ const METRIC_LABELS: Record<string, string> = {
   impressions: 'Impressões',
   purchases: 'Vendas',
   purchase_value: 'Valor de Venda',
+  spend: 'Investimento',
+  totalConversionValue: 'Valor de Conversão',
+  linkClicks: 'Cliques no Link',
 };
 
 export default function Dashboard() {
@@ -37,6 +39,8 @@ export default function Dashboard() {
   const [since, setSince] = useState(thirtyDaysAgo);
   const [until, setUntil] = useState(today);
   const [selectedClient, setSelectedClient] = useState<string>('');
+  const [topAdsMetric, setTopAdsMetric] = useState<string>('roas');
+  const [mediaViewer, setMediaViewer] = useState<{ url: string; type: string; name: string } | null>(null);
 
   const fetchMetrics = useCallback(async (isInitial = false) => {
     if (isInitial) setLoading(true);
@@ -318,6 +322,269 @@ export default function Dashboard() {
           </table>
         </div>
       </div>
+
+      {data.topAds.length > 0 && (
+        <div className="rounded-xl border border-gray-800 bg-gray-900 overflow-hidden">
+          <div className="border-b border-gray-800 bg-gray-900/50 px-6 py-4 flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+              <TrendingUp size={16} /> Top Anúncios
+            </h3>
+            <select
+              value={topAdsMetric}
+              onChange={(e) => setTopAdsMetric(e.target.value)}
+              className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-1 text-xs text-white focus:border-blue-500 focus:outline-none"
+            >
+              <option value="roas">ROAS</option>
+              <option value="leads">Leads</option>
+              <option value="spend">Investimento</option>
+              <option value="cpl">CPL</option>
+              <option value="ctr">CTR</option>
+              <option value="purchases">Vendas</option>
+              <option value="totalConversionValue">Valor de Conversão</option>
+            </select>
+          </div>
+          <div className="grid gap-4 p-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {[...data.topAds]
+              .sort((a, b) => {
+                const aVal = topAdsMetric === 'cpl' ? -a[topAdsMetric as keyof typeof a] : a[topAdsMetric as keyof typeof a];
+                const bVal = topAdsMetric === 'cpl' ? -b[topAdsMetric as keyof typeof b] : b[topAdsMetric as keyof typeof b];
+                return Number(bVal) - Number(aVal);
+              })
+              .slice(0, 8)
+              .map((ad, idx) => {
+                const metricVal = ad[topAdsMetric as keyof typeof ad];
+                return (
+                  <div key={ad.adId} className="rounded-lg border border-gray-800 bg-gray-950 overflow-hidden">
+                    {ad.creativeUrl ? (
+                      <div
+                        className="relative w-full cursor-pointer bg-gray-800 group"
+                        onClick={() => setMediaViewer({ url: ad.creativeUrl, type: ad.creativeType || 'image', name: ad.adName })}
+                      >
+                        {ad.creativeType === 'video' ? (
+                          <>
+                            <video
+                              src={ad.creativeUrl}
+                              className="h-48 w-full object-cover"
+                              muted
+                              preload="metadata"
+                            />
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/50 transition-colors">
+                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
+                                <Play size={18} className="text-white ml-0.5" fill="white" />
+                              </div>
+                            </div>
+                          </>
+                        ) : (
+                          <img
+                            src={ad.creativeUrl}
+                            alt={ad.adName}
+                            className="h-48 w-full object-cover transition-opacity group-hover:opacity-80"
+                            loading="lazy"
+                          />
+                        )}
+                      </div>
+                    ) : (
+                      <div className="flex h-48 items-center justify-center bg-gray-800">
+                        <Eye size={24} className="text-gray-600" />
+                      </div>
+                    )}
+                    <div className="p-3">
+                      <div className="mb-1 flex items-center gap-2">
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[10px] font-bold text-white">
+                          {idx + 1}
+                        </span>
+                        <p className="truncate text-xs font-semibold text-white">{ad.adName}</p>
+                      </div>
+                      <p className="mb-2 truncate text-[10px] text-gray-500">{ad.campaignName}</p>
+                      <div className="flex items-center justify-between">
+                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                          topAdsMetric === 'roas' ? (Number(metricVal) >= 2 ? 'bg-purple-500/10 text-purple-400' : 'bg-gray-800 text-gray-400') :
+                          topAdsMetric === 'ctr' ? 'bg-teal-500/10 text-teal-400' :
+                          topAdsMetric === 'cpl' ? 'bg-orange-500/10 text-orange-400' :
+                          'bg-green-500/10 text-green-400'
+                        }`}>
+                          {topAdsMetric === 'roas' ? `${Number(metricVal).toFixed(2)}x` :
+                           topAdsMetric === 'ctr' || topAdsMetric === 'cpl' ? fmtCurrency(Number(metricVal)) :
+                           topAdsMetric === 'spend' || topAdsMetric === 'totalConversionValue' ? fmtCurrency(Number(metricVal)) :
+                           fmtNumber(Number(metricVal))}
+                          {' '}{METRIC_LABELS[topAdsMetric] || topAdsMetric}
+                        </span>
+                        {ad.previewLink && (
+                          <a href={ad.previewLink} target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-gray-400">
+                            <ExternalLink size={12} />
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+        </div>
+      )}
+
+      {(data.audienceData.length > 0 || data.placementData.length > 0 || data.regionData.length > 0) && (
+        <div className="grid gap-6 lg:grid-cols-3">
+          {data.placementData.length > 0 && (
+            <div className="rounded-xl border border-gray-800 bg-gray-900 p-6">
+              <h3 className="mb-4 text-sm font-semibold text-gray-400 flex items-center gap-2">
+                <Monitor size={16} /> Plataformas
+              </h3>
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie
+                    data={data.placementData.map(p => ({ name: p.platform, value: Number(p.spend) }))}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={80}
+                    paddingAngle={3}
+                    dataKey="value"
+                  >
+                    {data.placementData.map((_, i) => (
+                      <Cell key={i} fill={['#3B82F6', '#8B5CF6', '#EC4899', '#F59E0B'][i % 4]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#111827', border: '1px solid #374151', borderRadius: '12px' }}
+                    formatter={(value) => [fmtCurrency(Number(value)), 'Investimento']}
+                  />
+                  <Legend
+                    verticalAlign="bottom"
+                    iconType="circle"
+                    iconSize={8}
+                    formatter={(val) => <span className="text-xs text-gray-400">{val}</span>}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="mt-2 space-y-1">
+                {data.placementData.map(p => (
+                  <div key={p.platform} className="flex items-center justify-between text-xs">
+                    <span className="text-gray-400">{p.platform}</span>
+                    <span className="text-gray-300">{fmtCurrency(Number(p.spend))} · {fmtNumber(p.leads)} leads</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {data.audienceData.length > 0 && (
+            <div className="rounded-xl border border-gray-800 bg-gray-900 p-6">
+              <h3 className="mb-4 text-sm font-semibold text-gray-400 flex items-center gap-2">
+                <UserCircle size={16} /> Público (Sexo × Idade)
+              </h3>
+              {(() => {
+                const ageRanges = [...new Set(data.audienceData.map(a => a.ageRange))];
+                const maleMap = new Map(data.audienceData.filter(a => a.gender === 'male').map(a => [a.ageRange, Number(a.spend)]));
+                const femaleMap = new Map(data.audienceData.filter(a => a.gender === 'female').map(a => [a.ageRange, Number(a.spend)]));
+                const chartData = ageRanges.map(age => ({
+                  age,
+                  Masculino: maleMap.get(age) || 0,
+                  Feminino: femaleMap.get(age) || 0,
+                }));
+                return (
+                  <ResponsiveContainer width="100%" height={250}>
+                    <BarChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                      <XAxis dataKey="age" stroke="#4B5563" tick={{ fontSize: 9 }} />
+                      <YAxis stroke="#4B5563" tick={{ fontSize: 9 }} />
+                      <Tooltip
+                        contentStyle={{ backgroundColor: '#111827', border: '1px solid #374151', borderRadius: '12px' }}
+                        formatter={(value) => fmtCurrency(Number(value))}
+                      />
+                      <Bar dataKey="Masculino" fill="#3B82F6" radius={[4, 4, 0, 0]} barSize={16} />
+                      <Bar dataKey="Feminino" fill="#EC4899" radius={[4, 4, 0, 0]} barSize={16} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                );
+              })()}
+              <div className="mt-2 flex items-center gap-4 text-xs text-gray-500">
+                <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-blue-500" /> Masculino</span>
+                <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-pink-500" /> Feminino</span>
+              </div>
+              <div className="mt-2 space-y-1">
+                {data.audienceData
+                  .sort((a, b) => Number(b.spend) - Number(a.spend))
+                  .slice(0, 6)
+                  .map((a, i) => (
+                    <div key={i} className="flex items-center justify-between text-xs">
+                      <span className="text-gray-400">{a.gender === 'male' ? '♂' : '♀'} {a.ageRange}</span>
+                      <span className="text-gray-300">{fmtCurrency(Number(a.spend))} · {fmtNumber(a.leads)} leads</span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {data.regionData.length > 0 && (
+            <div className="rounded-xl border border-gray-800 bg-gray-900 p-6">
+              <h3 className="mb-4 text-sm font-semibold text-gray-400 flex items-center gap-2">
+                <MapPin size={16} /> Top Regiões
+              </h3>
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={data.regionData} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" horizontal={false} />
+                  <XAxis type="number" stroke="#4B5563" tick={{ fontSize: 9 }} />
+                  <YAxis type="category" dataKey="region" stroke="#4B5563" tick={{ fontSize: 9 }} width={100} />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#111827', border: '1px solid #374151', borderRadius: '12px' }}
+                    formatter={(value) => [fmtCurrency(Number(value)), 'Investimento']}
+                  />
+                  <Bar dataKey="spend" fill="#F59E0B" name="Investimento" radius={[0, 4, 4, 0]} barSize={14} />
+                </BarChart>
+              </ResponsiveContainer>
+              <div className="mt-2 space-y-1">
+                {data.regionData.slice(0, 6).map((r) => (
+                  <div key={r.region} className="flex items-center justify-between text-xs">
+                    <span className="text-gray-400">{r.region}</span>
+                    <span className="text-gray-300">{fmtCurrency(Number(r.spend))} · {fmtNumber(r.leads)} leads</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {mediaViewer && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+          onClick={() => setMediaViewer(null)}
+        >
+          <div
+            className="relative max-h-[90vh] max-w-4xl w-full rounded-2xl bg-gray-900 border border-gray-700 overflow-hidden shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-gray-800 px-4 py-3">
+              <p className="truncate text-sm font-medium text-white pr-4">{mediaViewer.name}</p>
+              <button
+                onClick={() => setMediaViewer(null)}
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="flex items-center justify-center bg-black p-2" style={{ maxHeight: 'calc(90vh - 56px)' }}>
+              {mediaViewer.type === 'video' ? (
+                <video
+                  src={mediaViewer.url}
+                  controls
+                  autoPlay
+                  className="max-h-[calc(90vh-72px)] w-auto rounded-lg"
+                  style={{ maxWidth: '100%' }}
+                />
+              ) : (
+                <img
+                  src={mediaViewer.url}
+                  alt={mediaViewer.name}
+                  className="max-h-[calc(90vh-72px)] w-auto rounded-lg object-contain"
+                  style={{ maxWidth: '100%' }}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

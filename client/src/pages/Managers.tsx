@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Shield, Loader2, UserX, Link2, Unlink } from 'lucide-react';
+import { Shield, Loader2, UserX, Link2 } from 'lucide-react';
 import { managerApi, clientApi } from '../lib/api';
 import Message from '../components/ui/Message';
 
@@ -86,15 +86,6 @@ export default function Managers() {
     }
   };
 
-  const handleUnlink = async (managerId: string, actId: string) => {
-    try {
-      await managerApi.unlinkClient(managerId, actId);
-      setMessage({ type: 'success', text: 'Cliente desvinculado!' });
-      fetchData();
-    } catch {
-      setMessage({ type: 'error', text: 'Erro ao desvincular cliente.' });
-    }
-  };
 
   if (loading) {
     return (

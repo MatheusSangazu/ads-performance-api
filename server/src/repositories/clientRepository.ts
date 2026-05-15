@@ -55,6 +55,8 @@ class ClientRepository {
 
     if (newActId && newActId !== oldActId) {
       return prisma.$transaction(async (tx) => {
+        await tx.$executeRawUnsafe('SET FOREIGN_KEY_CHECKS = 0');
+
         await tx.adPerformance.updateMany({ where: { clientId: oldActId }, data: { clientId: newActId } });
         await tx.adAudiencePerformance.updateMany({ where: { clientId: oldActId }, data: { clientId: newActId } });
         await tx.adPlacementPerformance.updateMany({ where: { clientId: oldActId }, data: { clientId: newActId } });
@@ -65,7 +67,7 @@ class ClientRepository {
         await tx.alert.updateMany({ where: { clientId: oldActId }, data: { clientId: newActId } });
         await tx.task.updateMany({ where: { clientId: oldActId }, data: { clientId: newActId } });
 
-        return tx.client.update({
+        await tx.client.update({
           where: { actId: oldActId },
           data: {
             actId: newActId,
@@ -73,6 +75,8 @@ class ClientRepository {
             ...(data.customEventId !== undefined && { customEventId: data.customEventId || null }),
           },
         });
+
+        await tx.$executeRawUnsafe('SET FOREIGN_KEY_CHECKS = 1');
       });
     }
 

@@ -42,4 +42,6 @@ COPY --from=base /app/client/dist ./client/dist
 ENV NODE_ENV=production
 EXPOSE 3001
 
+RUN mkdir -p /app/server/uploads/creatives
+
 CMD ["node", "server/dist/app.js"]

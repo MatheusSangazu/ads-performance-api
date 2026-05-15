@@ -138,15 +138,22 @@ Build multi-stage que compila API + Front em um único container. Em produção,
 - **Middleware de acesso:** `authMiddleware` (JWT) + `adminOnly` + `clientAccess` (multi-tenancy)
 - **Seed automático:** Admin criado no primeiro startup via `ADMIN_EMAIL` / `ADMIN_PASSWORD`
 
-### Dashboard e Dados
-- **Dashboard:** Métricas agregadas, gráficos de tendência, ranking por cliente
-- **Sync em tempo real:** Modal com logs via SSE, barra de progresso global por fases, minimizar
-- **Sync otimizado:** Batch upsert via raw SQL com chunking automático (respeita limite MySQL de 65k placeholders)
-- **Breakdowns:** Público (sexo x idade), plataforma, região
-- **Auto-Sync:** Cron job diário com toggle on/off
-- **Token Management:** Token por cliente + fallback global automático (testa client token, usa global se falhar) + botão "Usar global" no card
-- **CRUD de clientes:** Cadastro, edição de token, limpar token, exclusão cascade, download Excel
+### Dashboard e Dados Analíticos
+- **Filtros Avançados:** Filtro por período de datas e cliente específico para isolar análises
+- **Gráficos de Tendência e Metas:** Acompanhamento diário e acompanhamento do valor atual vs meta
+- **Top Anúncios:** Ranking de criativos por qualquer métrica (ROAS, CPL, Leads, Investimento).
+- **Preview de Mídias:** Download automático de criativos em alta resolução (imagens originais e vídeos `.mp4` com player nativo) salvos localmente, com modal fullscreen de visualização
+- **Gráficos Demográficos:** Distribuição de investimento e leads por plataformas (Facebook/Insta), público (Sexo x Idade) e top 10 regiões
+- **Sync em tempo real:** Modal com logs via SSE, validação pré-sync de token/permissão e barra de progresso
+- **Sync otimizado:** Batch upsert via raw SQL com chunking automático (respeita limite MySQL)
+- **Token Management:** Token por cliente + fallback global automático
+- **Gerenciamento de Clientes:** Edição de Nome, Custom Event e Act ID com migração atômica de todas as dependências do cliente no BD
 - **BI-ready:** Tabelas denormalizadas para Looker e Metabase
+
+### Integração WhatsApp (Evolution API)
+- **Saúde das Contas (Health Check):** Checagem automática do `account_status` na Meta API com badges visuais (Ativa, Restrita, Inativa) nos cards
+- **Notificações Programadas:** Gestor configura quais horários (08h, 12h, 18h) deseja receber alertas automáticos de saúde via WhatsApp
+- **Resumo Semanal:** Opção de receber um relatório automatizado semanal via WhatsApp do desempenho geral dos clientes
 
 ### Orçamento e Metas
 - **Orçamento mensal por cliente:** Gestor define o budget do mês; barra de progresso mostra % investido com cores (verde/amarelo/vermelho)

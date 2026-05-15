@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { X, Minimize2, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 
 export interface LogEntry {

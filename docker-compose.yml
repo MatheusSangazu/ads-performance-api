@@ -11,4 +11,17 @@ services:
       - DB_NAME=${DB_NAME}
       - DATABASE_URL=${DATABASE_URL}
       - PORT=3001
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-15m}
+      - JWT_REFRESH_EXPIRES_IN=${JWT_REFRESH_EXPIRES_IN:-7d}
+      - ADMIN_EMAIL=${ADMIN_EMAIL}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - EVO_API_URL=${EVO_API_URL:-}
+      - EVO_API_KEY=${EVO_API_KEY:-}
+      - EVO_INSTANCE_NAME=${EVO_INSTANCE_NAME:-}
+    volumes:
+      - creatives:/app/server/uploads/creatives
     restart: unless-stopped
+
+volumes:
+  creatives:
