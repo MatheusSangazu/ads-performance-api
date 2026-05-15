@@ -133,11 +133,23 @@ class AuthService {
     return jwt.verify(token, env.JWT_SECRET) as TokenPayload;
   }
 
-  public async updateProfile(managerId: string, data: { name?: string; company?: string; password?: string }) {
+  public async updateProfile(managerId: string, data: { 
+    name?: string; 
+    company?: string; 
+    password?: string; 
+    phone?: string; 
+    whatsappNotify?: boolean;
+    healthCheckTimes?: string;
+    weeklySummary?: boolean;
+  }) {
     const updateData: any = {};
     if (data.name) updateData.name = data.name;
     if (data.company) updateData.company = data.company;
     if (data.password) updateData.passwordHash = await bcrypt.hash(data.password, 10);
+    if (data.phone !== undefined) updateData.phone = data.phone || null;
+    if (data.whatsappNotify !== undefined) updateData.whatsappNotify = data.whatsappNotify;
+    if (data.healthCheckTimes !== undefined) updateData.healthCheckTimes = data.healthCheckTimes;
+    if (data.weeklySummary !== undefined) updateData.weeklySummary = data.weeklySummary;
     return managerRepository.update(managerId, updateData);
   }
 }

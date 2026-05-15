@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Download, Key, Loader2, RefreshCw, Trash2, X, Globe } from 'lucide-react';
+import { Download, Key, Loader2, RefreshCw, Trash2, X, Globe, ShieldCheck, ShieldAlert, AlertCircle } from 'lucide-react';
 import { clientApi, syncApi, type Client } from '../lib/api';
 import BudgetCard from './BudgetCard';
 import GoalCard from './GoalCard';
@@ -23,7 +23,7 @@ function getMonthStart(): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
 }
 
-export default function ClientCard({ client, downloading, onDownload, onTokenUpdated, onDelete, onError, onSuccess }: Omit<ClientCardProps, 'syncing' | 'onSync'>) {
+export default function ClientCard({ client, downloading, onDownload, onTokenUpdated, onDelete, onError, onSuccess }: ClientCardProps) {
   const [showTokenEdit, setShowTokenEdit] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [newToken, setNewToken] = useState('');
@@ -113,17 +113,62 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
     }
   };
 
+  const renderHealthBadge = () => {
+    if (!client.accountStatus) return null;
+
+    const labels: Record<number, string> = {
+      1: 'Ativa',
+      2: 'Desativada',
+      3: 'Pendência de Pagamento',
+      7: 'Análise de Risco',
+      9: 'Período de Graça',
+      100: 'Fechamento Pendente',
+      101: 'Fechada',
+    };
+
+    const status = client.accountStatus;
+    const label = labels[status] || 'Desconhecido';
+    
+    if (status === 1) {
+      return (
+        <span className="flex items-center gap-1 text-[10px] font-medium text-green-400" title={label}>
+          <ShieldCheck size={12} />
+          {label}
+        </span>
+      );
+    }
+
+    if ([2, 100, 101].includes(status)) {
+      return (
+        <span className="flex items-center gap-1 text-[10px] font-medium text-red-400" title={label}>
+          <ShieldAlert size={12} />
+          {label}
+        </span>
+      );
+    }
+
+    return (
+      <span className="flex items-center gap-1 text-[10px] font-medium text-amber-400" title={label}>
+        <AlertCircle size={12} />
+        {label}
+      </span>
+    );
+  };
+
   return (
     <div className="rounded-xl border border-gray-800 bg-gray-900 p-5">
-      <div className="mb-2 flex items-center justify-between">
+      <div className="mb-1 flex items-center justify-between">
         <h4 className="font-semibold text-white">{client.clientName}</h4>
-        <span className="rounded bg-gray-800 px-2 py-1 text-xs text-gray-400">
+        <span className="rounded bg-gray-800 px-2 py-1 text-[10px] text-gray-400">
           {client.actId}
         </span>
       </div>
-      {client.customEventId && (
-        <p className="mb-3 text-xs text-gray-500">Custom Event: {client.customEventId}</p>
-      )}
+      <div className="mb-3 flex items-center justify-between">
+        {renderHealthBadge()}
+        {client.customEventId && (
+          <p className="text-[10px] text-gray-500">Event: {client.customEventId}</p>
+        )}
+      </div>
 
       <div className="mb-3 space-y-2">
         <BudgetCard actId={client.actId} currentSpend={currentSpend} />

@@ -4,6 +4,8 @@ import goalRepository from '../repositories/goalRepository.js';
 import dashboardRepository from '../repositories/dashboardRepository.js';
 import managerRepository from '../repositories/managerRepository.js';
 import taskService from './taskService.js';
+import evoService from './evoService.js';
+import prisma from '../config/db.js';
 import type { AlertType, AlertSeverity } from '../generated/prisma/client.js';
 
 class AlertService {
@@ -29,6 +31,8 @@ class AlertService {
         alertId: alert.id,
       }).catch(() => {});
     }
+
+    this.sendWhatsapp(managerId, clientId, title, message, severity).catch(() => {});
 
     return alert;
   }
@@ -167,6 +171,20 @@ class AlertService {
     return alertRepository.dismiss(id);
   }
 
+  public async onAccountIssue(clientId: string, statusLabel: string, reasonLabel: string) {
+    const managers = await managerRepository.findManagersForClient(clientId);
+    for (const manager of managers) {
+      await this.dedupCreate(
+        manager.id,
+        clientId,
+        'account_issue',
+        'critical',
+        'Problema na conta de anuncios',
+        `A conta de anuncios esta com status: ${statusLabel}. Motivo: ${reasonLabel}.`,
+      );
+    }
+  }
+
   private getMetricValue(metric: string, clientMetrics: any, overview: any): number {
     switch (metric) {
       case 'leads': return clientMetrics.leads || 0;
@@ -179,6 +197,33 @@ class AlertService {
       case 'purchase_value': return overview.totalPurchaseValue || 0;
       default: return 0;
     }
+  }
+
+  private async sendWhatsapp(
+    managerId: string,
+    clientId: string,
+    title: string,
+    message: string,
+    severity: AlertSeverity,
+  ) {
+    if (!evoService.isConfigured) return;
+
+    const manager = await managerRepository.findById(managerId);
+    if (!manager?.phone || !manager.whatsappNotify) return;
+
+    const client = await prisma.client.findUnique({
+      where: { actId: clientId },
+      select: { clientName: true },
+    });
+
+    const text = evoService.formatAlertMessage({
+      title,
+      message,
+      clientName: client?.clientName,
+      severity,
+    });
+
+    await evoService.sendText(manager.phone, text);
   }
 }
 

@@ -10,6 +10,10 @@ export interface CreateManagerData {
   role: ManagerRole;
   plan?: string;
   maxClients?: number;
+  phone?: string;
+  whatsappNotify?: boolean;
+  healthCheckTimes?: string;
+  weeklySummary?: boolean;
 }
 
 export interface UpdateManagerData {
@@ -20,6 +24,10 @@ export interface UpdateManagerData {
   maxClients?: number;
   active?: boolean;
   role?: ManagerRole;
+  phone?: string | null;
+  whatsappNotify?: boolean;
+  healthCheckTimes?: string;
+  weeklySummary?: boolean;
 }
 
 class ManagerRepository {

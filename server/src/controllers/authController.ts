@@ -71,6 +71,9 @@ class AuthController {
       res.json({
         id: manager.id, name: manager.name, email: manager.email,
         company: manager.company, role: manager.role, plan: manager.plan, active: manager.active,
+        phone: manager.phone, whatsappNotify: manager.whatsappNotify,
+        healthCheckTimes: manager.healthCheckTimes,
+        weeklySummary: manager.weeklySummary,
       });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -79,15 +82,20 @@ class AuthController {
 
   public async updateProfile(req: AuthRequest, res: Response) {
     try {
-      const { name, company, password } = req.body;
+      const { name, company, password, phone, whatsappNotify, healthCheckTimes, weeklySummary } = req.body;
       if (password && password.length < 6) {
         res.status(400).json({ error: 'Senha deve ter no mínimo 6 caracteres.' });
         return;
       }
-      const manager = await authService.updateProfile(req.manager!.id, { name, company, password });
+      const manager = await authService.updateProfile(req.manager!.id, { 
+        name, company, password, phone, whatsappNotify, healthCheckTimes, weeklySummary 
+      });
       res.json({
         id: manager.id, name: manager.name, email: manager.email,
         company: manager.company, role: manager.role, plan: manager.plan,
+        phone: manager.phone, whatsappNotify: manager.whatsappNotify,
+        healthCheckTimes: manager.healthCheckTimes,
+        weeklySummary: manager.weeklySummary,
       });
     } catch (err: any) {
       res.status(400).json({ error: err.message });

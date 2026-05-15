@@ -7,6 +7,7 @@ import { resolveToken } from '../utils/tokenUtils.js';
 import type { MetaInsight, MetaAction, SyncResult } from '../types/index.js';
 import syncProgress from './syncProgress.js';
 import alertService from './alertService.js';
+import healthCheckService from './healthCheckService.js';
 
 class SyncService {
   private previewCache: Map<string, string> = new Map();
@@ -163,6 +164,11 @@ class SyncService {
 
     alertService.evaluate(actId).catch((err) => {
       console.error('[ALERT] Erro ao avaliar alertas:', err instanceof Error ? err.message : String(err));
+    });
+
+    // Update account health status
+    healthCheckService.updateClientHealth(actId, accessToken).catch((err) => {
+      console.error('[HealthCheck] Erro ao atualizar saúde:', err instanceof Error ? err.message : String(err));
     });
 
     if (totalErrors > 0) {

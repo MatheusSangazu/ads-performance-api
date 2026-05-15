@@ -636,13 +636,13 @@ JOIN managers m ON mc.manager_id = m.id;
 5. ~~Integração com alertas (criar tarefa automática)~~
 6. ~~Filtros por cliente e prioridade~~
 
-### Sprint 5 — WhatsApp via Evolution API (Fase 5)
-1. Integração com Evolution API (REST)
-2. Conexão WhatsApp do gestor (QR code)
-3. Templates de notificação → gestor
-4. Cadastro de contatos dos clientes
-5. Envio de resumos automáticos → clientes
-6. Agendamento de mensagens
+### Sprint 5 — Notificações WhatsApp (Evo API) [CONCLUIDA]
+1. ~~Configuração Evolution API (.env + config service)~~
+2. ~~Lógica de envio de mensagens (alertService + evoService)~~
+3. ~~Status de conexão da instância no dashboard/configurações~~
+4. ~~Seleção de horários para checagem de saúde (08:00, 12:00, 18:00)~~
+5. ~~Envio de resumos semanais automáticos para gestores~~
+6. ~~Indicadores visuais de saúde da conta (Ativa, Desativada, Erro de Pagamento)~~
 
 ### Sprint 6 — Monetização (Futuro)
 1. Planos e limites

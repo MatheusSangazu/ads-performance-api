@@ -3,6 +3,7 @@ import { z } from 'zod';
 import settingsController from '../controllers/settingsController.js';
 import { validate } from '../middleware/validate.js';
 import { authMiddleware, adminOnly } from '../middleware/auth.js';
+import evoService from '../services/evoService.js';
 
 const router = Router();
 
@@ -32,6 +33,21 @@ router.put('/auto-sync', authMiddleware, adminOnly, validate(setAutoSyncSchema),
 
 router.post('/sync-all', authMiddleware, adminOnly, (req, res, next) => {
   settingsController.triggerSyncAll(req, res).catch(next);
+});
+
+router.get('/whatsapp/status', authMiddleware, async (_req, res) => {
+  const status = await evoService.getConnectionState();
+  res.json(status);
+});
+
+router.get('/whatsapp/qrcode', authMiddleware, adminOnly, async (_req, res) => {
+  const qr = await evoService.getQRCode();
+  res.json(qr);
+});
+
+router.post('/whatsapp/logout', authMiddleware, adminOnly, async (_req, res) => {
+  const ok = await evoService.logout();
+  res.json({ success: ok });
 });
 
 export default router;

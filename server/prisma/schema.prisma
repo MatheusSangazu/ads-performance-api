@@ -36,6 +36,7 @@ enum AlertType {
   goal_reached
   sync_failed
   sync_success
+  account_issue
 }
 
 enum AlertSeverity {
@@ -70,6 +71,10 @@ model Manager {
   plan         String       @default("pro") @db.VarChar(30)
   maxClients   Int?         @map("max_clients")
   active       Boolean      @default(true)
+  phone        String?      @db.VarChar(20)
+  whatsappNotify Boolean    @default(false) @map("whatsapp_notify")
+  healthCheckTimes String?    @default("08,12,18") @map("health_check_times") @db.VarChar(50)
+  weeklySummary Boolean     @default(false) @map("weekly_summary")
   createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamp(0)
   updatedAt    DateTime     @updatedAt @map("updated_at") @db.Timestamp(0)
 
@@ -132,6 +137,9 @@ model Client {
   customEventId   String?      @map("custom_event_id") @db.VarChar(100)
   isEcommerce     Boolean?     @default(false) @map("is_ecommerce")
   status          ClientStatus @default(active)
+  accountStatus   Int?         @map("account_status")
+  disableReason   Int?         @map("disable_reason")
+  healthLastCheck DateTime?    @map("health_last_check") @db.Timestamp(0)
   createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamp(0)
 
   adsPerformance         AdPerformance[]

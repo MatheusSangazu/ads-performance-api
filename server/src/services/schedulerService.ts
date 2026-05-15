@@ -3,30 +3,79 @@ import clientRepository from '../repositories/clientRepository.js';
 import syncService from './syncService.js';
 import breakdownSyncService from './breakdownSyncService.js';
 import settingsRepository from '../repositories/settingsRepository.js';
+import summaryService from './summaryService.js';
+import healthCheckService from './healthCheckService.js';
+import managerRepository from '../repositories/managerRepository.js';
+import prisma from '../config/db.js';
 
 class SchedulerService {
   private task: cron.ScheduledTask | null = null;
+  private healthTask: cron.ScheduledTask | null = null;
+  private weeklyTask: cron.ScheduledTask | null = null;
 
   public start() {
     if (this.task) return;
 
+    // Daily Sync at 02:00
     this.task = cron.schedule('0 2 * * *', async () => {
       await this.runDailySync();
     });
 
-    console.log('[SCHEDULER] Scheduler iniciado: sync diário às 02:00');
+    // Health Checks at 08:00, 12:00, 18:00
+    this.healthTask = cron.schedule('0 8,12,18 * * *', async () => {
+      const hour = new Date().getHours().toString().padStart(2, '0');
+      await this.runScheduledHealthChecks(hour);
+    });
+
+    // Weekly Summary on Mondays at 09:00
+    this.weeklyTask = cron.schedule('0 9 * * 1', async () => {
+      await summaryService.sendWeeklySummaryToAllManagers();
+    });
+
+    console.log('[SCHEDULER] Scheduler iniciado: sync diário, health checks e resumo semanal');
   }
 
   public stop() {
     if (this.task) {
       this.task.stop();
       this.task = null;
-      console.log('[SCHEDULER] Scheduler parado.');
     }
+    if (this.healthTask) {
+      this.healthTask.stop();
+      this.healthTask = null;
+    }
+    if (this.weeklyTask) {
+      this.weeklyTask.stop();
+      this.weeklyTask = null;
+    }
+    console.log('[SCHEDULER] Scheduler parado.');
   }
 
   public isRunning(): boolean {
     return this.task !== null;
+  }
+
+  private async runScheduledHealthChecks(hour: string) {
+    console.log(`[SCHEDULER] Iniciando health checks agendados para as ${hour}:00...`);
+    
+    // Find managers who want health checks at this hour
+    const managers = await prisma.manager.findMany({
+      where: {
+        active: true,
+        whatsappNotify: true,
+        healthCheckTimes: { contains: hour }
+      }
+    });
+
+    if (managers.length === 0) return;
+
+    for (const manager of managers) {
+      const clientIds = await managerRepository.getClientIds(manager.id);
+      for (const actId of clientIds) {
+        // This will update health and trigger alerts if needed
+        await healthCheckService.updateClientHealth(actId).catch(() => {});
+      }
+    }
   }
 
   public async syncAllClients(): Promise<{

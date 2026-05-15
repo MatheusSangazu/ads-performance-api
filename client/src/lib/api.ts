@@ -42,6 +42,10 @@ export interface AuthUser {
   company: string | null;
   role: 'admin' | 'manager';
   plan: string;
+  phone: string | null;
+  whatsappNotify: boolean;
+  healthCheckTimes: string | null;
+  weeklySummary: boolean;
 }
 
 export interface AuthResponse {
@@ -54,6 +58,11 @@ export interface Client {
   clientName: string;
   actId: string;
   customEventId: string | null;
+  status: 'active' | 'paused' | 'archived';
+  accountStatus: number | null;
+  disableReason: number | null;
+  healthLastCheck: string | null;
+  createdAt: string;
 }
 
 export interface CreateClientPayload {
@@ -180,6 +189,9 @@ export const settingsApi = {
   getAutoSync: () => api.get<{ enabled: boolean; schedulerRunning: boolean }>('/settings/auto-sync'),
   setAutoSync: (enabled: boolean) => api.put('/settings/auto-sync', { enabled }),
   syncAll: () => api.post('/settings/sync-all'),
+  getWhatsappStatus: () => api.get<{ state: string; instance?: string }>('/settings/whatsapp/status'),
+  getWhatsappQRCode: () => api.get<{ qrcode?: string; base64?: string; state: string }>('/settings/whatsapp/qrcode'),
+  whatsappLogout: () => api.post<{ success: boolean }>('/settings/whatsapp/logout'),
 };
 
 export const authApi = {
@@ -189,7 +201,15 @@ export const authApi = {
   refresh: (refreshToken: string) => api.post<{ accessToken: string; refreshToken: string }>('/auth/refresh', { refreshToken }),
   logout: (refreshToken?: string) => api.post('/auth/logout', { refreshToken }),
   me: () => api.get<AuthUser>('/auth/me'),
-  updateProfile: (data: { name?: string; company?: string; password?: string }) => api.put<AuthUser>('/auth/me', data),
+  updateProfile: (data: {
+    name?: string;
+    company?: string;
+    password?: string;
+    phone?: string;
+    whatsappNotify?: boolean;
+    healthCheckTimes?: string;
+    weeklySummary?: boolean;
+  }) => api.put<AuthUser>('/auth/me', data),
   verifyInvite: (token: string) => api.get<{ valid: boolean; invite: { plan: string; email?: string } }>(`/invites/verify/${token}`),
 };
 
