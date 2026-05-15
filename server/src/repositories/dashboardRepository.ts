@@ -1,8 +1,12 @@
 import prisma from '../config/db.js';
 
 class DashboardRepository {
-  public async getOverview(clientIds?: string[]) {
-    const clientFilter = clientIds ? { clientId: { in: clientIds } } : {};
+  public async getOverview(clientIds?: string[], filters?: { since?: string; until?: string; specificClientId?: string }) {
+    const clientFilter = filters?.specificClientId 
+      ? { clientId: filters.specificClientId }
+      : clientIds 
+        ? { clientId: { in: clientIds } } 
+        : {};
 
     const totalClients = clientIds
       ? clientIds.length
@@ -12,9 +16,16 @@ class DashboardRepository {
     const thirtyDaysAgo = new Date(today);
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
+    const since = filters?.since ? new Date(filters.since) : thirtyDaysAgo;
+    const until = filters?.until ? new Date(filters.until) : today;
+
+    // Ensure until includes the full day
+    const untilEnd = new Date(until);
+    untilEnd.setHours(23, 59, 59, 999);
+
     const performance = await prisma.adPerformance.findMany({
       where: {
-        date: { gte: thirtyDaysAgo, lte: today },
+        date: { gte: since, lte: untilEnd },
         ...clientFilter,
       },
       select: {
@@ -46,18 +57,23 @@ class DashboardRepository {
     const avgCtr = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0;
     const avgRoas = totalSpend > 0 ? totalConversionValue / totalSpend : 0;
 
-    const clientMap = new Map<string, { name: string; spend: number; leads: number; conversionValue: number }>();
+    const clientMap = new Map<string, { name: string; spend: number; leads: number; conversionValue: number; purchases: number }>();
     const clients = await prisma.client.findMany({
-      where: clientIds ? { actId: { in: clientIds } } : {},
+      where: filters?.specificClientId 
+        ? { actId: filters.specificClientId }
+        : clientIds 
+          ? { actId: { in: clientIds } } 
+          : {},
       select: { actId: true, clientName: true },
     });
     const clientNames = new Map(clients.map((c) => [c.actId, c.clientName]));
 
     for (const p of performance) {
-      const existing = clientMap.get(p.clientId) || { name: clientNames.get(p.clientId) || p.clientId, spend: 0, leads: 0, conversionValue: 0 };
+      const existing = clientMap.get(p.clientId) || { name: clientNames.get(p.clientId) || p.clientId, spend: 0, leads: 0, conversionValue: 0, purchases: 0 };
       existing.spend += Number(p.spend || 0);
       existing.leads += p.leads || 0;
       existing.conversionValue += Number(p.totalConversionValue || 0);
+      existing.purchases += p.purchases || 0;
       clientMap.set(p.clientId, existing);
     }
 
@@ -67,23 +83,34 @@ class DashboardRepository {
       spend: data.spend,
       leads: data.leads,
       conversionValue: data.conversionValue,
+      purchases: data.purchases,
       roas: data.spend > 0 ? data.conversionValue / data.spend : 0,
     }));
 
-    const dailyMap = new Map<string, { spend: number; leads: number; clicks: number; conversionValue: number }>();
+    const dailyMap = new Map<string, { spend: number; leads: number; clicks: number; conversionValue: number; purchases: number }>();
     for (const p of performance) {
       const dateKey = p.date.toISOString().split('T')[0];
-      const existing = dailyMap.get(dateKey) || { spend: 0, leads: 0, clicks: 0, conversionValue: 0 };
+      const existing = dailyMap.get(dateKey) || { spend: 0, leads: 0, clicks: 0, conversionValue: 0, purchases: 0 };
       existing.spend += Number(p.spend || 0);
       existing.leads += p.leads || 0;
       existing.clicks += p.linkClicks || 0;
       existing.conversionValue += Number(p.totalConversionValue || 0);
+      existing.purchases += p.purchases || 0;
       dailyMap.set(dateKey, existing);
     }
 
     const dailyMetrics = Array.from(dailyMap.entries())
       .map(([date, data]) => ({ date, ...data }))
       .sort((a, b) => a.date.localeCompare(b.date));
+
+    // Fetch goals if a specific client is selected
+    let goals: any[] = [];
+    if (filters?.specificClientId) {
+      const currentMonth = new Date(until.getFullYear(), until.getMonth(), 1);
+      goals = await prisma.clientGoal.findMany({
+        where: { clientId: filters.specificClientId, month: currentMonth },
+      });
+    }
 
     return {
       totalClients,
@@ -102,7 +129,11 @@ class DashboardRepository {
       avgRoas,
       clientMetrics,
       dailyMetrics,
-      period: { since: thirtyDaysAgo.toISOString().split('T')[0], until: today.toISOString().split('T')[0] },
+      goals,
+      period: { 
+        since: since.toISOString().split('T')[0], 
+        until: until.toISOString().split('T')[0] 
+      },
     };
   }
 }

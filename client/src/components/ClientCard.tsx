@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Download, Key, Loader2, RefreshCw, Trash2, X, Globe, ShieldCheck, ShieldAlert, AlertCircle } from 'lucide-react';
+import { Download, Key, Loader2, RefreshCw, Trash2, X, Globe, ShieldCheck, ShieldAlert, AlertCircle, Pencil } from 'lucide-react';
 import { clientApi, syncApi, type Client } from '../lib/api';
 import BudgetCard from './BudgetCard';
 import GoalCard from './GoalCard';
@@ -26,6 +26,11 @@ function getMonthStart(): string {
 export default function ClientCard({ client, downloading, onDownload, onTokenUpdated, onDelete, onError, onSuccess }: ClientCardProps) {
   const [showTokenEdit, setShowTokenEdit] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
+  const [editName, setEditName] = useState(client.clientName);
+  const [editActId, setEditActId] = useState(client.actId);
+  const [editCustomEvent, setEditCustomEvent] = useState(client.customEventId || '');
+  const [editLoading, setEditLoading] = useState(false);
   const [newToken, setNewToken] = useState('');
   const [quickSyncing, setQuickSyncing] = useState(false);
   const [currentSpend, setCurrentSpend] = useState(0);
@@ -75,6 +80,25 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
       onSuccess(`Token individual removido. ${client.clientName} usará o token global.`);
     } catch {
       onError('Erro ao remover token.');
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    setEditLoading(true);
+    try {
+      await clientApi.update(client.actId, {
+        name: editName,
+        act_id: editActId,
+        custom_event_id: editCustomEvent,
+      });
+      setShowEdit(false);
+      onTokenUpdated();
+      onSuccess('Cliente atualizado com sucesso!');
+    } catch (err: any) {
+      const msg = err?.response?.data?.error || 'Erro ao atualizar cliente.';
+      onError(msg);
+    } finally {
+      setEditLoading(false);
     }
   };
 
@@ -175,6 +199,55 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
         <GoalCard actId={client.actId} currentMetrics={currentMetrics} />
       </div>
 
+      {showEdit && (
+        <div className="mb-3 rounded-lg border border-blue-800/50 bg-gray-800 p-3 space-y-2">
+          <div>
+            <label className="mb-1 block text-xs text-gray-400">Nome</label>
+            <input
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              className="w-full rounded-lg border border-gray-600 bg-gray-700 px-3 py-1.5 text-sm text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none"
+              placeholder="Nome do cliente"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-gray-400">Act ID</label>
+            <input
+              value={editActId}
+              onChange={(e) => setEditActId(e.target.value)}
+              className="w-full rounded-lg border border-gray-600 bg-gray-700 px-3 py-1.5 text-sm text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none"
+              placeholder="act_123456789"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-gray-400">Custom Event ID</label>
+            <input
+              value={editCustomEvent}
+              onChange={(e) => setEditCustomEvent(e.target.value)}
+              className="w-full rounded-lg border border-gray-600 bg-gray-700 px-3 py-1.5 text-sm text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none"
+              placeholder="Opcional"
+            />
+          </div>
+          <div className="flex gap-2 pt-1">
+            <button
+              onClick={handleSaveEdit}
+              disabled={editLoading || !editName.trim() || !editActId.trim()}
+              className="flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            >
+              {editLoading ? <Loader2 size={12} className="animate-spin" /> : <Pencil size={12} />}
+              Salvar
+            </button>
+            <button
+              onClick={() => { setShowEdit(false); setEditName(client.clientName); setEditActId(client.actId); setEditCustomEvent(client.customEventId || ''); }}
+              className="flex items-center gap-1 rounded-lg bg-gray-600 px-3 py-1 text-xs font-medium text-white hover:bg-gray-500"
+            >
+              <X size={12} />
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+
       {showTokenEdit && (
         <div className="mb-3 rounded-lg border border-gray-700 bg-gray-800 p-3">
           <label className="mb-1 block text-xs text-gray-400">Novo Token</label>
@@ -244,11 +317,18 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
           {quickSyncing ? 'Syncing...' : 'Sync'}
         </button>
         <button
-          onClick={() => { setShowTokenEdit(!showTokenEdit); setShowDeleteConfirm(false); }}
+          onClick={() => { setShowTokenEdit(!showTokenEdit); setShowDeleteConfirm(false); setShowEdit(false); }}
           className="flex items-center gap-1 rounded-lg bg-gray-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-600"
         >
           <Key size={14} />
           Token
+        </button>
+        <button
+          onClick={() => { setShowEdit(!showEdit); setShowTokenEdit(false); setShowDeleteConfirm(false); }}
+          className="flex items-center gap-1 rounded-lg bg-gray-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-600"
+        >
+          <Pencil size={14} />
+          Editar
         </button>
         <button
           onClick={() => onDownload(client.actId)}
@@ -263,7 +343,7 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
           Excel
         </button>
         <button
-          onClick={() => { setShowDeleteConfirm(!showDeleteConfirm); setShowTokenEdit(false); }}
+          onClick={() => { setShowDeleteConfirm(!showDeleteConfirm); setShowTokenEdit(false); setShowEdit(false); }}
           className="flex items-center gap-1 rounded-lg bg-gray-700 px-3 py-1.5 text-xs font-medium text-red-400 hover:bg-red-900/30 hover:text-red-300"
         >
           <Trash2 size={14} />

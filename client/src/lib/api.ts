@@ -112,6 +112,7 @@ export interface DashboardMetrics {
     spend: number;
     leads: number;
     conversionValue: number;
+    purchases: number;
     roas: number;
   }[];
   dailyMetrics: {
@@ -120,7 +121,9 @@ export interface DashboardMetrics {
     leads: number;
     clicks: number;
     conversionValue: number;
+    purchases: number;
   }[];
+  goals: Goal[];
   period: { since: string; until: string };
 }
 
@@ -163,10 +166,13 @@ export const clientApi = {
   create: (data: CreateClientPayload) => api.post('/clients', data),
   updateToken: (actId: string, access_token: string) =>
     api.patch(`/clients/${actId}/token`, { access_token }),
+  update: (actId: string, data: { name?: string; act_id?: string; custom_event_id?: string }) =>
+    api.patch(`/clients/${actId}`, data),
   delete: (actId: string) => api.delete(`/clients/${actId}`),
   downloadReport: (actId: string) =>
     api.get(`/clients/${actId}/download`, { responseType: 'blob' }),
-  metrics: () => api.get<DashboardMetrics>('/clients/metrics'),
+  metrics: (params?: { since?: string; until?: string; clientId?: string }) => 
+    api.get<DashboardMetrics>('/clients/metrics', { params }),
   getBudget: (actId: string) => api.get<Budget | null>(`/clients/${actId}/budget`),
   setBudget: (actId: string, month: string, budgetAmount: number) =>
     api.post(`/clients/${actId}/budget`, { month, budgetAmount }),

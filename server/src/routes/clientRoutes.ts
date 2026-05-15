@@ -20,6 +20,12 @@ const updateTokenSchema = z.object({
   access_token: z.string().min(1, 'Access Token é obrigatório'),
 });
 
+const updateClientSchema = z.object({
+  name: z.string().min(1).optional(),
+  act_id: z.string().min(1).optional(),
+  custom_event_id: z.string().optional(),
+});
+
 const setBudgetSchema = z.object({
   month: z.string().regex(/^\d{4}-\d{2}$/, 'Formato: YYYY-MM'),
   budgetAmount: z.number().positive('Orçamento deve ser maior que zero'),
@@ -65,6 +71,10 @@ router.post('/:actId/goals', authMiddleware, validate(setGoalSchema), (req, res,
 
 router.delete('/:actId/goals/:id', authMiddleware, (req, res, next) => {
   goalController.remove(req, res).catch(next);
+});
+
+router.patch('/:actId', authMiddleware, validate(updateClientSchema), (req, res, next) => {
+  clientController.update(req, res).catch(next);
 });
 
 router.patch('/:actId/token', authMiddleware, validate(updateTokenSchema), (req, res, next) => {

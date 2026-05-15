@@ -1,7 +1,7 @@
 import clientRepository from '../repositories/clientRepository.js';
 import adRepository from '../repositories/adRepository.js';
 import type { UpsertInsightData } from '../repositories/adRepository.js';
-import { fetchAllInsights, fetchPreviewLink } from '../integrations/metaApi.js';
+import { fetchAllInsights, fetchPreviewLink, validateAccount } from '../integrations/metaApi.js';
 import { splitDates } from '../utils/dateUtils.js';
 import { resolveToken } from '../utils/tokenUtils.js';
 import type { MetaInsight, MetaAction, SyncResult } from '../types/index.js';
@@ -93,6 +93,15 @@ class SyncService {
     const { accessToken, source } = await resolveToken(actId);
     console.log(`[TOKEN] Token usado: ${source}`);
 
+    syncProgress.send({ type: 'start', message: `[SYNC] Validando acesso à conta ${actId}...`, step: 'main', progress: 0 });
+    const validation = await validateAccount(actId, accessToken);
+    if (!validation.valid) {
+      const errMsg = `Não foi possível acessar a conta ${actId}: ${validation.error}`;
+      syncProgress.send({ type: 'error', message: `[ERROR] ${errMsg}`, step: 'main' });
+      syncProgress.send({ type: 'done', message: `[DONE] Sync abortado: acesso inválido`, step: 'main', progress: 100, records: 0, errors: 1 });
+      return { success: false, records: 0, errors: 1, details: [errMsg] };
+    }
+
     const dateChunks = splitDates(dateSince, dateUntil);
     syncProgress.send({ type: 'start', message: `[SYNC] Sync: ${client.clientName} | ${dateChunks.length} chunk(s)`, step: 'main', progress: 0 });
     this.previewCache.clear();
@@ -145,8 +154,12 @@ class SyncService {
           syncProgress.send({ type: 'error', message: `   [ERROR] Erro ao salvar lote: ${msg}`, step: 'main' });
           details.push(`${chunk.start} → ${chunk.end}: FALHA - ${msg}`);
         }
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
+      } catch (err: any) {
+        const metaError = err?.response?.data?.error?.message;
+        const metaCode = err?.response?.data?.error?.code;
+        const msg = metaError
+          ? `Meta API ${err.response.status} (code ${metaCode}): ${metaError}`
+          : (err instanceof Error ? err.message : String(err));
         syncProgress.send({ type: 'error', message: `   [ERROR] Falha no chunk ${chunk.start} → ${chunk.end}: ${msg}`, step: 'main' });
         details.push(`${chunk.start} → ${chunk.end}: FALHA - ${msg}`);
         totalErrors++;

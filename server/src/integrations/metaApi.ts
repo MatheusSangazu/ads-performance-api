@@ -4,6 +4,24 @@ import { retry } from '../utils/retry.js';
 
 const META_API_BASE = 'https://graph.facebook.com/v25.0';
 
+export async function validateAccount(
+  actId: string,
+  accessToken: string,
+): Promise<{ valid: boolean; error?: string }> {
+  try {
+    await axios.get(`${META_API_BASE}/${actId}`, {
+      params: {
+        access_token: accessToken,
+        fields: 'account_status,name',
+      },
+    });
+    return { valid: true };
+  } catch (err: any) {
+    const metaMsg = err?.response?.data?.error?.message || err.message;
+    return { valid: false, error: metaMsg };
+  }
+}
+
 export async function fetchAllInsights(
   actId: string,
   accessToken: string,

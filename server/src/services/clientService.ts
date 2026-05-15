@@ -8,7 +8,8 @@ class ClientService {
     customEventId?: string,
     isEcommerce: boolean = false,
   ) {
-    await clientRepository.upsert({ name, actId, token, customEventId, isEcommerce });
+    const normalizedActId = actId.startsWith('act_') ? actId : `act_${actId}`;
+    await clientRepository.upsert({ name, actId: normalizedActId, token, customEventId, isEcommerce });
     return { success: true, message: `Cliente ${name} configurado com sucesso!` };
   }
 
@@ -19,6 +20,20 @@ class ClientService {
   public async updateToken(actId: string, token: string) {
     await clientRepository.updateToken(actId, token);
     return { success: true, message: 'Token atualizado com sucesso!' };
+  }
+
+  public async updateClient(
+    oldActId: string,
+    data: { actId?: string; clientName?: string; customEventId?: string },
+  ) {
+    if (data.actId && data.actId !== oldActId) {
+      const existing = await clientRepository.findByActId(
+        data.actId.startsWith('act_') ? data.actId : `act_${data.actId}`,
+      );
+      if (existing) throw new Error('Já existe um cliente com esse Act ID.');
+    }
+    await clientRepository.updateClient(oldActId, data);
+    return { success: true, message: 'Cliente atualizado com sucesso!' };
   }
 
   public async deleteClient(actId: string) {

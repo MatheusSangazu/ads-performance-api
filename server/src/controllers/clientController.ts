@@ -37,14 +37,21 @@ class ClientController {
   }
 
   public async metrics(req: AuthRequest, res: Response): Promise<void> {
+    const { since, until, clientId } = req.query;
+    const filters = {
+      since: since as string,
+      until: until as string,
+      specificClientId: clientId as string,
+    };
+
     if (req.manager?.role === 'admin') {
-      const data = await dashboardRepository.getOverview();
+      const data = await dashboardRepository.getOverview(undefined, filters);
       res.json(data);
       return;
     }
 
     const clientIds = await managerRepository.getClientIds(req.manager!.id);
-    const data = await dashboardRepository.getOverview(clientIds);
+    const data = await dashboardRepository.getOverview(clientIds, filters);
     res.json(data);
   }
 
@@ -52,6 +59,17 @@ class ClientController {
     const { actId } = req.params;
     const { access_token } = req.body;
     const result = await clientService.updateToken(actId, access_token);
+    res.json(result);
+  }
+
+  public async update(req: AuthRequest, res: Response): Promise<void> {
+    const { actId } = req.params;
+    const { act_id, name, custom_event_id } = req.body;
+    const result = await clientService.updateClient(actId, {
+      actId: act_id,
+      clientName: name,
+      customEventId: custom_event_id,
+    });
     res.json(result);
   }
 

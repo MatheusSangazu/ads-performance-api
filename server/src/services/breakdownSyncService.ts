@@ -134,8 +134,12 @@ class BreakdownSyncService {
           syncProgress.send({ type: 'error', message: `   [ERROR] Erro ao salvar lote ${config.label}: ${msg}`, step: type });
           details.push(`${chunk.start} → ${chunk.end}: FALHA - ${msg}`);
         }
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
+      } catch (err: any) {
+        const metaError = err?.response?.data?.error?.message;
+        const metaCode = err?.response?.data?.error?.code;
+        const msg = metaError
+          ? `Meta API ${err.response.status} (code ${metaCode}): ${metaError}`
+          : (err instanceof Error ? err.message : String(err));
         syncProgress.send({ type: 'error', message: `   [ERROR] Falha ${config.label} ${chunk.start} → ${chunk.end}: ${msg}`, step: type });
         details.push(`${chunk.start} → ${chunk.end}: FALHA - ${msg}`);
         totalErrors++;

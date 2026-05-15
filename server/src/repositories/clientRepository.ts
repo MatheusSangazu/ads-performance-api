@@ -47,6 +47,44 @@ class ClientRepository {
     });
   }
 
+  public async updateClient(
+    oldActId: string,
+    data: { actId?: string; clientName?: string; customEventId?: string },
+  ) {
+    const newActId = data.actId?.startsWith('act_') ? data.actId : data.actId ? `act_${data.actId}` : undefined;
+
+    if (newActId && newActId !== oldActId) {
+      return prisma.$transaction(async (tx) => {
+        await tx.adPerformance.updateMany({ where: { clientId: oldActId }, data: { clientId: newActId } });
+        await tx.adAudiencePerformance.updateMany({ where: { clientId: oldActId }, data: { clientId: newActId } });
+        await tx.adPlacementPerformance.updateMany({ where: { clientId: oldActId }, data: { clientId: newActId } });
+        await tx.adRegionPerformance.updateMany({ where: { clientId: oldActId }, data: { clientId: newActId } });
+        await tx.managerClient.updateMany({ where: { clientId: oldActId }, data: { clientId: newActId } });
+        await tx.clientBudget.updateMany({ where: { clientId: oldActId }, data: { clientId: newActId } });
+        await tx.clientGoal.updateMany({ where: { clientId: oldActId }, data: { clientId: newActId } });
+        await tx.alert.updateMany({ where: { clientId: oldActId }, data: { clientId: newActId } });
+        await tx.task.updateMany({ where: { clientId: oldActId }, data: { clientId: newActId } });
+
+        return tx.client.update({
+          where: { actId: oldActId },
+          data: {
+            actId: newActId,
+            ...(data.clientName && { clientName: data.clientName }),
+            ...(data.customEventId !== undefined && { customEventId: data.customEventId || null }),
+          },
+        });
+      });
+    }
+
+    return prisma.client.update({
+      where: { actId: oldActId },
+      data: {
+        ...(data.clientName && { clientName: data.clientName }),
+        ...(data.customEventId !== undefined && { customEventId: data.customEventId || null }),
+      },
+    });
+  }
+
   public async deleteByActId(actId: string) {
     await prisma.adAudiencePerformance.deleteMany({ where: { clientId: actId } });
     await prisma.adPlacementPerformance.deleteMany({ where: { clientId: actId } });
