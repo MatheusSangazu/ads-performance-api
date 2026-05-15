@@ -207,4 +207,52 @@ export const managerApi = {
   unlinkClient: (id: string, actId: string) => api.delete(`/managers/${id}/clients/${actId}`),
 };
 
+export interface AlertItem {
+  id: string;
+  managerId: string;
+  clientId: string;
+  type: string;
+  severity: string;
+  title: string;
+  message: string;
+  read: boolean;
+  dismissed: boolean;
+  createdAt: string;
+}
+
+export const alertApi = {
+  list: () => api.get<AlertItem[]>('/alerts'),
+  countUnread: () => api.get<{ count: number }>('/alerts/unread-count'),
+  markRead: (id: string) => api.patch(`/alerts/${id}/read`),
+  markAllRead: () => api.post('/alerts/mark-all-read'),
+  dismiss: (id: string) => api.delete(`/alerts/${id}`),
+};
+
+export interface TaskItem {
+  id: string;
+  managerId: string;
+  clientId: string | null;
+  title: string;
+  description: string | null;
+  status: string;
+  priority: string;
+  dueDate: string | null;
+  position: number;
+  alertId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const taskApi = {
+  list: (params?: { status?: string; clientId?: string; priority?: string }) =>
+    api.get<TaskItem[]>('/tasks', { params }),
+  counts: () => api.get<Record<string, number>>('/tasks/counts'),
+  create: (data: Partial<TaskItem> & { title: string }) => api.post<TaskItem>('/tasks', data),
+  update: (id: string, data: Partial<TaskItem>) => api.patch<TaskItem>(`/tasks/${id}`, data),
+  updateStatus: (id: string, status: string) => api.patch<TaskItem>(`/tasks/${id}/status`, { status }),
+  reorder: (status: string, orderedIds: string[]) => api.patch(`/tasks/reorder`, { status, orderedIds }),
+  remove: (id: string) => api.delete(`/tasks/${id}`),
+  clearByStatus: (status: string) => api.post<{ success: boolean; deleted: number }>('/tasks/clear', { status }),
+};
+
 export default api;

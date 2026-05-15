@@ -9,7 +9,7 @@ Plataforma SaaS de coleta e visualização de dados de performance do **Meta Ads
 | Camada | Stack |
 |--------|-------|
 | **API** | Node.js + TypeScript (ESM), Express 5, Prisma 7, MySQL |
-| **Front** | React 19, Vite, Tailwind CSS 4, Recharts |
+| **Front** | React 19, Vite, Tailwind CSS 4, Recharts, @dnd-kit |
 | **Auth** | JWT (access + refresh tokens), bcrypt |
 | **Integração** | Meta Ads Graph API v25.0 |
 | **Relatórios** | ExcelJS |
@@ -74,7 +74,7 @@ growth-ads-api/
 ├── server/                  # API (Node.js + Express)
 │   ├── src/                 # Código-fonte TypeScript (MVC)
 │   │   ├── config/          # DB, env
-│   │   ├── controllers/     # Auth, Clients, Sync, Settings, Managers, Invites
+│   │   ├── controllers/     # Auth, Clients, Sync, Settings, Managers, Invites, Tasks, Alerts
 │   │   ├── middleware/      # Auth (JWT), AdminOnly, ClientAccess, Validate
 │   │   ├── repositories/    # Data access (Prisma + raw SQL)
 │   │   ├── routes/          # Express routes
@@ -90,7 +90,7 @@ growth-ads-api/
 │       ├── contexts/        # AuthContext (login, logout, refresh)
 │       ├── hooks/           # Custom hooks
 │       ├── lib/             # Axios API client + tipos
-│       ├── pages/           # Login, Register, Dashboard, Clients, Settings, Managers, Invites
+│       ├── pages/           # Login, Register, Dashboard, Clients, Tasks, Settings, Managers, Invites
 │       └── ...
 │
 ├── docs/                    # Documentação
@@ -153,6 +153,19 @@ Build multi-stage que compila API + Front em um único container. Em produção,
 - **Metas por métrica:** Gestor define metas mensais para leads, CPL, ROAS, CTR, cliques, impressões, compras, valor de compras
 - **Progresso visual:** Cada meta mostra valor atual vs. target com indicador de atingimento (CPL é inverso — menor é melhor)
 - **Isolamento por gestor:** Orçamentos e metas são por gestor+cliente, cada gestor pode ter suas próprias metas para o mesmo cliente
+
+### Alertas e Notificações
+- **Alertas automáticos:** Avaliados após cada sync — orçamento excedido (>100%), acima de 80%, subutilizado (<20%), meta atingida, meta atrasada (<50%), sync falhou
+- **Dedup mensal:** Mesmo tipo de alerta não é duplicado dentro do mês
+- **Severidades:** info, warning, critical, success — com ícones e cores no dropdown do navbar
+- **Dropdown de alertas:** Badge com contagem de não lidos, lista com marcar como lido e descartar, auto-refresh a cada 60s
+
+### Kanban de Tarefas
+- **Board com 5 colunas:** Backlog, A Fazer, Em Progresso, Revisão, Concluído — com drag-and-drop via @dnd-kit
+- **CRUD completo:** Criar, editar, excluir tarefas com título, descrição, prioridade (baixa/média/alta/urgente), prazo, cliente vinculado
+- **Ordenação por posição:** Cada tarefa tem posição dentro da coluna, mantida após drag-and-drop
+- **Tarefas automáticas:** Alertas críticos (budget_exceeded, sync_failed) criam tarefa automática no backlog com prioridade urgent/high
+- **Filtros:** Por status, cliente e prioridade via query params
 
 ---
 

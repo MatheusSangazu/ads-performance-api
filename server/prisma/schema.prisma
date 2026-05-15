@@ -28,6 +28,38 @@ enum GoalMetric {
   purchase_value
 }
 
+enum AlertType {
+  budget_warning
+  budget_exceeded
+  budget_underuse
+  goal_behind
+  goal_reached
+  sync_failed
+  sync_success
+}
+
+enum AlertSeverity {
+  info
+  warning
+  critical
+  success
+}
+
+enum TaskStatus {
+  backlog
+  todo
+  in_progress
+  review
+  done
+}
+
+enum TaskPriority {
+  low
+  medium
+  high
+  urgent
+}
+
 model Manager {
   id           String       @id @db.Char(36)
   name         String       @db.VarChar(100)
@@ -46,6 +78,8 @@ model Manager {
   invites       Invite[]
   budgets       ClientBudget[]
   goals         ClientGoal[]
+  alerts        Alert[]
+  tasks         Task[]
 
   @@map("managers")
 }
@@ -107,6 +141,8 @@ model Client {
   managerClients         ManagerClient[]
   budgets                ClientBudget[]
   goals                  ClientGoal[]
+  alerts                 Alert[]
+  tasks                  Task[]
 
   @@map("clients_config")
 }
@@ -252,6 +288,47 @@ model AdRegionPerformance {
   @@index([clientId], map: "idx_region_client")
   @@index([date], map: "idx_region_date")
   @@map("ad_region_performance")
+}
+
+model Alert {
+  id         String        @id @db.Char(36)
+  managerId  String        @map("manager_id") @db.Char(36)
+  clientId   String        @map("client_id") @db.VarChar(50)
+  type       AlertType
+  severity   AlertSeverity
+  title      String        @db.VarChar(200)
+  message    String        @db.Text
+  read       Boolean       @default(false)
+  dismissed  Boolean       @default(false)
+  createdAt  DateTime      @default(now()) @map("created_at") @db.Timestamp(0)
+
+  manager Manager @relation(fields: [managerId], references: [id])
+  client  Client  @relation(fields: [clientId], references: [actId])
+
+  @@index([managerId, read, dismissed], map: "idx_alert_manager_unread")
+  @@index([managerId, createdAt], map: "idx_alert_manager_date")
+  @@map("alerts")
+}
+
+model Task {
+  id          String       @id @db.Char(36)
+  managerId   String       @map("manager_id") @db.Char(36)
+  clientId    String?      @map("client_id") @db.VarChar(50)
+  title       String       @db.VarChar(200)
+  description String?      @db.Text
+  status      TaskStatus   @default(backlog)
+  priority    TaskPriority @default(medium)
+  dueDate     DateTime?    @map("due_date") @db.Date
+  position    Int          @default(0)
+  alertId     String?      @map("alert_id") @db.Char(36)
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt   DateTime     @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  manager Manager @relation(fields: [managerId], references: [id])
+  client  Client? @relation(fields: [clientId], references: [actId])
+
+  @@index([managerId, status, position], map: "idx_task_manager_status")
+  @@map("tasks")
 }
 
 model AppSettings {

@@ -620,21 +620,21 @@ JOIN managers m ON mc.manager_id = m.id;
 5. ~~Frontend: BudgetCard, GoalCard, formulários~~
 6. ~~Dashboard atualizado com metas e orçamento~~
 
-### Sprint 3 — Alertas (Fase 3)
-1. Model Prisma (Alert)
-2. AlertService (avaliação pós-sync)
-3. Rotas API
-4. Frontend: AlertBadge, AlertDropdown, AlertList
-5. Integração com sync existente
+### Sprint 3 — Alertas (Fase 3) [CONCLUIDA]
+1. ~~Model Prisma (Alert)~~
+2. ~~AlertService (avaliação pós-sync)~~
+3. ~~Rotas API~~
+4. ~~Frontend: AlertBadge, AlertDropdown, AlertList~~
+5. ~~Integração com sync existente~~
 6. (Futuro) Notificações por email
 
-### Sprint 4 — Kanban de Tarefas (Fase 4)
-1. Models Prisma (Task)
-2. Repositories + Services
-3. Rotas API (CRUD + reorder)
-4. Frontend: Board Kanban com @dnd-kit
-5. Integração com alertas (criar tarefa automática)
-6. Filtros por cliente e prioridade
+### Sprint 4 — Kanban de Tarefas (Fase 4) [CONCLUIDA]
+1. ~~Models Prisma (Task)~~
+2. ~~Repositories + Services~~
+3. ~~Rotas API (CRUD + reorder)~~
+4. ~~Frontend: Board Kanban com @dnd-kit~~
+5. ~~Integração com alertas (criar tarefa automática)~~
+6. ~~Filtros por cliente e prioridade~~
 
 ### Sprint 5 — WhatsApp via Evolution API (Fase 5)
 1. Integração com Evolution API (REST)

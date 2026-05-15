@@ -83,6 +83,22 @@ class ManagerRepository {
     });
     return !!link;
   }
+
+  public async findManagersForClient(clientId: string) {
+    const links = await prisma.managerClient.findMany({
+      where: { clientId },
+      select: { manager: { select: { id: true, name: true } } },
+    });
+    return links.map((l) => l.manager);
+  }
+
+  public async findAdminIds(): Promise<string[]> {
+    const admins = await prisma.manager.findMany({
+      where: { role: 'admin', active: true },
+      select: { id: true },
+    });
+    return admins.map((a) => a.id);
+  }
 }
 
 export default new ManagerRepository();

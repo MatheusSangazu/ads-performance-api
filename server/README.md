@@ -27,6 +27,7 @@ server/
 │   │   ├── db.ts                     # Prisma Client + adapter MySQL
 │   │   └── env.ts                    # Validação de env vars (Zod)
 │   ├── controllers/
+│   │   ├── alertController.ts       # List, countUnread, markRead, markAllRead, dismiss
 │   │   ├── authController.ts         # Login, register, refresh, logout, me, updateProfile
 │   │   ├── budgetController.ts       # Orçamento mensal por cliente
 │   │   ├── clientController.ts       # CRUD de clientes + métricas + download (multi-tenant)
@@ -34,7 +35,8 @@ server/
 │   │   ├── inviteController.ts       # CRUD de convites (admin)
 │   │   ├── managerController.ts      # CRUD de gestores + vincular clientes (admin)
 │   │   ├── settingsController.ts     # Token global + auto-sync
-│   │   └── syncController.ts         # Sync manual + breakdowns
+│   │   ├── syncController.ts         # Sync manual + breakdowns
+│   │   └── taskController.ts          # CRUD de tarefas + status + reorder
 │   ├── generated/
 │   │   └── prisma/                   # Código gerado pelo Prisma 7
 │   ├── integrations/
@@ -45,6 +47,7 @@ server/
 │   │   └── validate.ts               # Validação Zod genérica
 │   ├── repositories/
 │   │   ├── adRepository.ts           # Queries de performance geral (upsert)
+│   │   ├── alertRepository.ts        # Queries de alertas (CRUD + findDuplicate)
 │   │   ├── audienceRepository.ts     # Queries de performance por público (sexo x idade)
 │   │   ├── budgetRepository.ts       # Queries de orçamento mensal
 │   │   ├── clientRepository.ts       # Queries de clientes (cascade delete)
@@ -55,15 +58,19 @@ server/
 │   │   ├── placementRepository.ts    # Queries de performance por plataforma
 │   │   ├── refreshTokenRepository.ts # Queries de refresh tokens
 │   │   ├── regionRepository.ts       # Queries de performance por região
-│   │   └── settingsRepository.ts     # Queries de settings (key-value)
+│   │   ├── settingsRepository.ts     # Queries de settings (key-value)
+│   │   └── taskRepository.ts          # Queries de tarefas (CRUD + reorder + position)
 │   ├── routes/
+│   │   ├── alertRoutes.ts             # Rotas de alertas (auth)
 │   │   ├── authRoutes.ts             # Rotas de autenticação
 │   │   ├── clientRoutes.ts           # Rotas de clientes (protegidas por auth)
 │   │   ├── inviteRoutes.ts           # Rotas de convites (admin)
 │   │   ├── managerRoutes.ts          # Rotas de gestores (admin)
 │   │   ├── settingsRoutes.ts         # Rotas de settings (admin para escrita)
-│   │   └── syncRoutes.ts             # Rotas de sync (protegidas por auth)
+│   │   ├── syncRoutes.ts             # Rotas de sync (protegidas por auth)
+│   │   └── taskRoutes.ts              # Rotas de tarefas (CRUD + status + reorder)
 │   ├── services/
+│   │   ├── alertService.ts           # Avaliação de alertas + dedup + integração com tasks
 │   │   ├── authService.ts            # Hash, JWT, refresh token rotation
 │   │   ├── breakdownSyncService.ts   # Sync de breakdowns (audience, placement, region)
 │   │   ├── budgetService.ts          # Lógica de orçamento mensal
@@ -75,7 +82,8 @@ server/
 │   │   ├── seedService.ts            # Auto-seed do admin no startup
 │   │   ├── settingsService.ts        # Lógica de negócio (settings)
 │   │   ├── syncProgress.ts           # EventEmitter singleton para SSE progress
-│   │   └── syncService.ts            # Sync com Meta Ads + resiliência
+│   │   ├── syncService.ts            # Sync com Meta Ads + resiliência
+│   │   └── taskService.ts            # CRUD de tarefas + reorder + posição automática
 │   ├── types/
 │   │   └── index.ts                  # Interfaces compartilhadas
 │   ├── utils/
@@ -164,6 +172,28 @@ server/
 | `POST` | `/managers/:id/clients/:actId` | Vincular cliente a gestor | Admin |
 | `DELETE` | `/managers/:id/clients/:actId` | Desvincular cliente de gestor | Admin |
 
+### Alertas
+
+| Método | Rota | Descrição | Auth |
+|--------|------|-----------|------|
+| `GET` | `/alerts` | Listar alertas do gestor (não lidos primeiro) | JWT |
+| `GET` | `/alerts/unread-count` | Contagem de alertas não lidos | JWT |
+| `PATCH` | `/alerts/:id/read` | Marcar alerta como lido | JWT |
+| `POST` | `/alerts/mark-all-read` | Marcar todos como lidos | JWT |
+| `DELETE` | `/alerts/:id` | Descartar alerta | JWT |
+
+### Tarefas
+
+| Método | Rota | Descrição | Auth |
+|--------|------|-----------|------|
+| `GET` | `/tasks` | Listar tarefas (filtros: status, clientId, priority) | JWT |
+| `GET` | `/tasks/counts` | Contagem por status | JWT |
+| `POST` | `/tasks` | Criar tarefa | JWT |
+| `PATCH` | `/tasks/:id` | Atualizar tarefa (título, descrição, prioridade, prazo, cliente) | JWT |
+| `PATCH` | `/tasks/:id/status` | Mover tarefa para outra coluna (status) | JWT |
+| `PATCH` | `/tasks/:id/reorder` | Reordenar posições após drag-and-drop | JWT |
+| `DELETE` | `/tasks/:id` | Excluir tarefa | JWT |
+
 ---
 
 ## Exemplos
@@ -245,6 +275,8 @@ POST /invites
 | `refresh_tokens` | Refresh tokens JWT | `token_hash` |
 | `client_budgets` | Orçamento mensal por gestor+cliente | `manager_id + client_id + month` |
 | `client_goals` | Metas por métrica por gestor+cliente | `manager_id + client_id + metric + month` |
+| `alerts` | Alertas automáticos por gestor+cliente | `id` |
+| `tasks` | Tarefas Kanban por gestor | `id` |
 
 ### Métricas por tabela
 
@@ -322,6 +354,22 @@ Todas as tabelas de performance compartilham as mesmas métricas:
 
 ### Relatórios Excel
 - GET `/clients/:actId/download` gera um relatório Excel com os dados de performance do cliente
+
+### Alertas Automáticos
+- **Avaliação pós-sync:** Após cada sincronização, `alertService.evaluate()` verifica orçamento e metas de todos os gestores vinculados ao cliente
+- **Regras de orçamento:** >100% = critical, >=80% = warning, <20% = info
+- **Regras de metas:** >=100% = success, <50% = warning (CPL é inverso — menor é melhor)
+- **Dedup mensal:** Mesmo tipo de alerta não é duplicado dentro do mês corrente
+- **Sync events:** `onSyncSuccess` e `onSyncFailed` geram alertas info/critical respectivamente
+- **Tarefas automáticas:** Alertas com severity `critical` criam tarefa automática no backlog via `taskService`
+
+### Kanban de Tarefas
+- **Status:** backlog → todo → in_progress → review → done
+- **Prioridades:** low, medium, high, urgent
+- **Posição automática:** Novas tarefas recebem posição = max + 1 na coluna backlog
+- **Mudança de status:** Ao mover tarefa para outra coluna, posição é automaticamente a última da coluna destino
+- **Reorder:** Endpoint para reordenar tarefas dentro de uma coluna após drag-and-drop
+- **Vinculação:** Tarefa pode ser vinculada a cliente e alerta (opcional)
 
 ### Integração com BI (Looker / Metabase)
 - Tabelas denormalizadas (uma por dimensão) para queries simples

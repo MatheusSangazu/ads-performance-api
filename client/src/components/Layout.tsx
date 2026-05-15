@@ -1,10 +1,12 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { BarChart3, Settings, Users, Shield, MailPlus, LogOut } from 'lucide-react';
+import { BarChart3, Settings, Users, Shield, MailPlus, LogOut, ClipboardList } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import AlertDropdown from './AlertDropdown';
 
 const baseNavItems = [
   { to: '/', label: 'Dashboard', icon: BarChart3 },
   { to: '/clients', label: 'Clientes', icon: Users },
+  { to: '/tasks', label: 'Tarefas', icon: ClipboardList },
   { to: '/settings', label: 'Configurações', icon: Settings },
 ];
 
@@ -69,6 +71,7 @@ export default function Layout() {
           <div className="ml-auto flex items-center gap-4">
             {user && (
               <div className="flex items-center gap-3">
+                <AlertDropdown />
                 <div className="text-right">
                   <p className="text-sm font-medium text-white">{user.name}</p>
                   <p className="text-xs text-gray-500">{user.email}</p>

@@ -6,6 +6,7 @@ import { splitDates } from '../utils/dateUtils.js';
 import { resolveToken } from '../utils/tokenUtils.js';
 import type { MetaInsight, MetaAction, SyncResult } from '../types/index.js';
 import syncProgress from './syncProgress.js';
+import alertService from './alertService.js';
 
 class SyncService {
   private previewCache: Map<string, string> = new Map();
@@ -159,6 +160,14 @@ class SyncService {
       records: totalRecords,
       errors: totalErrors,
     });
+
+    alertService.evaluate(actId).catch((err) => {
+      console.error('[ALERT] Erro ao avaliar alertas:', err instanceof Error ? err.message : String(err));
+    });
+
+    if (totalErrors > 0) {
+      alertService.onSyncFailed(actId, `${totalErrors} erro(s) durante sync`).catch(() => {});
+    }
 
     return { success: totalErrors === 0, records: totalRecords, errors: totalErrors, details };
   }

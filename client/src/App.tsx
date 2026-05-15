@@ -9,6 +9,7 @@ import Clients from './pages/Clients';
 import Settings from './pages/Settings';
 import Managers from './pages/Managers';
 import Invites from './pages/Invites';
+import Tasks from './pages/Tasks';
 
 function AppRoutes() {
   const { user, loading } = useAuth();
@@ -24,6 +25,7 @@ function AppRoutes() {
         <Route element={<Layout />}>
           <Route path="/" element={<Dashboard />} />
           <Route path="/clients" element={<Clients />} />
+          <Route path="/tasks" element={<Tasks />} />
           <Route path="/settings" element={<Settings />} />
         </Route>
       </Route>
