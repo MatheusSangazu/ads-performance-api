@@ -1,4 +1,5 @@
 import express from 'express';
+import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import syncRoutes from './routes/syncRoutes.js';
@@ -19,6 +20,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const port = process.env.PORT || 3001;
 
+app.use(cors());
 app.use(express.json());
 
 const uploadsDir = path.join(__dirname, '..', 'uploads');
@@ -33,15 +35,7 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/alerts', alertRoutes);
 app.use('/api/tasks', taskRoutes);
 
-if (process.env.NODE_ENV === 'production') {
-  const clientDist = path.join(__dirname, '..', '..', 'client', 'dist');
-  app.use(express.static(clientDist));
-  app.get('(.*)', (_req, res) => {
-    res.sendFile(path.join(clientDist, 'index.html'));
-  });
-} else {
-  app.get('/', (_req, res) => res.send('[GROWTH-ADS] API Online!'));
-}
+app.get('/', (_req, res) => res.send('[GROWTH-ADS] API Online!'));
 
 app.use(errorHandler);
 

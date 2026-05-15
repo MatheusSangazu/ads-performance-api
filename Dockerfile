@@ -5,25 +5,17 @@ RUN apk add --no-cache openssl
 WORKDIR /app
 
 COPY package*.json ./
-
+COPY server/package*.json ./server/
 COPY server/prisma ./server/prisma/
 COPY server/prisma.config.ts ./server/
 
-RUN npm ci
+RUN npm install
 
 COPY server/ ./server/
 
 RUN npx prisma generate --schema=server/prisma/schema.prisma
 
 RUN npm run build
-
-WORKDIR /app/client
-COPY client/package*.json ./
-RUN npm ci
-COPY client/ ./
-RUN npm run build
-
-WORKDIR /app
 
 FROM node:20-alpine AS runner
 
@@ -37,7 +29,6 @@ COPY --from=base /app/server/dist ./server/dist
 COPY --from=base /app/server/prisma ./server/prisma
 COPY --from=base /app/server/prisma.config.ts ./server/
 COPY --from=base /app/server/src/generated ./server/src/generated
-COPY --from=base /app/client/dist ./client/dist
 
 ENV NODE_ENV=production
 EXPOSE 3001

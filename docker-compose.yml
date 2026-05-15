@@ -1,8 +1,10 @@
 services:
-  app:
-    build: .
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
-      - "${PORT:-3001}:3001"
+      - "3001:3001"
     environment:
       - NODE_ENV=production
       - DB_HOST=${DB_HOST}
@@ -21,6 +23,16 @@ services:
       - EVO_INSTANCE_NAME=${EVO_INSTANCE_NAME:-}
     volumes:
       - creatives:/app/server/uploads/creatives
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+      args:
+        - VITE_API_URL=https://sua-api.com/api
+    ports:
+      - "80:80"
     restart: unless-stopped
 
 volumes:
