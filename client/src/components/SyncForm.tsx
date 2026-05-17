@@ -120,7 +120,7 @@ export default function SyncForm({ clients, syncing, onSubmit }: SyncFormProps) 
       <h3 className="mb-4 text-lg font-semibold">Sincronizar Dados</h3>
       <form
         onSubmit={handleSubmit(handleFormSubmit)}
-        className="rounded-xl border border-gray-800 bg-gray-900 p-6"
+        className="rounded-xl border border-gray-800 bg-gray-900 p-4 sm:p-6"
       >
         <div className="mb-4 flex flex-wrap gap-2">
           {presets.map((p) => (

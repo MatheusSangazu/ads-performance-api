@@ -147,7 +147,7 @@ export default function Settings() {
 
       {message && <Message type={message.type}>{message.text}</Message>}
 
-      <div className="rounded-xl border border-gray-800 bg-gray-900 p-6">
+      <div className="rounded-xl border border-gray-800 bg-gray-900 p-4 sm:p-6">
         <div className="mb-4 flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600/20">
             <Key size={20} className="text-blue-400" />
@@ -450,7 +450,7 @@ export default function Settings() {
                 <img
                   src={qrData.base64.startsWith('data:') ? qrData.base64 : `data:image/png;base64,${qrData.base64}`}
                   alt="QR Code WhatsApp"
-                  className="h-64 w-64"
+                  className="h-48 w-48 sm:h-64 sm:w-64"
                 />
                 <p className="mt-2 text-center text-xs text-gray-600">
                   Escaneie com o WhatsApp para conectar

@@ -88,7 +88,7 @@ export default function AlertDropdown() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full z-50 mt-2 w-96 rounded-xl border border-gray-700 bg-gray-900 shadow-2xl">
+        <div className="absolute right-0 top-full z-50 mt-2 w-[calc(100vw-2rem)] rounded-xl border border-gray-700 bg-gray-900 shadow-2xl sm:w-96">
           <div className="flex items-center justify-between border-b border-gray-800 px-4 py-3">
             <h3 className="text-sm font-semibold text-white">Notificacoes</h3>
             {unread > 0 && (

@@ -181,7 +181,7 @@ export default function TaskBoard() {
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex gap-4 pb-4">
+        <div className="-mx-4 flex gap-4 overflow-x-auto px-4 pb-4 md:mx-0 md:px-0 scrollbar-hide">
           {COLUMNS.map((col) => (
             <TaskColumn
               key={col.status}

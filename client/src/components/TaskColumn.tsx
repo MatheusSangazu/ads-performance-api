@@ -33,7 +33,7 @@ export default function TaskColumn({
   return (
     <div
       ref={setNodeRef}
-      className={`flex min-h-[300px] min-w-0 flex-1 flex-col rounded-xl border transition-colors ${
+      className={`flex min-h-[300px] min-w-[280px] flex-1 flex-col rounded-xl border transition-colors md:min-w-0 ${
         isOver ? 'border-blue-500/50 bg-gray-900/80' : 'border-gray-800 bg-gray-900/50'
       }`}
     >

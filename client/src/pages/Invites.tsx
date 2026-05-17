@@ -96,9 +96,9 @@ export default function Invites() {
 
       {message && <Message type={message.type}>{message.text}</Message>}
 
-      <div className="mb-8 rounded-xl border border-gray-800 bg-gray-900 p-6">
+      <div className="mb-8 rounded-xl border border-gray-800 bg-gray-900 p-4 sm:p-6">
         <h3 className="mb-4 text-lg font-semibold">Novo Convite</h3>
-        <form onSubmit={handleCreate} className="flex items-end gap-4">
+        <form onSubmit={handleCreate} className="flex flex-col gap-4 sm:flex-row sm:items-end">
           <div className="flex-1">
             <label className="mb-1 block text-sm text-gray-400">Email (opcional)</label>
             <input
@@ -154,7 +154,7 @@ export default function Invites() {
                     : 'border-gray-800'
                 }`}
               >
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-3">
                     {used ? (
                       <CheckCircle size={18} className="text-green-400" />
@@ -167,7 +167,7 @@ export default function Invites() {
                       <p className="text-sm font-medium">
                         {inv.email || 'Email nao definido'}
                       </p>
-                      <div className="flex gap-3 text-xs text-gray-500">
+                      <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500">
                         <span>Plano: {inv.plan}</span>
                         <span>Criado: {formatDate(inv.createdAt)}</span>
                         <span>Expira: {formatDate(inv.expiresAt)}</span>

@@ -42,10 +42,10 @@ export default function TaskForm({ task, clients, onSubmit, onCancel }: TaskForm
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-lg rounded-xl border border-gray-700 bg-gray-900 p-6"
+        className="w-full max-w-lg rounded-xl border border-gray-700 bg-gray-900 p-4 sm:p-6 max-h-[90vh] overflow-y-auto"
       >
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-lg font-semibold text-white">

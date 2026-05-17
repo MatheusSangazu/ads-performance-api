@@ -152,7 +152,7 @@ export default function Dashboard() {
             </select>
           </div>
 
-          <div className="h-6 w-px bg-gray-800 hidden md:block" />
+          <div className="h-6 w-px bg-gray-800 hidden sm:block" />
 
           <div className="flex items-center gap-2">
             <CalendarIcon size={14} className="text-gray-500" />
@@ -167,14 +167,14 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+      <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
         {cards.map((card) => (
-          <div key={card.label} className="group relative overflow-hidden rounded-xl border border-gray-800 bg-gray-900 p-4 transition-all hover:border-gray-700">
+          <div key={card.label} className="group relative overflow-hidden rounded-xl border border-gray-800 bg-gray-900 p-3 sm:p-4 transition-all hover:border-gray-700">
             <div className="flex items-center gap-2 text-gray-500">
               <card.icon size={14} />
               <span className="text-[10px] font-medium uppercase tracking-wider">{card.label}</span>
             </div>
-            <p className={`mt-2 text-xl font-bold ${card.color}`}>
+            <p className={`mt-2 text-lg font-bold sm:text-xl ${card.color}`}>
               {card.fmt(card.value)}
             </p>
             <div className={`absolute bottom-0 left-0 h-1 w-0 transition-all group-hover:w-full ${card.color.replace('text-', 'bg-')}`} />
@@ -225,8 +225,8 @@ export default function Dashboard() {
       )}
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-xl border border-gray-800 bg-gray-900 p-6">
-          <h3 className="mb-6 text-sm font-semibold text-gray-400 flex items-center gap-2">
+        <div className="rounded-xl border border-gray-800 bg-gray-900 p-4 sm:p-6">
+          <h3 className="mb-4 sm:mb-6 text-sm font-semibold text-gray-400 flex items-center gap-2">
             <BarChart3 size={16} /> Tendência de Investimento e Leads
           </h3>
           <ResponsiveContainer width="100%" height={300}>
@@ -259,8 +259,8 @@ export default function Dashboard() {
           </ResponsiveContainer>
         </div>
 
-        <div className="rounded-xl border border-gray-800 bg-gray-900 p-6">
-          <h3 className="mb-6 text-sm font-semibold text-gray-400 flex items-center gap-2">
+        <div className="rounded-xl border border-gray-800 bg-gray-900 p-4 sm:p-6">
+          <h3 className="mb-4 sm:mb-6 text-sm font-semibold text-gray-400 flex items-center gap-2">
             <Users size={16} /> {selectedClient ? 'Performance Diária' : 'Comparativo entre Clientes'}
           </h3>
           <ResponsiveContainer width="100%" height={300}>
@@ -284,11 +284,11 @@ export default function Dashboard() {
       </div>
 
       <div className="rounded-xl border border-gray-800 bg-gray-900 overflow-hidden">
-        <div className="border-b border-gray-800 bg-gray-900/50 px-6 py-4">
+        <div className="border-b border-gray-800 bg-gray-900/50 px-4 sm:px-6 py-4">
           <h3 className="text-sm font-semibold text-white">Ranking de Performance</h3>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+          <table className="w-full text-left text-xs min-w-[600px]">
             <thead className="bg-gray-900/80 text-gray-500 uppercase tracking-wider font-bold">
               <tr>
                 <th className="px-6 py-4">Cliente</th>
@@ -325,7 +325,7 @@ export default function Dashboard() {
 
       {data.topAds.length > 0 && (
         <div className="rounded-xl border border-gray-800 bg-gray-900 overflow-hidden">
-          <div className="border-b border-gray-800 bg-gray-900/50 px-6 py-4 flex items-center justify-between">
+          <div className="border-b border-gray-800 bg-gray-900/50 px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <h3 className="text-sm font-semibold text-white flex items-center gap-2">
               <TrendingUp size={16} /> Top Anúncios
             </h3>
@@ -426,7 +426,7 @@ export default function Dashboard() {
       {(data.audienceData.length > 0 || data.placementData.length > 0 || data.regionData.length > 0) && (
         <div className="grid gap-6 lg:grid-cols-3">
           {data.placementData.length > 0 && (
-            <div className="rounded-xl border border-gray-800 bg-gray-900 p-6">
+            <div className="rounded-xl border border-gray-800 bg-gray-900 p-4 sm:p-6">
               <h3 className="mb-4 text-sm font-semibold text-gray-400 flex items-center gap-2">
                 <Monitor size={16} /> Plataformas
               </h3>
@@ -469,7 +469,7 @@ export default function Dashboard() {
           )}
 
           {data.audienceData.length > 0 && (
-            <div className="rounded-xl border border-gray-800 bg-gray-900 p-6">
+            <div className="rounded-xl border border-gray-800 bg-gray-900 p-4 sm:p-6">
               <h3 className="mb-4 text-sm font-semibold text-gray-400 flex items-center gap-2">
                 <UserCircle size={16} /> Público (Sexo × Idade)
               </h3>
@@ -517,7 +517,7 @@ export default function Dashboard() {
           )}
 
           {data.regionData.length > 0 && (
-            <div className="rounded-xl border border-gray-800 bg-gray-900 p-6">
+            <div className="rounded-xl border border-gray-800 bg-gray-900 p-4 sm:p-6">
               <h3 className="mb-4 text-sm font-semibold text-gray-400 flex items-center gap-2">
                 <MapPin size={16} /> Top Regiões
               </h3>

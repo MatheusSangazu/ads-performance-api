@@ -77,7 +77,7 @@ export default function SyncProgressModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="flex max-h-[80vh] w-full max-w-2xl flex-col rounded-2xl border border-gray-700 bg-gray-900 shadow-2xl">
         <div className="flex items-center justify-between border-b border-gray-800 px-6 py-4">
           <h3 className="text-lg font-semibold text-white">

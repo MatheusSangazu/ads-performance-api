@@ -3,6 +3,7 @@ import { Download, Key, Loader2, RefreshCw, Trash2, X, Globe, ShieldCheck, Shiel
 import { clientApi, syncApi, type Client } from '../lib/api';
 import BudgetCard from './BudgetCard';
 import GoalCard from './GoalCard';
+import HelpTooltip from './HelpTooltip';
 
 interface ClientCardProps {
   client: Client;
@@ -245,9 +246,35 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
 
       {showTokenEdit && (
         <div className="mb-3 rounded-lg border border-gray-700 bg-gray-800 p-3">
-          <label className="mb-1 block text-xs text-gray-400">Novo Token</label>
+          <div className="mb-1 flex items-center gap-1">
+            <label className="text-xs text-gray-400">Novo Token</label>
+            <HelpTooltip title="Como obter o Token">
+              <p>
+                <strong>1.</strong> Acesse o{' '}
+                <a href="https://developers.facebook.com/tools/explorer/" target="_blank" rel="noopener" className="text-blue-400 underline">
+                  Graph API Explorer
+                </a>
+                {' '}com sua conta.
+              </p>
+              <p>
+                <strong>2.</strong> Selecione o app e a conta de anúncio desejada.
+              </p>
+              <p>
+                <strong>3.</strong> Adicione a permissão <code className="rounded bg-gray-800 px-1 py-0.5 text-yellow-400">ads_read</code> e clique em <em>"Generate Access Token"</em>.
+              </p>
+              <p className="mt-1 border-t border-gray-700 pt-2">
+                <strong>Estender para 3 meses:</strong> Copie o token gerado e acesse o{' '}
+                <a href="https://developers.facebook.com/tools/debug/accesstoken/" target="_blank" rel="noopener" className="text-blue-400 underline">
+                  Access Token Debugger
+                </a>
+                {' '}para verificar e estender a validade do token.
+              </p>
+            </HelpTooltip>
+          </div>
           <input
             type="password"
+            autoComplete="off"
+            data-1p-ignore
             value={newToken}
             onChange={(e) => setNewToken(e.target.value)}
             className="mb-2 w-full rounded-lg border border-gray-600 bg-gray-700 px-3 py-1.5 text-sm text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none"
@@ -302,7 +329,7 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
         </div>
       )}
 
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <button
           onClick={handleQuickSync}
           disabled={quickSyncing}

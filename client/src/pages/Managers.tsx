@@ -115,9 +115,9 @@ export default function Managers() {
               m.active ? 'border-gray-800' : 'border-red-900/40 opacity-60'
             }`}
           >
-            <div className="flex items-start justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <h3 className="text-lg font-semibold">{m.name}</h3>
                   {m.role === 'admin' && (
                     <span className="rounded-full bg-purple-600/20 px-2 py-0.5 text-xs font-semibold text-purple-400">
@@ -139,7 +139,7 @@ export default function Managers() {
                 </div>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 {m.role !== 'admin' && (
                   <>
                     <button
@@ -176,7 +176,7 @@ export default function Managers() {
             </div>
 
             {editId === m.id && (
-              <div className="mt-4 flex items-end gap-3 border-t border-gray-800 pt-4">
+              <div className="mt-4 flex flex-wrap items-end gap-3 border-t border-gray-800 pt-4">
                 <div>
                   <label className="mb-1 block text-xs text-gray-400">Plano</label>
                   <input
