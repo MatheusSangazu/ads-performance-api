@@ -5,5 +5,11 @@ client/node_modules
 server/src/generated
 .git
 .env
+.env.*
+!.env.example
 .vscode
 .idea
+docs
+*.md
+!README.md
+docker-compose.yml

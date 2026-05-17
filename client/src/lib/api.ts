@@ -163,7 +163,8 @@ export interface DashboardMetrics {
 }
 
 export function createProgressStream(onEvent: (event: SyncProgressEvent) => void): () => void {
-  const es = new EventSource('/api/sync/progress');
+  const baseUrl = import.meta.env.VITE_API_URL || '/api';
+  const es = new EventSource(`${baseUrl}/sync/progress`);
 
   es.onmessage = (e) => {
     try {

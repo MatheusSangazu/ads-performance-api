@@ -17,6 +17,7 @@ const envSchema = z.object({
   EVO_API_URL: z.string().optional(),
   EVO_API_KEY: z.string().optional(),
   EVO_INSTANCE_NAME: z.string().optional(),
+  CORS_ORIGIN: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

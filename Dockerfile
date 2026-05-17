@@ -5,7 +5,6 @@ RUN apk add --no-cache openssl
 WORKDIR /app
 
 COPY package*.json ./
-COPY server/package*.json ./server/
 COPY server/prisma ./server/prisma/
 COPY server/prisma.config.ts ./server/
 
@@ -30,9 +29,12 @@ COPY --from=base /app/server/prisma ./server/prisma
 COPY --from=base /app/server/prisma.config.ts ./server/
 COPY --from=base /app/server/src/generated ./server/src/generated
 
+RUN mkdir -p /app/server/uploads/creatives
+
 ENV NODE_ENV=production
 EXPOSE 3001
 
-RUN mkdir -p /app/server/uploads/creatives
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3001/ || exit 1
 
 CMD ["node", "server/dist/app.js"]
