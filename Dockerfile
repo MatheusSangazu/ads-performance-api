@@ -4,6 +4,8 @@ RUN apk add --no-cache openssl
 
 WORKDIR /app
 
+ENV NODE_ENV=development
+
 COPY package*.json ./
 COPY server/prisma ./server/prisma/
 COPY server/prisma.config.ts ./server/
