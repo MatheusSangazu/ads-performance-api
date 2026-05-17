@@ -14,7 +14,43 @@ API Node.js (MVC) para coleta de dados de performance do **Meta Ads** via Graph 
 - **Relatórios:** ExcelJS
 - **Validação:** Zod
 - **Scheduler:** node-cron (auto-sync diário)
-- **Integração:** Meta Ads API (Graph API v25.0)
+- **Integração:** Meta Ads API (Graph API v25.0), Evolution API (WhatsApp)
+
+---
+
+## Variáveis de Ambiente
+
+### Banco de Dados e Auth
+
+| Variável | Descrição | Obrigatória |
+|----------|-----------|-------------|
+| `DB_HOST` | Host do MySQL | Sim |
+| `DB_USER` | Usuário do MySQL | Sim |
+| `DB_PASSWORD` | Senha do MySQL | Sim |
+| `DB_NAME` | Nome do banco | Sim |
+| `DATABASE_URL` | Connection string Prisma | Sim |
+| `PORT` | Porta da API (default: 3001) | Não |
+| `JWT_SECRET` | Chave secreta JWT | Sim |
+| `JWT_EXPIRES_IN` | Expiração access token (default: 15m) | Não |
+| `JWT_REFRESH_EXPIRES_IN` | Expiração refresh token (default: 7d) | Não |
+| `ADMIN_EMAIL` | Email do admin (seed) | Sim |
+| `ADMIN_PASSWORD` | Senha do admin (seed) | Sim |
+
+### CORS e Frontend
+
+| Variável | Descrição | Obrigatória |
+|----------|-----------|-------------|
+| `CORS_ORIGIN` | Origens permitidas (comma-separated) | Recomendada |
+
+### Evolution API (WhatsApp)
+
+| Variável | Descrição | Obrigatória |
+|----------|-----------|-------------|
+| `EVO_API_URL` | URL base da Evolution API | Não |
+| `EVO_API_KEY` | API key da Evolution | Não |
+| `EVO_INSTANCE_NAME` | Nome da instância WhatsApp | Não |
+
+> Se as variáveis da Evolution API não forem configuradas, as funcionalidades de WhatsApp são desabilitadas silenciosamente.
 
 ---
 
@@ -75,6 +111,7 @@ server/
 │   │   ├── breakdownSyncService.ts   # Sync de breakdowns (audience, placement, region)
 │   │   ├── budgetService.ts          # Lógica de orçamento mensal
 │   │   ├── clientService.ts          # Lógica de negócio (clientes)
+│   │   ├── evoService.ts             # Integração Evolution API (WhatsApp — envio de alertas)
 │   │   ├── goalService.ts            # Lógica de metas por métrica
 │   │   ├── inviteService.ts          # Geração/validação de convites
 │   │   ├── reportService.ts          # Geração de Excel
@@ -370,6 +407,14 @@ Todas as tabelas de performance compartilham as mesmas métricas:
 - **Mudança de status:** Ao mover tarefa para outra coluna, posição é automaticamente a última da coluna destino
 - **Reorder:** Endpoint para reordenar tarefas dentro de uma coluna após drag-and-drop
 - **Vinculação:** Tarefa pode ser vinculada a cliente e alerta (opcional)
+
+### Integração WhatsApp (Evolution API)
+- **evoService:** Serviço singleton que encapsula chamadas à Evolution API
+- **Envio de texto:** `sendText(phone, text)` para mensagens via WhatsApp
+- **QR Code:** `getQRCode()` para conectar instância
+- **Status da conexão:** `getConnectionState()` para verificar se está conectado
+- **Graceful degradation:** Se Evolution API não estiver configurada, todas as chamadas retornam `false` silenciosamente
+- **Alertas automáticos:** Envia alertas críticos e resumos via WhatsApp quando configurado
 
 ### Integração com BI (Looker / Metabase)
 - Tabelas denormalizadas (uma por dimensão) para queries simples

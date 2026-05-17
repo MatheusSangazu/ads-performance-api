@@ -1,6 +1,8 @@
-# Growth Ads
+# Growth Ads (SpiderGestor)
 
 Plataforma SaaS de coleta e visualização de dados de performance do **Meta Ads** para gestores de tráfego, com API Node.js (MVC) e front React. Dados prontos para consumo em **Looker** e **Metabase**.
+
+**Produção:** [spidergestor.forjacorp.com](https://spidergestor.forjacorp.com) | **API:** [spidergestor-api.forjacorp.com](https://spidergestor-api.forjacorp.com)
 
 ---
 
@@ -9,12 +11,13 @@ Plataforma SaaS de coleta e visualização de dados de performance do **Meta Ads
 | Camada | Stack |
 |--------|-------|
 | **API** | Node.js + TypeScript (ESM), Express 5, Prisma 7, MySQL |
-| **Front** | React 19, Vite, Tailwind CSS 4, Recharts, @dnd-kit |
+| **Front** | React 19, Vite 8, Tailwind CSS 4, Recharts, @dnd-kit |
 | **Auth** | JWT (access + refresh tokens), bcrypt |
-| **Integração** | Meta Ads Graph API v25.0 |
+| **Integração** | Meta Ads Graph API v25.0, Evolution API (WhatsApp) |
 | **Relatórios** | ExcelJS |
 | **Validação** | Zod (frontend + backend) |
 | **Scheduler** | node-cron (auto-sync diário) |
+| **Deploy** | Coolify (self-hosted PaaS) + Traefik + Let's Encrypt |
 
 ---
 
@@ -32,7 +35,7 @@ npm install
 # Banco de Dados MySQL
 DB_HOST=seu_host
 DB_USER=seu_usuario
-DB_PASSWORD="sua_senha"           # Aspas obrigatórias se conter # ou caracteres especiais
+DB_PASSWORD="sua_senha"
 DB_NAME=growth_ads_db
 DATABASE_URL="mysql://usuario:senha@host:3306/growth_ads_db"
 PORT=3001
@@ -43,6 +46,17 @@ JWT_EXPIRES_IN=15m
 JWT_REFRESH_EXPIRES_IN=7d
 ADMIN_EMAIL=admin@exemplo.com
 ADMIN_PASSWORD="senha_do_admin"
+
+# Frontend (build-time)
+VITE_API_URL=http://localhost:3001/api
+
+# CORS
+CORS_ORIGIN=http://localhost:5173
+
+# Evolution API (WhatsApp — opcional)
+EVO_API_URL=https://sua-evolution-api.com
+EVO_API_KEY=sua_api_key
+EVO_INSTANCE_NAME=sua_instancia
 ```
 
 > Senhas com `#` no `.env` **devem** estar entre aspas para evitar truncamento pelo dotenv.
@@ -75,35 +89,35 @@ growth-ads-api/
 │   ├── src/                 # Código-fonte TypeScript (MVC)
 │   │   ├── config/          # DB, env
 │   │   ├── controllers/     # Auth, Clients, Sync, Settings, Managers, Invites, Tasks, Alerts
+│   │   ├── integrations/    # Meta Graph API (paginação + breakdowns)
 │   │   ├── middleware/      # Auth (JWT), AdminOnly, ClientAccess, Validate
 │   │   ├── repositories/    # Data access (Prisma + raw SQL)
 │   │   ├── routes/          # Express routes
-│   │   ├── services/        # Business logic
+│   │   ├── services/        # Business logic (sync, alerts, scheduler, evo, etc.)
 │   │   └── ...
 │   ├── prisma/              # Schema + migrações
-│   ├── prisma.config.ts
+│   ├── Dockerfile           # Build multi-stage (Node.js)
 │   └── README.md            # Documentação completa da API
 │
 ├── client/                  # Front React
 │   └── src/
-│       ├── components/      # Componentes React (Layout, ClientCard, SyncModal, etc.)
+│       ├── components/      # Layout, ClientCard, TaskBoard, SyncModal, HelpTooltip, etc.
 │       ├── contexts/        # AuthContext (login, logout, refresh)
-│       ├── hooks/           # Custom hooks
 │       ├── lib/             # Axios API client + tipos
 │       ├── pages/           # Login, Register, Dashboard, Clients, Tasks, Settings, Managers, Invites
 │       └── ...
+│   ├── Dockerfile.client    # Build multi-stage (Vite + Nginx)
+│   ├── nginx.conf           # SPA routing
+│   └── README.md            # Documentação do front
 │
 ├── docs/                    # Documentação
 │   ├── funcionalidades.md  # Roadmap e especificações
 │   └── guia-desenvolvimento.md  # Guia para devs e IA
 │
-├── Dockerfile               # Build multi-stage (API + Front)
-├── docker-compose.yml
+├── docker-compose.yml       # 2 serviços: api + frontend
 ├── package.json             # Scripts e dependências
 └── .env
 ```
-
-> Documentação completa da API: [server/README.md](server/README.md)
 
 ---
 
@@ -119,13 +133,31 @@ growth-ads-api/
 
 ---
 
-## Deploy (Docker)
+## Deploy
+
+### Coolify (Self-hosted PaaS)
+
+O projeto roda em **2 containers separados** no Coolify:
+
+| Serviço | Dockerfile | Porta | Domínio |
+|---------|-----------|-------|---------|
+| **API** | `Dockerfile` | 3001 | `spidergestor-api.forjacorp.com` |
+| **Frontend** | `Dockerfile.client` | 80 | `spidergestor.forjacorp.com` |
+
+SSL automático via Traefik + Let's Encrypt.
+
+**Variáveis no Coolify (API):**
+- Todas as env vars do `.env` (DB, JWT, ADMIN, CORS_ORIGIN, Evolution API)
+- `CORS_ORIGIN=https://spidergestor.forjacorp.com`
+
+**Variáveis no Coolify (Frontend):**
+- `VITE_API_URL=https://spidergestor-api.forjacorp.com/api` (build arg, exige redeploy para alterar)
+
+### Docker Compose (local)
 
 ```bash
 docker compose up -d --build
 ```
-
-Build multi-stage que compila API + Front em um único container. Em produção, o Express serve o front estático e as rotas da API ficam sob `/api`.
 
 ---
 
@@ -141,38 +173,31 @@ Build multi-stage que compila API + Front em um único container. Em produção,
 ### Dashboard e Dados Analíticos
 - **Filtros Avançados:** Filtro por período de datas e cliente específico para isolar análises
 - **Gráficos de Tendência e Metas:** Acompanhamento diário e acompanhamento do valor atual vs meta
-- **Top Anúncios:** Ranking de criativos por qualquer métrica (ROAS, CPL, Leads, Investimento).
-- **Preview de Mídias:** Download automático de criativos em alta resolução (imagens originais e vídeos `.mp4` com player nativo) salvos localmente, com modal fullscreen de visualização
-- **Gráficos Demográficos:** Distribuição de investimento e leads por plataformas (Facebook/Insta), público (Sexo x Idade) e top 10 regiões
-- **Sync em tempo real:** Modal com logs via SSE, validação pré-sync de token/permissão e barra de progresso
-- **Sync otimizado:** Batch upsert via raw SQL com chunking automático (respeita limite MySQL)
-- **Token Management:** Token por cliente + fallback global automático
-- **Gerenciamento de Clientes:** Edição de Nome, Custom Event e Act ID com migração atômica de todas as dependências do cliente no BD
-- **BI-ready:** Tabelas denormalizadas para Looker e Metabase
+- **Top Anúncios:** Ranking de criativos por qualquer métrica (ROAS, CPL, Leads, Investimento)
+- **Preview de Mídias:** Download automático de criativos em alta resolução (imagens e vídeos) com modal fullscreen
+- **Gráficos Demográficos:** Distribuição por plataformas, público (Sexo x Idade) e top 10 regiões
+- **Responsivo:** Layout adaptado para desktop e mobile (hamburger menu, grids flexíveis, scroll horizontal no Kanban)
+- **Tooltips de ajuda:** Ícone "?" nos campos de token com passo a passo para obter e estender tokens da Meta
 
 ### Integração WhatsApp (Evolution API)
-- **Saúde das Contas (Health Check):** Checagem automática do `account_status` na Meta API com badges visuais (Ativa, Restrita, Inativa) nos cards
-- **Notificações Programadas:** Gestor configura quais horários (08h, 12h, 18h) deseja receber alertas automáticos de saúde via WhatsApp
-- **Resumo Semanal:** Opção de receber um relatório automatizado semanal via WhatsApp do desempenho geral dos clientes
+- **Saúde das Contas:** Checagem automática do status na Meta API com badges visuais nos cards
+- **Notificações Programadas:** Gestor configura horários para receber alertas via WhatsApp
+- **Resumo Semanal:** Relatório automatizado semanal do desempenho geral dos clientes
 
 ### Orçamento e Metas
-- **Orçamento mensal por cliente:** Gestor define o budget do mês; barra de progresso mostra % investido com cores (verde/amarelo/vermelho)
-- **Metas por métrica:** Gestor define metas mensais para leads, CPL, ROAS, CTR, cliques, impressões, compras, valor de compras
-- **Progresso visual:** Cada meta mostra valor atual vs. target com indicador de atingimento (CPL é inverso — menor é melhor)
-- **Isolamento por gestor:** Orçamentos e metas são por gestor+cliente, cada gestor pode ter suas próprias metas para o mesmo cliente
+- **Orçamento mensal por cliente:** Budget com barra de progresso e cores (verde/amarelo/vermelho)
+- **Metas por métrica:** Leads, CPL, ROAS, CTR, cliques, impressões, compras, valor de compras
+- **Isolamento por gestor:** Orçamentos e metas são por gestor+cliente
 
 ### Alertas e Notificações
-- **Alertas automáticos:** Avaliados após cada sync — orçamento excedido (>100%), acima de 80%, subutilizado (<20%), meta atingida, meta atrasada (<50%), sync falhou
+- **Alertas automáticos:** Avaliados após cada sync — orçamento excedido, acima de 80%, subutilizado, meta atingida, sync falhou
 - **Dedup mensal:** Mesmo tipo de alerta não é duplicado dentro do mês
-- **Severidades:** info, warning, critical, success — com ícones e cores no dropdown do navbar
-- **Dropdown de alertas:** Badge com contagem de não lidos, lista com marcar como lido e descartar, auto-refresh a cada 60s
+- **Tarefas automáticas:** Alertas críticos criam tarefa automática no backlog
 
 ### Kanban de Tarefas
-- **Board com 5 colunas:** Backlog, A Fazer, Em Progresso, Revisão, Concluído — com drag-and-drop via @dnd-kit
-- **CRUD completo:** Criar, editar, excluir tarefas com título, descrição, prioridade (baixa/média/alta/urgente), prazo, cliente vinculado
-- **Ordenação por posição:** Cada tarefa tem posição dentro da coluna, mantida após drag-and-drop
-- **Tarefas automáticas:** Alertas críticos (budget_exceeded, sync_failed) criam tarefa automática no backlog com prioridade urgent/high
-- **Filtros:** Por status, cliente e prioridade via query params
+- **Board com 5 colunas:** Backlog, A Fazer, Em Progresso, Revisão, Concluído — drag-and-drop via @dnd-kit
+- **CRUD completo:** Título, descrição, prioridade (baixa/média/alta/urgente), prazo, cliente vinculado
+- **Filtros:** Por status, cliente e prioridade
 
 ---
 
@@ -185,3 +210,5 @@ Build multi-stage que compila API + Front em um único container. Em produção,
 - Validação de input no backend com Zod
 - Error handler global que não vaza stack traces em produção
 - Middleware de acesso por cliente (managers só acessam clientes vinculados)
+- HTTPS em trânsito (Traefik + Let's Encrypt)
+- Inputs de token com `autoComplete="off"` para evitar preenchimento pelo navegador
