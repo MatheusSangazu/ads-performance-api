@@ -90,11 +90,18 @@ class ClientRepository {
   }
 
   public async deleteByActId(actId: string) {
-    await prisma.adAudiencePerformance.deleteMany({ where: { clientId: actId } });
-    await prisma.adPlacementPerformance.deleteMany({ where: { clientId: actId } });
-    await prisma.adRegionPerformance.deleteMany({ where: { clientId: actId } });
-    await prisma.adPerformance.deleteMany({ where: { clientId: actId } });
-    return prisma.client.delete({ where: { actId } });
+    await prisma.$transaction(async (tx) => {
+      await tx.alert.deleteMany({ where: { clientId: actId } });
+      await tx.task.deleteMany({ where: { clientId: actId } });
+      await tx.clientGoal.deleteMany({ where: { clientId: actId } });
+      await tx.clientBudget.deleteMany({ where: { clientId: actId } });
+      await tx.managerClient.deleteMany({ where: { clientId: actId } });
+      await tx.adAudiencePerformance.deleteMany({ where: { clientId: actId } });
+      await tx.adPlacementPerformance.deleteMany({ where: { clientId: actId } });
+      await tx.adRegionPerformance.deleteMany({ where: { clientId: actId } });
+      await tx.adPerformance.deleteMany({ where: { clientId: actId } });
+      await tx.client.delete({ where: { actId } });
+    });
   }
 }
 

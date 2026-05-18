@@ -1,16 +1,20 @@
 import prisma from '../config/db.js';
 
 class DashboardRepository {
-  public async getOverview(clientIds?: string[], filters?: { since?: string; until?: string; specificClientId?: string }) {
+  public async getOverview(clientIds: string[] | null, filters?: { since?: string; until?: string; specificClientId?: string }) {
+    const isAdmin = clientIds === null;
+
     const clientFilter = filters?.specificClientId 
       ? { clientId: filters.specificClientId }
-      : clientIds 
-        ? { clientId: { in: clientIds } } 
-        : {};
+      : !isAdmin && clientIds?.length
+        ? { clientId: { in: clientIds } }
+        : isAdmin
+          ? {}
+          : { clientId: { in: [] as string[] } };
 
-    const totalClients = clientIds
-      ? clientIds.length
-      : await prisma.client.count();
+    const totalClients = isAdmin
+      ? await prisma.client.count()
+      : clientIds!.length;
 
     const today = new Date();
     const thirtyDaysAgo = new Date(today);
@@ -61,9 +65,11 @@ class DashboardRepository {
     const clients = await prisma.client.findMany({
       where: filters?.specificClientId 
         ? { actId: filters.specificClientId }
-        : clientIds 
-          ? { actId: { in: clientIds } } 
-          : {},
+        : !isAdmin && clientIds?.length
+          ? { actId: { in: clientIds } }
+          : isAdmin
+            ? {}
+            : { actId: { in: [] as string[] } },
       select: { actId: true, clientName: true },
     });
     const clientNames = new Map(clients.map((c) => [c.actId, c.clientName]));
@@ -167,12 +173,16 @@ class DashboardRepository {
     let placementData: any[] = [];
     let regionData: any[] = [];
 
-    if (filters?.specificClientId || clientIds) {
+    if (filters?.specificClientId || isAdmin || (clientIds && clientIds.length > 0)) {
       const breakdownFilter = {
         date: { gte: since, lte: untilEnd },
         ...(filters?.specificClientId
           ? { clientId: filters.specificClientId }
-          : clientIds ? { clientId: { in: clientIds } } : {}),
+          : isAdmin
+            ? {}
+            : clientIds?.length
+              ? { clientId: { in: clientIds } }
+              : { clientId: { in: [] as string[] } }),
       };
 
       const audienceRows = await prisma.adAudiencePerformance.findMany({

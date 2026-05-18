@@ -1,4 +1,4 @@
-import type { Request, Response } from 'express';
+import type { Response } from 'express';
 import clientService from '../services/clientService.js';
 import reportService from '../services/reportService.js';
 import dashboardRepository from '../repositories/dashboardRepository.js';
@@ -23,13 +23,25 @@ class ClientController {
     res.json(result);
   }
 
-  public async list(req: AuthRequest, res: Response): Promise<void> {
-    let clientIds: string[];
+  private async getAccessibleClientIds(req: AuthRequest): Promise<string[] | null> {
+    if (req.manager?.role === 'admin') {
+      return null;
+    }
 
     if (req.manager?.role === 'agency') {
-      clientIds = await managerRepository.getAgencyClientIds(req.manager.id);
-    } else {
-      clientIds = await managerRepository.getClientIds(req.manager!.id);
+      return managerRepository.getAgencyClientIds(req.manager.id);
+    }
+
+    return managerRepository.getClientIds(req.manager!.id);
+  }
+
+  public async list(req: AuthRequest, res: Response): Promise<void> {
+    const clientIds = await this.getAccessibleClientIds(req);
+
+    if (clientIds === null) {
+      const allClients = await clientService.listClients();
+      res.json(allClients);
+      return;
     }
 
     const allClients = await clientService.listClients();
@@ -45,14 +57,9 @@ class ClientController {
       specificClientId: clientId as string,
     };
 
-    let clientIds: string[] | undefined;
-    if (req.manager?.role === 'agency') {
-      clientIds = await managerRepository.getAgencyClientIds(req.manager.id);
-    } else {
-      clientIds = await managerRepository.getClientIds(req.manager!.id);
-    }
+    const clientIds = await this.getAccessibleClientIds(req);
 
-    const data = await dashboardRepository.getOverview(clientIds.length > 0 ? clientIds : undefined, filters);
+    const data = await dashboardRepository.getOverview(clientIds, filters);
     res.json(data);
   }
 
