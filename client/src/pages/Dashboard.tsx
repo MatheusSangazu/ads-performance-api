@@ -142,7 +142,7 @@ export default function Dashboard() {
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
           <h2 className="text-2xl font-bold text-white">Dashboard</h2>
-          <p className="text-xs text-gray-500">Análise de performance em tempo real</p>
+          <p className="text-xs text-gray-500">Análise de performance em tempo real (v1.0.1)</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3 rounded-xl border border-gray-800 bg-gray-900/50 p-3">

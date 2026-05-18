@@ -11,7 +11,14 @@ export interface AuthRequest extends Request {
 }
 
 export function authMiddleware(req: AuthRequest, res: Response, next: NextFunction) {
-  const header = req.headers.authorization;
+  let header = req.headers.authorization;
+
+  // Workaround temporário: permitir token na URL apenas para o progresso de sincronização
+  // enquanto o frontend não atualiza para a nova versão com headers.
+  if (!header?.startsWith('Bearer ') && req.path.includes('/progress') && req.query.token) {
+    const token = (req.query.token as string).replace(/ /g, '+');
+    header = `Bearer ${token}`;
+  }
 
   if (!header?.startsWith('Bearer ')) {
     res.status(401).json({ error: 'Token não fornecido ou formato inválido.' });

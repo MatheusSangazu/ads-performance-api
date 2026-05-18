@@ -164,15 +164,17 @@ export interface DashboardMetrics {
 }
 
 export function createProgressStream(onEvent: (event: SyncProgressEvent) => void): () => void {
+  console.log('Iniciando stream de progresso via fetchEventSource (POST)');
   const baseUrl = import.meta.env.VITE_API_URL || '/api';
   const token = localStorage.getItem('access_token');
   const ctrl = new AbortController();
 
   fetchEventSource(`${baseUrl}/sync/progress`, {
-    method: 'POST', // Usando POST para evitar problemas com headers em GET em alguns proxies
+    method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
       'Accept': 'text/event-stream',
+      'Content-Type': 'application/json',
     },
     signal: ctrl.signal,
     onmessage(ev) {

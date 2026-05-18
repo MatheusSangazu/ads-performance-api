@@ -62,6 +62,7 @@ const creativesDir = getCreativesDir();
 const resolvedCreativesDir = path.resolve(creativesDir);
 
 app.get('/creatives/:filename', async (req, res, next) => {
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
   const filename = req.params.filename;
   if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
     return res.status(403).send('Forbidden');
@@ -97,7 +98,10 @@ app.get('/creatives/:filename', async (req, res, next) => {
   res.status(404).send('Not found');
 });
 
-app.use('/creatives', express.static(creativesDir));
+app.use('/creatives', (req, res, next) => {
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  next();
+}, express.static(creativesDir));
 
 app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/invites', inviteRoutes);
