@@ -39,7 +39,11 @@ app.use('/creatives', express.static(creativesDir));
 
 app.get('/creatives/:filename', async (req, res, next) => {
   const filePath = path.join(creativesDir, req.params.filename);
-  if (fs.existsSync(filePath)) return next();
+  if (fs.existsSync(filePath)) {
+    const stat = fs.statSync(filePath);
+    if (stat.size > 5000) return next();
+    try { fs.unlinkSync(filePath); } catch {}
+  }
 
   const adId = req.params.filename.replace(/\.\w+$/, '').split('_').pop();
   if (!adId) return res.status(404).send('Not found');
@@ -57,21 +61,47 @@ app.get('/creatives/:filename', async (req, res, next) => {
     const mediaList = await fetchAdMedia(row.clientId, accessToken, [adId]);
 
     for (const media of mediaList) {
-      const sourceUrl = media.imageUrl || media.thumbnailUrl;
-      if (!sourceUrl) continue;
+      let sourceUrl: string;
+      let ext: string;
 
-      const resp = await axios.get(sourceUrl, { responseType: 'arraybuffer', timeout: 15000 });
+      if (media.type === 'video' && media.videoUrl) {
+        sourceUrl = media.videoUrl;
+        ext = 'mp4';
+      } else if (media.imageUrl) {
+        sourceUrl = media.imageUrl;
+        ext = 'jpg';
+      } else {
+        continue;
+      }
+
+      const resp = await axios.get(sourceUrl, {
+        responseType: 'arraybuffer',
+        timeout: 30000,
+        maxContentLength: 50 * 1024 * 1024,
+      });
+
       const ct = resp.headers['content-type'] || '';
-      let ext = 'jpg';
-      if (ct.includes('png')) ext = 'png';
-      else if (ct.includes('webp')) ext = 'webp';
-      else if (ct.includes('mp4')) ext = 'mp4';
+      if (media.type !== 'video') {
+        if (ct.includes('png')) ext = 'png';
+        else if (ct.includes('webp')) ext = 'webp';
+      }
 
       const finalName = `${row.clientId}_${adId}.${ext}`;
       fs.writeFileSync(path.join(creativesDir, finalName), resp.data);
+
+      if (media.type === 'video' && media.thumbnailUrl) {
+        try {
+          const thumbRes = await axios.get(media.thumbnailUrl, { responseType: 'arraybuffer', timeout: 10000 });
+          fs.writeFileSync(path.join(creativesDir, `${row.clientId}_${adId}_thumb.jpg`), thumbRes.data);
+        } catch {}
+      }
+
       await prisma.adPerformance.updateMany({
         where: { adId },
-        data: { creativeUrl: `/creatives/${finalName}` },
+        data: {
+          creativeUrl: `/creatives/${finalName}`,
+          creativeType: media.type,
+        },
       });
       return res.redirect(`/creatives/${finalName}`);
     }
