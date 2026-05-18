@@ -60,7 +60,7 @@ export default function BudgetCard({ actId, currentSpend }: BudgetCardProps) {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-gray-500">
+      <div className="flex items-center gap-2 text-gray-400 dark:text-gray-500">
         <Loader2 size={14} className="animate-spin" />
       </div>
     );
@@ -79,9 +79,9 @@ export default function BudgetCard({ actId, currentSpend }: BudgetCardProps) {
     v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
   return (
-    <div className="rounded-lg border border-gray-800 bg-gray-900/50 p-3">
+    <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-800 dark:bg-gray-900/50">
       <div className="mb-2 flex items-center justify-between">
-        <div className="flex items-center gap-1.5 text-xs font-medium text-gray-400">
+        <div className="flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">
           <Wallet size={14} />
           Orçamento
         </div>
@@ -90,64 +90,58 @@ export default function BudgetCard({ actId, currentSpend }: BudgetCardProps) {
             setEditing(true);
             setValue(budget ? String(budgetAmount) : '');
           }}
-          className="text-gray-500 transition-colors hover:text-white"
+          className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-blue-600 dark:hover:bg-gray-800 dark:hover:text-blue-400"
         >
           <Pencil size={12} />
         </button>
       </div>
 
       {editing ? (
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1">
-            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-gray-500">R$</span>
-            <input
-              type="text"
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              className="w-full rounded border border-gray-700 bg-gray-800 py-1 pl-7 pr-2 text-sm text-white focus:border-blue-500 focus:outline-none"
-              placeholder="5.000"
-              autoFocus
-              onKeyDown={(e) => e.key === 'Enter' && handleSave()}
-            />
-          </div>
+        <div className="flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
+          <input
+            type="text"
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            className="flex-1 rounded border border-gray-200 bg-white px-2 py-1 text-xs text-gray-900 focus:border-blue-500 outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+            placeholder="0,00"
+            autoFocus
+          />
           <button
             onClick={handleSave}
             disabled={saving}
-            className="rounded bg-blue-600 px-2 py-1 text-xs text-white hover:bg-blue-700 disabled:opacity-50"
+            className="rounded bg-blue-600 px-2 py-1 text-xs font-bold text-white hover:bg-blue-500 disabled:opacity-50"
           >
-            {saving ? <Loader2 size={12} className="animate-spin" /> : 'OK'}
+            {saving ? <Loader2 size={12} className="animate-spin" /> : 'Salvar'}
           </button>
           <button
             onClick={() => setEditing(false)}
-            className="rounded bg-gray-700 px-2 py-1 text-xs text-white hover:bg-gray-600"
+            className="text-[10px] text-gray-500 hover:underline dark:text-gray-400"
           >
-            X
+            Sair
           </button>
         </div>
-      ) : budgetAmount > 0 ? (
-        <div>
-          <div className="mb-1 flex items-baseline justify-between">
-            <span className="text-sm font-semibold text-white">{formatCurrency(currentSpend)}</span>
-            <span className="text-xs text-gray-400">de {formatCurrency(budgetAmount)}</span>
+      ) : (
+        <div className="space-y-2">
+          <div className="flex items-end justify-between">
+            <div>
+              <p className="text-lg font-bold text-gray-900 dark:text-white">{formatCurrency(currentSpend)}</p>
+              <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                de {budgetAmount > 0 ? formatCurrency(budgetAmount) : 'não definido'}
+              </p>
+            </div>
+            {budgetAmount > 0 && (
+              <span className={`text-xs font-bold ${isOverBudget ? 'text-red-500' : 'text-gray-500 dark:text-gray-400'}`}>
+                {percent.toFixed(0)}%
+              </span>
+            )}
           </div>
-          <div className="mb-1 h-1.5 w-full overflow-hidden rounded-full bg-gray-800">
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-800">
             <div
-              className={`h-full rounded-full transition-all ${barColor}`}
+              className={`h-full transition-all duration-500 ${barColor}`}
               style={{ width: `${percent}%` }}
             />
           </div>
-          <div className="flex justify-between text-xs">
-            <span className={isOverBudget ? 'text-red-400' : 'text-gray-400'}>
-              {percent.toFixed(0)}% investido
-            </span>
-            <span className={isOverBudget ? 'text-red-400 font-semibold' : 'text-green-400'}>
-              {formatCurrency(Math.abs(budgetAmount - currentSpend))}
-              {isOverBudget ? ' excedido' : ' restante'}
-            </span>
-          </div>
         </div>
-      ) : (
-        <p className="text-xs text-gray-600">Nenhum orçamento definido</p>
       )}
     </div>
   );

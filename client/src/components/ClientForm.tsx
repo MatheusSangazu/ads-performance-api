@@ -48,88 +48,75 @@ export default function ClientForm({ onSubmit, onCancel }: ClientFormProps) {
       visible ? (
         <form
           onSubmit={handleSubmit(handleFormSubmit)}
-          className="mb-8 rounded-xl border border-gray-800 bg-gray-900 p-4 sm:p-6"
+          className="mb-12 rounded-2xl border border-blue-500/20 bg-blue-500/5 p-6 backdrop-blur-sm shadow-xl shadow-blue-900/5 animate-in fade-in slide-in-from-top-4 duration-300"
         >
-          <h3 className="mb-4 text-lg font-semibold">Cadastrar Cliente</h3>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-sm text-gray-400">Nome *</label>
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 rounded-lg bg-blue-600/20 text-blue-400">
+              <Plus size={20} />
+            </div>
+            <h3 className="text-xl font-bold text-white">Cadastrar Novo Cliente</h3>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2">
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider ml-1">Nome Comercial</label>
               <input
                 {...register('name')}
-                className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none"
-                placeholder="Nome do cliente"
+                className="w-full rounded-xl border border-gray-800 bg-gray-950 px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:border-blue-500/50 outline-none transition-all focus:ring-4 focus:ring-blue-500/10"
+                placeholder="Ex: Minha Loja Virtual"
               />
-              {errors.name && <p className="mt-1 text-xs text-red-400">{errors.name.message}</p>}
+              {errors.name && <p className="mt-1 ml-1 text-[10px] font-bold text-red-400 uppercase">{errors.name.message}</p>}
             </div>
-            <div>
-              <label className="mb-1 block text-sm text-gray-400">Act ID *</label>
+
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider ml-1">ID da Conta de Anúncios</label>
               <input
                 {...register('act_id')}
-                autoComplete="off"
-                data-1p-ignore
-                className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none"
+                className="w-full rounded-xl border border-gray-800 bg-gray-950 px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:border-blue-500/50 outline-none transition-all focus:ring-4 focus:ring-blue-500/10"
                 placeholder="act_123456789"
               />
-              {errors.act_id && <p className="mt-1 text-xs text-red-400">{errors.act_id.message}</p>}
+              {errors.act_id && <p className="mt-1 ml-1 text-[10px] font-bold text-red-400 uppercase">{errors.act_id.message}</p>}
             </div>
-            <div>
-              <div className="mb-1 flex items-center gap-1">
-                <label className="text-sm text-gray-400">Access Token *</label>
+
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between ml-1">
+                <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Access Token do Meta</label>
                 <HelpTooltip title="Como obter o Token">
-                  <p>
-                    <strong>1.</strong> Acesse o{' '}
-                    <a href="https://developers.facebook.com/tools/explorer/" target="_blank" rel="noopener" className="text-blue-400 underline">
-                      Graph API Explorer
-                    </a>
-                    {' '}com sua conta.
-                  </p>
-                  <p>
-                    <strong>2.</strong> Selecione o app e a conta de anúncio desejada.
-                  </p>
-                  <p>
-                    <strong>3.</strong> Adicione a permissão <code className="rounded bg-gray-800 px-1 py-0.5 text-yellow-400">ads_read</code> e clique em <em>"Generate Access Token"</em>.
-                  </p>
-                  <p className="mt-1 border-t border-gray-700 pt-2">
-                    <strong>Estender para 3 meses:</strong> Copie o token gerado e acesse o{' '}
-                    <a href="https://developers.facebook.com/tools/debug/accesstoken/" target="_blank" rel="noopener" className="text-blue-400 underline">
-                      Access Token Debugger
-                    </a>
-                    {' '}para verificar e estender a validade do token.
-                  </p>
+                  <p>Acesse o Graph API Explorer, selecione o app e adicione ads_read.</p>
                 </HelpTooltip>
               </div>
               <input
                 {...register('access_token')}
                 type="password"
-                autoComplete="off"
-                data-1p-ignore
-                className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none"
-                placeholder="Token do Meta Ads"
+                className="w-full rounded-xl border border-gray-800 bg-gray-950 px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:border-blue-500/50 outline-none transition-all focus:ring-4 focus:ring-blue-500/10"
+                placeholder="••••••••••••••••"
               />
               {errors.access_token && (
-                <p className="mt-1 text-xs text-red-400">{errors.access_token.message}</p>
+                <p className="mt-1 ml-1 text-[10px] font-bold text-red-400 uppercase">{errors.access_token.message}</p>
               )}
             </div>
-            <div>
-              <label className="mb-1 block text-sm text-gray-400">Custom Event ID</label>
+
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider ml-1">Custom Event ID (Opcional)</label>
               <input
                 {...register('custom_event_id')}
-                className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none"
-                placeholder="Opcional"
+                className="w-full rounded-xl border border-gray-800 bg-gray-950 px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:border-blue-500/50 outline-none transition-all focus:ring-4 focus:ring-blue-500/10"
+                placeholder="Ex: purchase_pixel_123"
               />
             </div>
           </div>
-          <div className="mt-4 flex gap-3">
+
+          <div className="mt-8 flex items-center gap-3">
             <button
               type="submit"
-              className="rounded-lg bg-blue-600 px-6 py-2 text-sm font-medium text-white hover:bg-blue-700"
+              className="flex-1 sm:flex-none rounded-xl bg-blue-600 px-8 py-3 text-sm font-bold text-white shadow-lg shadow-blue-900/20 transition-all hover:bg-blue-500 hover:scale-[1.02] active:scale-[0.98]"
             >
-              Cadastrar
+              Confirmar Cadastro
             </button>
             <button
               type="button"
               onClick={onCancel}
-              className="rounded-lg bg-gray-700 px-6 py-2 text-sm font-medium text-white hover:bg-gray-600"
+              className="flex-1 sm:flex-none rounded-xl bg-gray-800 px-8 py-3 text-sm font-bold text-gray-300 transition-all hover:bg-gray-700 hover:text-white"
             >
               Cancelar
             </button>

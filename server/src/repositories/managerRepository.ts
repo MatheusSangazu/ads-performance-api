@@ -14,6 +14,7 @@ export interface CreateManagerData {
   whatsappNotify?: boolean;
   healthCheckTimes?: string;
   weeklySummary?: boolean;
+  agencyId?: string;
 }
 
 export interface UpdateManagerData {
@@ -72,7 +73,11 @@ class ManagerRepository {
   }
 
   public async linkClient(managerId: string, clientId: string) {
-    return prisma.managerClient.create({ data: { managerId, clientId } });
+    return prisma.managerClient.upsert({
+      where: { managerId_clientId: { managerId, clientId } },
+      create: { managerId, clientId },
+      update: {},
+    });
   }
 
   public async unlinkClient(managerId: string, clientId: string) {

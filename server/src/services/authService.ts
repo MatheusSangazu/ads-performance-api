@@ -94,6 +94,7 @@ class AuthService {
       passwordHash,
       plan: invite.plan,
       role: 'manager' as ManagerRole,
+      agencyId: invite.createdBy,
     });
 
     await inviteRepository.markUsed(invite.id, manager.id);

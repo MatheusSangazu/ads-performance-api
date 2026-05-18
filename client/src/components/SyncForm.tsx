@@ -106,18 +106,22 @@ export default function SyncForm({ clients, syncing, onSubmit }: SyncFormProps) 
 
   return (
     <div className="mb-8">
-      <h3 className="mb-4 text-lg font-semibold">Sincronizar Dados</h3>
+      <div className="flex items-center gap-2 mb-4">
+        <RefreshCw size={20} className="text-purple-600 dark:text-purple-400" />
+        <h3 className="text-xl font-bold text-gray-900 dark:text-white">Sincronização em Massa</h3>
+      </div>
+      
       <form
         onSubmit={handleSubmit(handleFormSubmit)}
-        className="rounded-xl border border-gray-800 bg-gray-900 p-4 sm:p-6"
+        className="rounded-2xl border border-gray-200 bg-white p-6 shadow-xl shadow-purple-900/5 dark:border-gray-800 dark:bg-gray-900/40 dark:backdrop-blur-sm"
       >
-        <div className="mb-4 flex flex-wrap gap-2">
+        <div className="mb-6 flex flex-wrap gap-2">
           {presets.map((p) => (
             <button
               key={p.key}
               type="button"
               onClick={() => handlePreset(p.key)}
-              className="flex items-center gap-1.5 rounded-lg border border-gray-700 bg-gray-800 px-3 py-1.5 text-xs font-medium text-gray-300 transition-colors hover:border-blue-500 hover:bg-gray-700 hover:text-white"
+              className="flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-2 text-xs font-semibold text-gray-500 transition-all hover:border-purple-500/50 hover:bg-purple-50 hover:text-purple-600 dark:border-gray-800 dark:bg-gray-900/80 dark:text-gray-400 dark:hover:bg-purple-500/5 dark:hover:text-purple-400 active:scale-95"
             >
               <p.icon size={14} />
               {p.label}
@@ -125,47 +129,56 @@ export default function SyncForm({ clients, syncing, onSubmit }: SyncFormProps) 
           ))}
         </div>
 
-        <div className="flex flex-wrap items-end gap-4">
-          <div>
-            <label className="mb-1 block text-sm text-gray-400">Cliente *</label>
-            <select
-              {...register('act_id')}
-              className="rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 text-white focus:border-blue-500 focus:outline-none"
-            >
-              <option value="">Selecione...</option>
-              {clients.map((c) => (
-                <option key={c.actId} value={c.actId}>
-                  {c.clientName}
-                </option>
-              ))}
-            </select>
+        <div className="grid gap-6 md:grid-cols-4 items-end">
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider ml-1 dark:text-gray-500">Cliente Alvo</label>
+            <div className="relative group">
+               <select
+                {...register('act_id')}
+                className="w-full appearance-none rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 focus:border-purple-500/50 outline-none transition-all focus:ring-4 focus:ring-purple-500/10 dark:border-gray-800 dark:bg-gray-950 dark:text-white"
+              >
+                <option value="">Selecione um cliente...</option>
+                {clients.map((c) => (
+                  <option key={c.actId} value={c.actId}>
+                    {c.clientName}
+                  </option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-600">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
           </div>
-          <div>
-            <label className="mb-1 block text-sm text-gray-400">Desde *</label>
+
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider ml-1 dark:text-gray-500">Data de Início</label>
             <input
               type="date"
               {...register('since')}
-              className="rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 text-white focus:border-blue-500 focus:outline-none"
+              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 focus:border-purple-500/50 outline-none transition-all focus:ring-4 focus:ring-purple-500/10 dark:border-gray-800 dark:bg-gray-950 dark:text-white"
             />
           </div>
-          <div>
-            <label className="mb-1 block text-sm text-gray-400">Até *</label>
+
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider ml-1 dark:text-gray-500">Data de Término</label>
             <input
               type="date"
               {...register('until')}
-              className="rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 text-white focus:border-blue-500 focus:outline-none"
+              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 focus:border-purple-500/50 outline-none transition-all focus:ring-4 focus:ring-purple-500/10 dark:border-gray-800 dark:bg-gray-950 dark:text-white"
             />
           </div>
+
           <button
             type="submit"
             disabled={!!syncing}
-            className="flex items-center gap-2 rounded-lg bg-green-600 px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700 disabled:opacity-50"
+            className="flex items-center justify-center gap-2 rounded-xl bg-purple-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-purple-900/20 transition-all hover:bg-purple-500 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:scale-100"
           >
             {syncing ? <Loader2 size={18} className="animate-spin" /> : <RefreshCw size={18} />}
-            {syncing ? 'Sincronizando...' : 'Sincronizar'}
+            {syncing ? 'Processando...' : 'Iniciar Sync'}
           </button>
         </div>
-
       </form>
     </div>
   );

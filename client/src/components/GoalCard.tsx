@@ -75,125 +75,91 @@ export default function GoalCard({ actId, currentMetrics }: GoalCardProps) {
   };
 
   const colorMap = {
-    green: 'text-green-400',
-    yellow: 'text-amber-400',
-    red: 'text-red-400',
-    gray: 'text-gray-500',
+    green: 'text-green-600 dark:text-green-400',
+    yellow: 'text-amber-600 dark:text-amber-400',
+    red: 'text-red-600 dark:text-red-400',
+    gray: 'text-gray-400 dark:text-gray-500',
   };
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-gray-500">
-        <Loader2 size={14} className="animate-spin" />
+      <div className="flex items-center gap-2 text-gray-400 dark:text-gray-500">
+        <Loader2 size="14" className="animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="rounded-lg border border-gray-800 bg-gray-900/50 p-3">
+    <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-800 dark:bg-gray-900/50">
       <div className="mb-2 flex items-center justify-between">
-        <div className="flex items-center gap-1.5 text-xs font-medium text-gray-400">
+        <div className="flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">
           <Target size={14} />
           Metas
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="text-gray-500 transition-colors hover:text-white"
+          className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-blue-600 dark:hover:bg-gray-800 dark:hover:text-blue-400"
         >
-          {showForm ? <X size={12} /> : <Plus size={12} />}
+          {showForm ? <X size={14} /> : <Plus size={14} />}
         </button>
       </div>
 
       {showForm && (
-        <div className="mb-2 space-y-2 rounded border border-gray-700 bg-gray-800 p-2">
-          <select
-            value={formMetric}
-            onChange={(e) => setFormMetric(e.target.value)}
-            className="w-full rounded border border-gray-700 bg-gray-900 px-2 py-1 text-xs text-white focus:border-blue-500 focus:outline-none"
-          >
-            {METRICS.map(([key, label]) => (
-              <option key={key} value={key}>
-                {label}
-              </option>
-            ))}
-          </select>
+        <div className="mb-3 space-y-2 rounded-lg border border-blue-200 bg-blue-50 p-2 dark:border-blue-900/30 dark:bg-blue-950/20">
           <div className="flex gap-2">
+            <select
+              value={formMetric}
+              onChange={(e) => setFormMetric(e.target.value)}
+              className="flex-1 rounded-md border border-gray-200 bg-white px-2 py-1 text-xs text-gray-900 focus:border-blue-500 outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+            >
+              {METRICS.map(([val, label]) => (
+                <option key={val} value={val}>{label}</option>
+              ))}
+            </select>
             <input
-              type="text"
               value={formValue}
               onChange={(e) => setFormValue(e.target.value)}
-              className="flex-1 rounded border border-gray-700 bg-gray-900 px-2 py-1 text-xs text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none"
-              placeholder="Valor da meta"
-              autoFocus
-              onKeyDown={(e) => e.key === 'Enter' && handleSave()}
+              className="w-16 rounded-md border border-gray-200 bg-white px-2 py-1 text-xs text-gray-900 focus:border-blue-500 outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+              placeholder="Valor"
             />
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="rounded bg-blue-600 px-2 py-1 text-xs text-white hover:bg-blue-700 disabled:opacity-50"
-            >
-              {saving ? <Loader2 size={12} className="animate-spin" /> : 'OK'}
-            </button>
           </div>
+          <button
+            onClick={handleSave}
+            disabled={saving || !formValue}
+            className="w-full rounded-md bg-blue-600 py-1.5 text-xs font-bold text-white hover:bg-blue-500 disabled:opacity-50"
+          >
+            {saving ? <Loader2 size={12} className="mx-auto animate-spin" /> : 'Definir Meta'}
+          </button>
         </div>
       )}
 
-      {goals.length === 0 && !showForm ? (
-        <p className="text-xs text-gray-600">Nenhuma meta definida</p>
-      ) : (
-        <div className="space-y-1.5">
-          {goals.map((goal) => {
-            const current = currentMetrics[goal.metric] ?? 0;
-            const target = Number(goal.targetValue);
-            const status = getStatusColor(goal.metric, target);
-            const percent = target > 0
-              ? goal.metric === 'cpl'
-                ? Math.min((target / Math.max(current, 0.01)) * 100, 100)
-                : Math.min((current / target) * 100, 100)
-              : 0;
-
-            return (
-              <div
-                key={goal.id}
-                className="flex items-center justify-between rounded bg-gray-800/50 px-2 py-1"
-              >
-                <div className="flex items-center gap-2">
-                  {percent >= 100 ? (
-                    <CheckCircle size={12} className="text-green-400" />
-                  ) : (
-                    <Target size={12} className={colorMap[status]} />
-                  )}
-                  <div>
-                    <span className="text-xs font-medium text-white">
-                      {METRIC_LABELS[goal.metric] || goal.metric}
-                    </span>
-                    <div className="flex items-center gap-1 text-xs">
-                      <span className={colorMap[status]}>
-                        {goal.metric === 'roas' || goal.metric === 'ctr'
-                          ? current.toFixed(2)
-                          : current.toLocaleString('pt-BR')}
-                      </span>
-                      <span className="text-gray-600">/</span>
-                      <span className="text-gray-400">
-                        {goal.metric === 'roas' || goal.metric === 'ctr'
-                          ? target.toFixed(2)
-                          : target.toLocaleString('pt-BR')}
-                      </span>
-                      <span className="text-gray-600">({percent.toFixed(0)}%)</span>
-                    </div>
-                  </div>
-                </div>
+      <div className="space-y-1.5">
+        {goals.map((goal) => {
+          const color = getStatusColor(goal.metric, Number(goal.targetValue));
+          return (
+            <div key={goal.id} className="group flex items-center justify-between">
+              <div className="flex flex-col">
+                <span className="text-[10px] text-gray-500 dark:text-gray-400">{METRIC_LABELS[goal.metric] || goal.metric}</span>
+                <span className={`text-xs font-bold ${colorMap[color as keyof typeof colorMap]}`}>
+                  {currentMetrics[goal.metric] ?? 0} / {goal.targetValue}
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                {color === 'green' && <CheckCircle size={12} className="text-green-500" />}
                 <button
                   onClick={() => handleDelete(goal.id)}
-                  className="text-gray-600 transition-colors hover:text-red-400"
+                  className="rounded p-1 text-gray-400 opacity-0 transition-opacity hover:bg-red-50 hover:text-red-600 group-hover:opacity-100 dark:hover:bg-red-900/20 dark:hover:text-red-400"
                 >
-                  <Trash2 size={11} />
+                  <Trash2 size={12} />
                 </button>
               </div>
-            );
-          })}
-        </div>
-      )}
+            </div>
+          );
+        })}
+        {goals.length === 0 && !showForm && (
+          <p className="text-center text-[10px] italic text-gray-400 dark:text-gray-500">Nenhuma meta definida</p>
+        )}
+      </div>
     </div>
   );
 }

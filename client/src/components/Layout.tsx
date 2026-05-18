@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { BarChart3, Settings, Users, Shield, MailPlus, LogOut, ClipboardList, Menu, X, CreditCard, Building2 } from 'lucide-react';
+import { BarChart3, Settings, Users, Shield, MailPlus, LogOut, ClipboardList, Menu, X, CreditCard, Building2, Sun, Moon } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import AlertDropdown from './AlertDropdown';
 
 const baseNavItems = [
@@ -52,6 +53,7 @@ function NavItem({ to, label, icon: Icon, end, admin, onClick }: {
 
 export default function Layout() {
   const { user, logout, isAdmin, isAgency } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -64,18 +66,27 @@ export default function Layout() {
   const closeMobile = () => setMobileOpen(false);
 
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100">
-      <nav className="border-b border-gray-800 bg-gray-900">
+    <div className="min-h-screen bg-gray-50 text-gray-900 transition-colors dark:bg-gray-950 dark:text-gray-100">
+      <nav className="border-b border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
         <div className="mx-auto flex max-w-7xl items-center px-4 py-3 md:px-6 md:py-4">
-          <h1 className="text-lg font-bold text-white md:text-xl">Growth Ads</h1>
+          <h1 className="text-lg font-bold text-gray-900 md:text-xl dark:text-white">Growth Ads</h1>
 
-          <button
-            onClick={() => setMobileOpen(!mobileOpen)}
-            className="ml-auto flex h-9 w-9 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-800 hover:text-white md:hidden"
-            aria-label="Menu"
-          >
-            {mobileOpen ? <X size={22} /> : <Menu size={22} />}
-          </button>
+          <div className="ml-auto flex items-center gap-2 md:hidden">
+            <button
+              onClick={toggleTheme}
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+              aria-label="Alternar tema"
+            >
+              {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+            </button>
+            <button
+              onClick={() => setMobileOpen(!mobileOpen)}
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+              aria-label="Menu"
+            >
+              {mobileOpen ? <X size={22} /> : <Menu size={22} />}
+            </button>
+          </div>
 
           <div className="ml-8 hidden flex-1 items-center gap-1 md:flex">
             {baseNavItems.map(({ to, label, icon }) => (
@@ -87,26 +98,34 @@ export default function Layout() {
           </div>
 
           <div className="ml-auto hidden items-center gap-4 md:flex">
+            <button
+              onClick={toggleTheme}
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+              aria-label="Alternar tema"
+              title={theme === 'light' ? 'Ativar modo escuro' : 'Ativar modo claro'}
+            >
+              {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+            </button>
             {user && (
               <div className="flex items-center gap-3">
                 <AlertDropdown />
                 <div className="text-right">
-                  <p className="text-sm font-medium text-white">{user.name}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">{user.name}</p>
                   <p className="text-xs text-gray-500">{user.email}</p>
                 </div>
                 {isAdmin && (
-                  <span className="rounded-full bg-purple-600/20 px-2.5 py-0.5 text-xs font-semibold text-purple-400">
+                  <span className="rounded-full bg-purple-600/10 px-2.5 py-0.5 text-xs font-semibold text-purple-600 dark:bg-purple-600/20 dark:text-purple-400">
                     Admin
                   </span>
                 )}
                 {isAgency && !isAdmin && (
-                  <span className="rounded-full bg-amber-600/20 px-2.5 py-0.5 text-xs font-semibold text-amber-400">
+                  <span className="rounded-full bg-amber-600/10 px-2.5 py-0.5 text-xs font-semibold text-amber-600 dark:bg-amber-600/20 dark:text-amber-400">
                     Agency
                   </span>
                 )}
                 <button
                   onClick={handleLogout}
-                  className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-gray-400 transition-colors hover:bg-gray-800 hover:text-red-400"
+                  className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-gray-500 transition-colors hover:bg-gray-100 hover:text-red-600 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-red-400"
                   title="Sair"
                 >
                   <LogOut size={16} />
@@ -117,14 +136,14 @@ export default function Layout() {
         </div>
 
         {mobileOpen && (
-          <div className="border-t border-gray-800 bg-gray-900 px-4 pb-4 md:hidden">
+          <div className="border-t border-gray-200 bg-white px-4 pb-4 md:hidden dark:border-gray-800 dark:bg-gray-900">
             <div className="flex flex-col gap-1 pt-2">
               {baseNavItems.map(({ to, label, icon }) => (
                 <NavItem key={to} to={to} label={label} icon={icon} end={to === '/'} onClick={closeMobile} />
               ))}
               {getVisibleAdminItems(isAdmin, isAgency).length > 0 && (
                 <>
-                  <div className="my-2 border-t border-gray-800" />
+                  <div className="my-2 border-t border-gray-200 dark:border-gray-800" />
                   {getVisibleAdminItems(isAdmin, isAgency).map(({ to, label, icon }) => (
                     <NavItem key={to} to={to} label={label} icon={icon} admin onClick={closeMobile} />
                   ))}
@@ -133,20 +152,20 @@ export default function Layout() {
             </div>
 
             {user && (
-              <div className="mt-3 flex items-center gap-3 border-t border-gray-800 pt-3">
+              <div className="mt-3 flex items-center gap-3 border-t border-gray-200 pt-3 dark:border-gray-800">
                 <AlertDropdown />
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-white">{user.name}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">{user.name}</p>
                   <p className="text-xs text-gray-500">{user.email}</p>
                 </div>
                 {isAdmin && (
-                  <span className="rounded-full bg-purple-600/20 px-2 py-0.5 text-[10px] font-semibold text-purple-400">
+                  <span className="rounded-full bg-purple-600/10 px-2 py-0.5 text-[10px] font-semibold text-purple-600 dark:bg-purple-600/20 dark:text-purple-400">
                     Admin
                   </span>
                 )}
                 <button
                   onClick={handleLogout}
-                  className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-gray-400 transition-colors hover:bg-gray-800 hover:text-red-400"
+                  className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-gray-500 transition-colors hover:bg-gray-100 hover:text-red-600 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-red-400"
                   title="Sair"
                 >
                   <LogOut size={16} />

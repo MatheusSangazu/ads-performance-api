@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Users, DollarSign, Target, TrendingUp, MousePointerClick, Eye, BarChart3, Loader2, Calendar as CalendarIcon, Filter, CheckCircle2, AlertCircle, ExternalLink, MapPin, Monitor, UserCircle, X, Play } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie, Legend } from 'recharts';
 import { clientApi, type DashboardMetrics, type Client } from '../lib/api';
+import { useTheme } from '../contexts/ThemeContext';
 import DatePicker from '../components/DatePicker';
 
 const API_BASE = (import.meta.env.VITE_API_URL || '/api').replace(/\/api$/, '');
@@ -46,6 +47,7 @@ function fmtBreakdownValue(metric: string, value: number) {
 }
 
 export default function Dashboard() {
+  const { theme } = useTheme();
   const [data, setData] = useState<DashboardMetrics | null>(null);
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
@@ -101,10 +103,10 @@ export default function Dashboard() {
   if (!data) {
     return (
       <div>
-        <h2 className="mb-6 text-2xl font-bold">Dashboard</h2>
-        <div className="rounded-xl border border-gray-800 bg-gray-900 p-8 text-center">
-          <p className="text-gray-400">Erro ao carregar métricas.</p>
-          <button onClick={() => fetchMetrics(true)} className="mt-4 inline-block text-sm text-blue-400 hover:underline">
+        <h2 className="mb-6 text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h2>
+        <div className="rounded-xl border border-gray-200 bg-white p-8 text-center dark:border-gray-800 dark:bg-gray-900">
+          <p className="text-gray-500 dark:text-gray-400">Erro ao carregar métricas.</p>
+          <button onClick={() => fetchMetrics(true)} className="mt-4 inline-block text-sm text-blue-600 hover:underline dark:text-blue-400">
             Tentar novamente
           </button>
         </div>
@@ -113,14 +115,14 @@ export default function Dashboard() {
   }
 
   const cards = [
-    { icon: DollarSign, label: 'Investimento', value: data.totalSpend, fmt: fmtCurrency, color: 'text-yellow-400' },
-    { icon: Target, label: 'Leads', value: data.totalLeads, fmt: fmtNumber, color: 'text-green-400' },
-    { icon: DollarSign, label: 'CPL Médio', value: data.avgCpl, fmt: fmtCurrency, color: 'text-orange-400' },
-    { icon: TrendingUp, label: 'ROAS Médio', value: data.avgRoas, fmt: (v: number) => v.toFixed(2) + 'x', color: 'text-purple-400' },
-    { icon: DollarSign, label: 'Valor de Conversão', value: data.totalConversionValue, fmt: fmtCurrency, color: 'text-emerald-400' },
-    { icon: MousePointerClick, label: 'Cliques', value: data.totalClicks, fmt: fmtNumber, color: 'text-cyan-400' },
-    { icon: BarChart3, label: 'CTR Médio', value: data.avgCtr, fmt: (v: number) => v.toFixed(2) + '%', color: 'text-teal-400' },
-    { icon: Eye, label: 'Impressões', value: data.totalImpressions, fmt: fmtNumber, color: 'text-pink-400' },
+    { icon: DollarSign, label: 'Investimento', value: data.totalSpend, fmt: fmtCurrency, color: 'text-yellow-600 dark:text-yellow-400', bgColor: 'bg-yellow-600 dark:bg-yellow-400' },
+    { icon: Target, label: 'Leads', value: data.totalLeads, fmt: fmtNumber, color: 'text-green-600 dark:text-green-400', bgColor: 'bg-green-600 dark:bg-green-400' },
+    { icon: DollarSign, label: 'CPL Médio', value: data.avgCpl, fmt: fmtCurrency, color: 'text-orange-600 dark:text-orange-400', bgColor: 'bg-orange-600 dark:bg-orange-400' },
+    { icon: TrendingUp, label: 'ROAS Médio', value: data.avgRoas, fmt: (v: number) => v.toFixed(2) + 'x', color: 'text-purple-600 dark:text-purple-400', bgColor: 'bg-purple-600 dark:bg-purple-400' },
+    { icon: DollarSign, label: 'Valor de Conversão', value: data.totalConversionValue, fmt: fmtCurrency, color: 'text-emerald-600 dark:text-emerald-400', bgColor: 'bg-emerald-600 dark:bg-emerald-400' },
+    { icon: MousePointerClick, label: 'Cliques', value: data.totalClicks, fmt: fmtNumber, color: 'text-cyan-600 dark:text-cyan-400', bgColor: 'bg-cyan-600 dark:bg-cyan-400' },
+    { icon: BarChart3, label: 'CTR Médio', value: data.avgCtr, fmt: (v: number) => v.toFixed(2) + '%', color: 'text-teal-600 dark:text-teal-400', bgColor: 'bg-teal-600 dark:bg-teal-400' },
+    { icon: Eye, label: 'Impressões', value: data.totalImpressions, fmt: fmtNumber, color: 'text-pink-600 dark:text-pink-400', bgColor: 'bg-pink-600 dark:bg-pink-400' },
   ];
 
   const getGoalCurrentValue = (metric: string): number => {
@@ -153,17 +155,17 @@ export default function Dashboard() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-white">Dashboard</h2>
-          <p className="text-xs text-gray-500">Análise de performance em tempo real (v1.0.1)</p>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h2>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Análise de performance em tempo real (v1.0.1)</p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-gray-800 bg-gray-900/50 p-3">
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-800 dark:bg-gray-900/50">
           <div className="flex items-center gap-2">
-            <Filter size={14} className="text-gray-500" />
+            <Filter size={14} className="text-gray-400 dark:text-gray-500" />
             <select
               value={selectedClient}
               onChange={(e) => setSelectedClient(e.target.value)}
-              className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-1.5 text-xs text-white focus:border-blue-500 focus:outline-none"
+              className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs text-gray-900 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white"
             >
               <option value="">Todos os Clientes</option>
               {clients.map(c => (
@@ -172,13 +174,13 @@ export default function Dashboard() {
             </select>
           </div>
 
-          <div className="h-6 w-px bg-gray-800 hidden sm:block" />
+          <div className="h-6 w-px bg-gray-200 dark:bg-gray-800 hidden sm:block" />
 
           <div className="flex items-center gap-2">
-            <CalendarIcon size={14} className="text-gray-500" />
-            <div className="flex items-center gap-1">
+            <CalendarIcon size={14} className="text-gray-400 dark:text-gray-500" />
+            <div className="flex items-center gap-1 text-gray-900 dark:text-white">
               <DatePicker value={since} onChange={setSince} />
-              <span className="text-gray-600 text-xs">até</span>
+              <span className="text-gray-400 dark:text-gray-600 text-xs">até</span>
               <DatePicker value={until} onChange={setUntil} />
             </div>
           </div>
@@ -189,15 +191,15 @@ export default function Dashboard() {
 
       <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
         {cards.map((card) => (
-          <div key={card.label} className="group relative overflow-hidden rounded-xl border border-gray-800 bg-gray-900 p-3 sm:p-4 transition-all hover:border-gray-700">
-            <div className="flex items-center gap-2 text-gray-500">
+          <div key={card.label} className="group relative overflow-hidden rounded-xl border border-gray-200 bg-white p-3 sm:p-4 transition-all hover:border-blue-500/50 dark:border-gray-800 dark:bg-gray-900">
+            <div className="flex items-center gap-2 text-gray-400 dark:text-gray-500">
               <card.icon size={14} />
               <span className="text-[10px] font-medium uppercase tracking-wider">{card.label}</span>
             </div>
             <p className={`mt-2 text-lg font-bold sm:text-xl ${card.color}`}>
               {card.fmt(card.value)}
             </p>
-            <div className={`absolute bottom-0 left-0 h-1 w-0 transition-all group-hover:w-full ${card.color.replace('text-', 'bg-')}`} />
+            <div className={`absolute bottom-0 left-0 h-1 w-0 transition-all group-hover:w-full ${card.bgColor}`} />
           </div>
         ))}
       </div>
@@ -215,9 +217,9 @@ export default function Dashboard() {
             const isAtingida = isInverse ? Number(currentVal) <= Number(goal.targetValue) : Number(currentVal) >= Number(goal.targetValue);
 
             return (
-              <div key={goal.id} className="rounded-xl border border-gray-800 bg-gray-900 p-4">
+              <div key={goal.id} className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-medium text-gray-400">{METRIC_LABELS[goal.metric] || goal.metric}</span>
+                  <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{METRIC_LABELS[goal.metric] || goal.metric}</span>
                   {isAtingida ? (
                     <CheckCircle2 size={14} className="text-green-500" />
                   ) : (
@@ -225,14 +227,14 @@ export default function Dashboard() {
                   )}
                 </div>
                 <div className="flex items-end justify-between">
-                  <p className="text-lg font-bold text-white">
+                  <p className="text-lg font-bold text-gray-900 dark:text-white">
                     {goal.metric === 'spend' || goal.metric === 'cpl' || goal.metric === 'purchase_value' 
                       ? fmtCurrency(Number(currentVal)) 
                       : fmtNumber(Number(currentVal))}
                   </p>
                   <p className="text-[10px] text-gray-500">Meta: {goal.targetValue}</p>
                 </div>
-                <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-gray-800">
+                <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
                   <div 
                     className={`h-full transition-all duration-500 ${isAtingida ? 'bg-green-500' : 'bg-amber-500'}`} 
                     style={{ width: `${Math.min(100, progress)}%` }}
@@ -245,8 +247,8 @@ export default function Dashboard() {
       )}
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-xl border border-gray-800 bg-gray-900 p-4 sm:p-6">
-          <h3 className="mb-4 sm:mb-6 text-sm font-semibold text-gray-400 flex items-center gap-2">
+        <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6 dark:border-gray-800 dark:bg-gray-900">
+          <h3 className="mb-4 sm:mb-6 text-sm font-semibold text-gray-500 dark:text-gray-400 flex items-center gap-2">
             <BarChart3 size={16} /> Tendência de Investimento e Leads
           </h3>
           <ResponsiveContainer width="100%" height={300}>
@@ -279,8 +281,8 @@ export default function Dashboard() {
           </ResponsiveContainer>
         </div>
 
-        <div className="rounded-xl border border-gray-800 bg-gray-900 p-4 sm:p-6">
-          <h3 className="mb-4 sm:mb-6 text-sm font-semibold text-gray-400 flex items-center gap-2">
+        <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6 dark:border-gray-800 dark:bg-gray-900">
+          <h3 className="mb-4 sm:mb-6 text-sm font-semibold text-gray-500 dark:text-gray-400 flex items-center gap-2">
             <Users size={16} /> {selectedClient ? 'Performance Diária' : 'Comparativo entre Clientes'}
           </h3>
           <ResponsiveContainer width="100%" height={300}>
@@ -303,13 +305,13 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="rounded-xl border border-gray-800 bg-gray-900 overflow-hidden">
-        <div className="border-b border-gray-800 bg-gray-900/50 px-4 sm:px-6 py-4">
-          <h3 className="text-sm font-semibold text-white">Ranking de Performance</h3>
+      <div className="rounded-xl border border-gray-200 bg-white overflow-hidden dark:border-gray-800 dark:bg-gray-900">
+        <div className="border-b border-gray-200 bg-gray-50 px-4 sm:px-6 py-4 dark:border-gray-800 dark:bg-gray-900/50">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Ranking de Performance</h3>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs min-w-[600px]">
-            <thead className="bg-gray-900/80 text-gray-500 uppercase tracking-wider font-bold">
+            <thead className="bg-gray-50 text-gray-500 uppercase tracking-wider font-bold dark:bg-gray-900/80 dark:text-gray-400">
               <tr>
                 <th className="px-6 py-4">Cliente</th>
                 <th className="px-6 py-4 text-right">Investimento</th>
@@ -319,20 +321,20 @@ export default function Dashboard() {
                 <th className="px-6 py-4 text-right">ROAS</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-800">
+            <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
               {(selectedClient ? data.clientMetrics.filter(c => c.actId === selectedClient) : data.clientMetrics)
                 .sort((a, b) => b.spend - a.spend)
                 .map((c) => (
-                  <tr key={c.actId} className="bg-gray-950 transition-colors hover:bg-gray-900/80">
-                    <td className="px-6 py-4 font-semibold text-white">{c.name}</td>
-                    <td className="px-6 py-4 text-right text-yellow-400">{fmtCurrency(c.spend)}</td>
-                    <td className="px-6 py-4 text-right text-green-400">{fmtNumber(c.leads)}</td>
-                    <td className="px-6 py-4 text-right text-orange-400">
+                  <tr key={c.actId} className="bg-white transition-colors hover:bg-gray-50 dark:bg-gray-950 dark:hover:bg-gray-900/80">
+                    <td className="px-6 py-4 font-semibold text-gray-900 dark:text-white">{c.name}</td>
+                    <td className="px-6 py-4 text-right text-yellow-600 dark:text-yellow-400">{fmtCurrency(c.spend)}</td>
+                    <td className="px-6 py-4 text-right text-green-600 dark:text-green-400">{fmtNumber(c.leads)}</td>
+                    <td className="px-6 py-4 text-right text-orange-600 dark:text-orange-400">
                       {Number(c.leads) > 0 ? fmtCurrency(Number(c.spend) / Number(c.leads)) : '—'}
                     </td>
-                    <td className="px-6 py-4 text-right text-emerald-400">{fmtCurrency(c.conversionValue)}</td>
+                    <td className="px-6 py-4 text-right text-emerald-600 dark:text-emerald-400">{fmtCurrency(c.conversionValue)}</td>
                     <td className="px-6 py-4 text-right">
-                      <span className={`rounded-full px-2 py-0.5 font-bold ${Number(c.roas) >= 2 ? 'bg-purple-500/10 text-purple-400' : 'bg-gray-800 text-gray-400'}`}>
+                      <span className={`rounded-full px-2 py-0.5 font-bold ${Number(c.roas) >= 2 ? 'bg-purple-600/10 text-purple-600 dark:bg-purple-500/10 dark:text-purple-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'}`}>
                         {Number(c.roas).toFixed(2)}x
                       </span>
                     </td>
@@ -344,15 +346,15 @@ export default function Dashboard() {
       </div>
 
       {data.topAds.length > 0 && (
-        <div className="rounded-xl border border-gray-800 bg-gray-900 overflow-hidden">
-          <div className="border-b border-gray-800 bg-gray-900/50 px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+        <div className="rounded-xl border border-gray-200 bg-white overflow-hidden dark:border-gray-800 dark:bg-gray-900">
+          <div className="border-b border-gray-200 bg-gray-50 px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 dark:border-gray-800 dark:bg-gray-900/50">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
               <TrendingUp size={16} /> Top Anúncios
             </h3>
             <select
               value={topAdsMetric}
               onChange={(e) => setTopAdsMetric(e.target.value)}
-              className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-1 text-xs text-white focus:border-blue-500 focus:outline-none"
+              className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-1 text-xs text-gray-900 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white"
             >
               <option value="roas">ROAS</option>
               <option value="leads">Leads</option>
@@ -374,10 +376,10 @@ export default function Dashboard() {
               .map((ad, idx) => {
                 const metricVal = ad[topAdsMetric as keyof typeof ad];
                 return (
-                  <div key={ad.adId} className="rounded-lg border border-gray-800 bg-gray-950 overflow-hidden">
+                  <div key={ad.adId} className="rounded-lg border border-gray-200 bg-gray-50 overflow-hidden dark:border-gray-800 dark:bg-gray-950">
                     {ad.creativeUrl ? (
                       <div
-                        className="relative w-full cursor-pointer bg-gray-800 group"
+                        className="relative w-full cursor-pointer bg-gray-200 dark:bg-gray-800 group"
                         onClick={() => setMediaViewer({ url: mediaUrl(ad.creativeUrl) || '', type: ad.creativeType || 'image', name: ad.adName })}
                       >
                         {ad.creativeType === 'video' ? (
@@ -404,8 +406,8 @@ export default function Dashboard() {
                         )}
                       </div>
                     ) : (
-                      <div className="flex h-48 items-center justify-center bg-gray-800">
-                        <Eye size={24} className="text-gray-600" />
+                      <div className="flex h-48 items-center justify-center bg-gray-200 dark:bg-gray-800">
+                        <Eye size={24} className="text-gray-400 dark:text-gray-600" />
                       </div>
                     )}
                     <div className="p-3">
@@ -413,15 +415,15 @@ export default function Dashboard() {
                         <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[10px] font-bold text-white">
                           {idx + 1}
                         </span>
-                        <p className="truncate text-xs font-semibold text-white">{ad.adName}</p>
+                        <p className="truncate text-xs font-semibold text-gray-900 dark:text-white">{ad.adName}</p>
                       </div>
                       <p className="mb-2 truncate text-[10px] text-gray-500">{ad.campaignName}</p>
                       <div className="flex items-center justify-between">
                         <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                          topAdsMetric === 'roas' ? (Number(metricVal) >= 2 ? 'bg-purple-500/10 text-purple-400' : 'bg-gray-800 text-gray-400') :
-                          topAdsMetric === 'ctr' ? 'bg-teal-500/10 text-teal-400' :
-                          topAdsMetric === 'cpl' ? 'bg-orange-500/10 text-orange-400' :
-                          'bg-green-500/10 text-green-400'
+                          topAdsMetric === 'roas' ? (Number(metricVal) >= 2 ? 'bg-purple-600/10 text-purple-600 dark:bg-purple-500/10 dark:text-purple-400' : 'bg-gray-200 text-gray-500 dark:bg-gray-800 dark:text-gray-400') :
+                          topAdsMetric === 'ctr' ? 'bg-teal-600/10 text-teal-600 dark:bg-teal-500/10 dark:text-teal-400' :
+                          topAdsMetric === 'cpl' ? 'bg-orange-600/10 text-orange-600 dark:bg-orange-500/10 dark:text-orange-400' :
+                          'bg-green-600/10 text-green-600 dark:bg-green-500/10 dark:text-green-400'
                         }`}>
                           {topAdsMetric === 'roas' ? `${Number(metricVal).toFixed(2)}x` :
                            topAdsMetric === 'ctr' ? `${Number(metricVal).toFixed(2)}%` :
@@ -430,7 +432,7 @@ export default function Dashboard() {
                           {' '}{METRIC_LABELS[topAdsMetric] || topAdsMetric}
                         </span>
                         {ad.previewLink && (
-                          <a href={ad.previewLink} target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-gray-400">
+                          <a href={ad.previewLink} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-gray-600 dark:text-gray-600 dark:hover:text-gray-400">
                             <ExternalLink size={12} />
                           </a>
                         )}
@@ -446,11 +448,11 @@ export default function Dashboard() {
       {(data.audienceData.length > 0 || data.placementData.length > 0 || data.regionData.length > 0) && (
         <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-white">Segmentação</h3>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Segmentação</h3>
             <select
               value={breakdownMetric}
               onChange={(e) => setBreakdownMetric(e.target.value)}
-              className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-1 text-xs text-white focus:border-blue-500 focus:outline-none"
+              className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-1 text-xs text-gray-900 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white"
             >
               <option value="spend">Investimento</option>
               <option value="leads">Leads</option>
@@ -464,8 +466,8 @@ export default function Dashboard() {
 
           <div className="grid gap-6 lg:grid-cols-3">
             {data.placementData.length > 0 && (
-              <div className="rounded-xl border border-gray-800 bg-gray-900 p-4 sm:p-6">
-                <h3 className="mb-4 text-sm font-semibold text-gray-400 flex items-center gap-2">
+              <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6 dark:border-gray-800 dark:bg-gray-900">
+                <h3 className="mb-4 text-sm font-semibold text-gray-500 dark:text-gray-400 flex items-center gap-2">
                   <Monitor size={16} /> Plataformas
                 </h3>
                 <ResponsiveContainer width="100%" height={250}>
@@ -484,22 +486,27 @@ export default function Dashboard() {
                       ))}
                     </Pie>
                     <Tooltip
-                      contentStyle={{ backgroundColor: '#111827', border: '1px solid #374151', borderRadius: '12px' }}
+                      contentStyle={{ 
+                        backgroundColor: theme === 'dark' ? '#111827' : '#FFFFFF', 
+                        border: theme === 'dark' ? '1px solid #374151' : '1px solid #E5E7EB', 
+                        borderRadius: '12px',
+                        color: theme === 'dark' ? '#F3F4F6' : '#111827'
+                      }}
                       formatter={(value) => [fmtBreakdownValue(breakdownMetric, Number(value)), METRIC_LABELS[breakdownMetric] || breakdownMetric]}
                     />
                     <Legend
                       verticalAlign="bottom"
                       iconType="circle"
                       iconSize={8}
-                      formatter={(val) => <span className="text-xs text-gray-400">{val}</span>}
+                      formatter={(val) => <span className="text-xs text-gray-500 dark:text-gray-400">{val}</span>}
                     />
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="mt-2 space-y-1">
                   {data.placementData.map(p => (
                     <div key={p.platform} className="flex items-center justify-between text-xs">
-                      <span className="text-gray-400">{p.platform}</span>
-                      <span className="text-gray-300">
+                      <span className="text-gray-500 dark:text-gray-400">{p.platform}</span>
+                      <span className="text-gray-700 dark:text-gray-300">
                         {fmtBreakdownValue(breakdownMetric, Number(p[breakdownMetric as keyof typeof p] || 0))} · {fmtNumber(p.leads)} leads
                       </span>
                     </div>
@@ -509,8 +516,8 @@ export default function Dashboard() {
             )}
 
             {data.audienceData.length > 0 && (
-              <div className="rounded-xl border border-gray-800 bg-gray-900 p-4 sm:p-6">
-                <h3 className="mb-4 text-sm font-semibold text-gray-400 flex items-center gap-2">
+              <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6 dark:border-gray-800 dark:bg-gray-900">
+                <h3 className="mb-4 text-sm font-semibold text-gray-500 dark:text-gray-400 flex items-center gap-2">
                   <UserCircle size={16} /> Público (Sexo × Idade)
                 </h3>
                 {(() => {
@@ -525,11 +532,16 @@ export default function Dashboard() {
                   return (
                     <ResponsiveContainer width="100%" height={250}>
                       <BarChart data={chartData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                        <XAxis dataKey="age" stroke="#4B5563" tick={{ fontSize: 9 }} />
-                        <YAxis stroke="#4B5563" tick={{ fontSize: 9 }} />
+                        <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#374151' : '#E5E7EB'} />
+                        <XAxis dataKey="age" stroke={theme === 'dark' ? '#4B5563' : '#9CA3AF'} tick={{ fontSize: 9 }} />
+                        <YAxis stroke={theme === 'dark' ? '#4B5563' : '#9CA3AF'} tick={{ fontSize: 9 }} />
                         <Tooltip
-                          contentStyle={{ backgroundColor: '#111827', border: '1px solid #374151', borderRadius: '12px' }}
+                          contentStyle={{ 
+                            backgroundColor: theme === 'dark' ? '#111827' : '#FFFFFF', 
+                            border: theme === 'dark' ? '1px solid #374151' : '1px solid #E5E7EB', 
+                            borderRadius: '12px',
+                            color: theme === 'dark' ? '#F3F4F6' : '#111827'
+                          }}
                           formatter={(value) => [fmtBreakdownValue(breakdownMetric, Number(value)), '']}
                         />
                         <Bar dataKey="Masculino" fill="#3B82F6" radius={[4, 4, 0, 0]} barSize={16} />
@@ -548,8 +560,8 @@ export default function Dashboard() {
                     .slice(0, 6)
                     .map((a, i) => (
                       <div key={i} className="flex items-center justify-between text-xs">
-                        <span className="text-gray-400">{a.gender === 'male' ? '♂' : '♀'} {a.ageRange}</span>
-                        <span className="text-gray-300">
+                        <span className="text-gray-500 dark:text-gray-400">{a.gender === 'male' ? '♂' : '♀'} {a.ageRange}</span>
+                        <span className="text-gray-700 dark:text-gray-300">
                           {fmtBreakdownValue(breakdownMetric, Number(a[breakdownMetric as keyof typeof a] || 0))} · {fmtNumber(a.leads)} leads
                         </span>
                       </div>
@@ -563,17 +575,22 @@ export default function Dashboard() {
                 Number(b[breakdownMetric as keyof typeof b] || 0) - Number(a[breakdownMetric as keyof typeof a] || 0)
               );
               return (
-              <div className="rounded-xl border border-gray-800 bg-gray-900 p-4 sm:p-6">
-                <h3 className="mb-4 text-sm font-semibold text-gray-400 flex items-center gap-2">
+              <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6 dark:border-gray-800 dark:bg-gray-900">
+                <h3 className="mb-4 text-sm font-semibold text-gray-500 dark:text-gray-400 flex items-center gap-2">
                   <MapPin size={16} /> Top Regiões
                 </h3>
                 <ResponsiveContainer width="100%" height={250}>
                   <BarChart data={sortedRegions} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" horizontal={false} />
-                    <XAxis type="number" stroke="#4B5563" tick={{ fontSize: 9 }} />
-                    <YAxis type="category" dataKey="region" stroke="#4B5563" tick={{ fontSize: 9 }} width={100} />
+                    <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#374151' : '#E5E7EB'} horizontal={false} />
+                    <XAxis type="number" stroke={theme === 'dark' ? '#4B5563' : '#9CA3AF'} tick={{ fontSize: 9 }} />
+                    <YAxis type="category" dataKey="region" stroke={theme === 'dark' ? '#4B5563' : '#9CA3AF'} tick={{ fontSize: 9 }} width={100} />
                     <Tooltip
-                      contentStyle={{ backgroundColor: '#111827', border: '1px solid #374151', borderRadius: '12px' }}
+                      contentStyle={{ 
+                        backgroundColor: theme === 'dark' ? '#111827' : '#FFFFFF', 
+                        border: theme === 'dark' ? '1px solid #374151' : '1px solid #E5E7EB', 
+                        borderRadius: '12px',
+                        color: theme === 'dark' ? '#F3F4F6' : '#111827'
+                      }}
                       formatter={(value) => [fmtBreakdownValue(breakdownMetric, Number(value)), METRIC_LABELS[breakdownMetric] || breakdownMetric]}
                     />
                     <Bar dataKey={breakdownMetric} fill="#F59E0B" name={METRIC_LABELS[breakdownMetric] || breakdownMetric} radius={[0, 4, 4, 0]} barSize={14} />
@@ -582,8 +599,8 @@ export default function Dashboard() {
                 <div className="mt-2 space-y-1">
                   {sortedRegions.slice(0, 6).map((r) => (
                     <div key={r.region} className="flex items-center justify-between text-xs">
-                      <span className="text-gray-400">{r.region}</span>
-                      <span className="text-gray-300">
+                      <span className="text-gray-500 dark:text-gray-400">{r.region}</span>
+                      <span className="text-gray-700 dark:text-gray-300">
                         {fmtBreakdownValue(breakdownMetric, Number(r[breakdownMetric as keyof typeof r] || 0))} · {fmtNumber(r.leads)} leads
                       </span>
                     </div>

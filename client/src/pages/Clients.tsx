@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react';
-import { Plus } from 'lucide-react';
+import { useState, useRef, useMemo } from 'react';
+import { Search } from 'lucide-react';
 import { clientApi, syncApi, createProgressStream } from '../lib/api';
 import type { SyncFormBreakdowns } from '../components/SyncForm';
 import type { LogEntry } from '../components/SyncProgressModal';
@@ -9,12 +9,28 @@ import ClientForm from '../components/ClientForm';
 import SyncForm from '../components/SyncForm';
 import ClientCard from '../components/ClientCard';
 import SyncProgressModal from '../components/SyncProgressModal';
+import ClientHeader from '../components/ClientHeader';
+import ClientTable from '../components/ClientTable';
+import { SkeletonClientList } from '../components/SkeletonClient';
 
 export default function Clients() {
   const { clients, loading, message, setMessage, fetchClients } = useClients();
   const { syncing, syncAccount } = useSync();
   const { downloading, downloadReport } = useDownload();
   const [showForm, setShowForm] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
+  // Filtragem derivativa para melhor performance
+  const filteredClients = useMemo(() => {
+    return clients.filter(client => {
+      const matchesSearch = client.clientName.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          client.actId.includes(searchTerm);
+      const matchesStatus = filterStatus === 'all' || client.accountStatus?.toString() === filterStatus;
+      return matchesSearch && matchesStatus;
+    });
+  }, [clients, searchTerm, filterStatus]);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMinimized, setModalMinimized] = useState(false);
@@ -148,45 +164,77 @@ export default function Clients() {
   });
 
   return (
-    <div>
-      <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Clientes</h2>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
-        >
-          <Plus size={18} />
-          Novo Cliente
-        </button>
-      </div>
+    <div className="max-w-[1400px] mx-auto pb-20">
+      <ClientHeader 
+        onSearch={setSearchTerm}
+        onFilterChange={setFilterStatus}
+        onViewToggle={setViewMode}
+        currentView={viewMode}
+        onNewClient={() => setShowForm(true)}
+        totalClients={clients.length}
+      />
 
       {message && <Message type={message.type}>{message.text}</Message>}
 
-      {form.form(showForm)}
+      <div className={`transition-all duration-300 ${showForm ? 'mb-8 opacity-100' : 'h-0 overflow-hidden opacity-0'}`}>
+        {form.form(showForm)}
+      </div>
 
-      <SyncForm clients={clients} syncing={syncing} onSubmit={handleSync} />
+      <div className="mb-12">
+        <SyncForm clients={clients} syncing={syncing} onSubmit={handleSync} />
+      </div>
 
-      <h3 className="mb-4 text-lg font-semibold">Clientes Cadastrados</h3>
-      {loading ? (
-        <p className="text-gray-500">Carregando...</p>
-      ) : clients.length === 0 ? (
-        <p className="text-gray-500">Nenhum cliente cadastrado.</p>
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {clients.map((client) => (
-            <ClientCard
-              key={client.actId}
-              client={client}
-              downloading={downloading}
-              onDownload={handleDownload}
-              onTokenUpdated={fetchClients}
-              onDelete={handleDelete}
-              onError={(msg) => setMessage({ type: 'error', text: msg })}
-              onSuccess={(msg) => setMessage({ type: 'success', text: msg })}
-            />
-          ))}
+      <div className="space-y-6">
+        <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-800 pb-4">
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            Resultados
+            <span className="text-xs font-medium bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 px-2 py-0.5 rounded-full">
+              {filteredClients.length}
+            </span>
+          </h3>
         </div>
-      )}
+
+        {loading ? (
+          <SkeletonClientList />
+        ) : filteredClients.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center rounded-3xl border border-dashed border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900/20">
+            <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800/50 rounded-full flex items-center justify-center mb-4 text-gray-400 dark:text-gray-500">
+               <Search size={32} />
+            </div>
+            <h4 className="text-lg font-semibold text-gray-900 dark:text-white">Nenhum cliente encontrado</h4>
+            <p className="text-sm text-gray-500 max-w-xs mt-1 dark:text-gray-400">
+              Tente ajustar seus filtros ou busque por um termo diferente.
+            </p>
+          </div>
+        ) : viewMode === 'grid' ? (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {filteredClients.map((client) => (
+              <ClientCard
+                key={client.actId}
+                client={client}
+                downloading={downloading}
+                onDownload={handleDownload}
+                onTokenUpdated={fetchClients}
+                onDelete={handleDelete}
+                onError={(msg) => setMessage({ type: 'error', text: msg })}
+                onSuccess={(msg) => setMessage({ type: 'success', text: msg })}
+              />
+            ))}
+          </div>
+        ) : (
+          <ClientTable 
+            clients={filteredClients}
+            downloading={downloading}
+            onDownload={handleDownload}
+            onDelete={handleDelete}
+            onSync={(actId) => syncAccount(actId, new Date().toISOString().split('T')[0], new Date().toISOString().split('T')[0])}
+            onEdit={(client) => {
+              // Aqui poderíamos abrir o formulário de edição pré-preenchido
+              setMessage({ type: 'success', text: `Editando ${client.clientName}` });
+            }}
+          />
+        )}
+      </div>
 
       <SyncProgressModal
         logs={logs}
