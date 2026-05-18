@@ -36,3 +36,4 @@ desktop.ini
 *.sublime-project
 *.sublime-workspace
 /server/src/generated/prisma
+ERRORS_REPORT.md
