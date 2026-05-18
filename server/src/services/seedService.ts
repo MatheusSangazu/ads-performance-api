@@ -39,21 +39,6 @@ class SeedService {
       });
       console.log('[SEED] Plano do admin corrigido para "pro".');
     }
-
-    const allClientIds = await prisma.client.findMany({ select: { actId: true } });
-    const existingLinks = await prisma.managerClient.findMany({
-      where: { managerId: adminId },
-      select: { clientId: true },
-    });
-    const linkedIds = new Set(existingLinks.map((l) => l.clientId));
-    const unlinked = allClientIds.filter((c) => !linkedIds.has(c.actId));
-
-    if (unlinked.length > 0) {
-      await prisma.managerClient.createMany({
-        data: unlinked.map((c) => ({ managerId: adminId, clientId: c.actId })),
-      });
-      console.log(`[SEED] ${unlinked.length} cliente(s) vinculado(s) ao admin.`);
-    }
   }
 }
 
