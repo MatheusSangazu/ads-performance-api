@@ -35,7 +35,6 @@ app.use(express.json());
 const uploadsDir = path.join(__dirname, '..', 'uploads');
 const creativesDir = path.join(uploadsDir, 'creatives');
 if (!fs.existsSync(creativesDir)) fs.mkdirSync(creativesDir, { recursive: true });
-app.use('/creatives', express.static(creativesDir));
 
 app.get('/creatives/:filename', async (req, res, next) => {
   const filePath = path.join(creativesDir, req.params.filename);
@@ -111,6 +110,8 @@ app.get('/creatives/:filename', async (req, res, next) => {
 
   res.status(404).send('Not found');
 });
+
+app.use('/creatives', express.static(creativesDir));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/invites', inviteRoutes);
