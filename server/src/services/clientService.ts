@@ -8,7 +8,7 @@ class ClientService {
     customEventId?: string,
     isEcommerce: boolean = false,
   ) {
-    const normalizedActId = actId.startsWith('act_') ? actId : `act_${actId}`;
+    const normalizedActId = actId.trim().startsWith('act_') ? actId.trim() : `act_${actId.trim()}`;
     await clientRepository.upsert({ name, actId: normalizedActId, token, customEventId, isEcommerce });
     return { success: true, message: `Cliente ${name} configurado com sucesso!` };
   }

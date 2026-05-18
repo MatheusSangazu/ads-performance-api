@@ -8,10 +8,11 @@ import type { AuthRequest } from '../middleware/auth.js';
 class ClientController {
   public async create(req: AuthRequest, res: Response): Promise<void> {
     const { name, act_id, access_token, custom_event_id, is_ecommerce } = req.body;
-    const normalizedActId = act_id.startsWith('act_') ? act_id : `act_${act_id}`;
+    const cleanActId = act_id.trim();
+    const normalizedActId = cleanActId.startsWith('act_') ? cleanActId : `act_${cleanActId}`;
     const result = await clientService.saveClient(
       name,
-      act_id,
+      cleanActId,
       access_token,
       custom_event_id,
       is_ecommerce ?? false,
