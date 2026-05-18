@@ -25,13 +25,9 @@ class ClientController {
     res.json(result);
   }
 
-  private async getAccessibleClientIds(req: AuthRequest): Promise<string[] | null> {
-    if (req.manager?.role === 'admin') {
-      return null;
-    }
-
-    if (req.manager?.role === 'agency') {
-      return managerRepository.getAgencyClientIds(req.manager.id);
+  private async getAccessibleClientIds(req: AuthRequest): Promise<string[]> {
+    if (req.manager?.role === 'admin' || req.manager?.role === 'agency') {
+      return managerRepository.getAgencyClientIds(req.manager!.id);
     }
 
     return managerRepository.getClientIds(req.manager!.id);
@@ -39,13 +35,6 @@ class ClientController {
 
   public async list(req: AuthRequest, res: Response): Promise<void> {
     const clientIds = await this.getAccessibleClientIds(req);
-
-    if (clientIds === null) {
-      const allClients = await clientService.listClients();
-      res.json(allClients);
-      return;
-    }
-
     const allClients = await clientService.listClients();
     const filtered = allClients.filter((c: any) => clientIds.includes(c.actId));
     res.json(filtered);

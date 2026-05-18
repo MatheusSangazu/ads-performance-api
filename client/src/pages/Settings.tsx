@@ -26,22 +26,28 @@ export default function Settings() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [tokenRes, syncRes, meRes, wppRes] = await Promise.all([
-          settingsApi.getGlobalToken(),
-          settingsApi.getAutoSync(),
-          authApi.me(),
-          settingsApi.getWhatsappStatus().catch(() => ({ data: { state: 'error' } })),
-        ]);
-        const current = tokenRes.data.globalToken;
-        setHasToken(!!current);
-        setToken(current || '');
-        setAutoSyncEnabled(syncRes.data.enabled);
+        const meRes = await authApi.me();
+        const admin = meRes.data.role === 'admin';
+        setIsAdmin(admin);
+
+        const requests: Promise<any>[] = [];
+        if (admin) {
+          requests.push(
+            settingsApi.getGlobalToken().then((r) => {
+              setHasToken(!!r.data.globalToken);
+              setToken(r.data.globalToken || '');
+            }),
+            settingsApi.getAutoSync().then((r) => setAutoSyncEnabled(r.data.enabled)),
+            settingsApi.getWhatsappStatus().then((r) => setWhatsappStatus(r.data)).catch(() => setWhatsappStatus({ state: 'error' }))
+          );
+        }
+
         setPhone(meRes.data.phone || '');
         setWhatsappNotify(meRes.data.whatsappNotify);
         setHealthCheckTimes(meRes.data.healthCheckTimes ? meRes.data.healthCheckTimes.split(',') : []);
         setWeeklySummary(meRes.data.weeklySummary);
-        setIsAdmin(meRes.data.role === 'admin');
-        setWhatsappStatus(wppRes.data);
+
+        await Promise.all(requests);
       } catch {
         setMessage({ type: 'error', text: 'Erro ao carregar configurações.' });
       } finally {
@@ -147,6 +153,7 @@ export default function Settings() {
 
       {message && <Message type={message.type}>{message.text}</Message>}
 
+      {isAdmin && (
       <div className="rounded-xl border border-gray-800 bg-gray-900 p-4 sm:p-6">
         <div className="mb-4 flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600/20">
@@ -203,7 +210,9 @@ export default function Settings() {
           </>
         )}
       </div>
+      )}
 
+      {isAdmin && (
       <div className="mt-6 rounded-xl border border-gray-800 bg-gray-900 p-6">
         <div className="mb-4 flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-600/20">
@@ -262,6 +271,7 @@ export default function Settings() {
           </div>
         )}
       </div>
+      )}
 
       <div className="mt-6 rounded-xl border border-gray-800 bg-gray-900 p-6">
         <div className="mb-4 flex items-center gap-3">

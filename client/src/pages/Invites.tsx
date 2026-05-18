@@ -8,6 +8,7 @@ interface Invite {
   token: string;
   email: string | null;
   plan: string;
+  used: boolean;
   usedAt: string | null;
   expiresAt: string;
   createdAt: string;
@@ -139,7 +140,7 @@ export default function Invites() {
       ) : (
         <div className="space-y-3">
           {invites.map((inv) => {
-            const used = !!inv.usedAt;
+            const used = inv.used;
             const expired = !used && isExpired(inv.expiresAt);
             const active = !used && !expired;
 
