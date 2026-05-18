@@ -163,7 +163,11 @@ class AlertService {
     return alertRepository.countUnread(managerId);
   }
 
-  public async markRead(id: string) {
+  public async markRead(id: string, managerId: string) {
+    const alert = await prisma.alert.findUnique({ where: { id }, select: { managerId: true } });
+    if (!alert || alert.managerId !== managerId) {
+      throw new Error('Alerta não encontrado ou sem permissão.');
+    }
     return alertRepository.markRead(id);
   }
 
@@ -171,7 +175,11 @@ class AlertService {
     return alertRepository.markAllRead(managerId);
   }
 
-  public async dismiss(id: string) {
+  public async dismiss(id: string, managerId: string) {
+    const alert = await prisma.alert.findUnique({ where: { id }, select: { managerId: true } });
+    if (!alert || alert.managerId !== managerId) {
+      throw new Error('Alerta não encontrado ou sem permissão.');
+    }
     return alertRepository.dismiss(id);
   }
 

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { authMiddleware, type AuthRequest } from '../middleware/auth.js';
+import { authMiddleware, adminOnly, type AuthRequest } from '../middleware/auth.js';
 import { PLANS, BILLING_DISCOUNTS, getPlan, type PlanId, type BillingPeriod } from '../config/plans.js';
 import prisma from '../config/db.js';
 import { validate } from '../middleware/validate.js';
@@ -80,7 +80,7 @@ const changePlanSchema = z.object({
   billingPeriod: z.enum(['monthly', 'quarterly', 'semiannual', 'annual']).optional(),
 });
 
-router.post('/change', authMiddleware, validate(changePlanSchema), async (req: AuthRequest, res, next) => {
+router.post('/change', authMiddleware, adminOnly, validate(changePlanSchema), async (req: AuthRequest, res, next) => {
   try {
     const { planId, billingPeriod } = req.body as { planId: PlanId; billingPeriod?: BillingPeriod };
     const plan = getPlan(planId);

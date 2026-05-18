@@ -1,9 +1,10 @@
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
-import fs from 'fs';
-import axios from 'axios';
+import fsSync from 'fs';
 import { fileURLToPath } from 'url';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import syncRoutes from './routes/syncRoutes.js';
 import clientRoutes from './routes/clientRoutes.js';
 import settingsRoutes from './routes/settingsRoutes.js';
@@ -18,92 +19,74 @@ import { errorHandler } from './middleware/errorHandler.js';
 import schedulerService from './services/schedulerService.js';
 import settingsRepository from './repositories/settingsRepository.js';
 import seedService from './services/seedService.js';
-import prisma from './config/db.js';
+import { getCreativesDir, downloadCreativeOnDemand } from './services/creativeDownloadService.js';
 import './config/env.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const port = process.env.PORT || 3001;
+const isProduction = process.env.NODE_ENV === 'production';
 
-const corsOrigin = process.env.CORS_ORIGIN || '*';
-app.use(cors({
-  origin: corsOrigin.includes(',') ? corsOrigin.split(',').map(s => s.trim()) : corsOrigin,
-  credentials: true,
-}));
+app.use(helmet());
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { error: 'Muitas tentativas. Tente novamente em 15 minutos.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+const apiLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000,
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const corsOrigin = process.env.CORS_ORIGIN;
+if (isProduction && !corsOrigin) {
+  console.warn('[SECURITY] CORS_ORIGIN não definido em produção. Rejeitando todas as origens.');
+}
+const origin = isProduction
+  ? (corsOrigin ? (corsOrigin.includes(',') ? corsOrigin.split(',').map(s => s.trim()) : corsOrigin) : false)
+  : (corsOrigin || '*');
+app.use(cors({ origin, credentials: true }));
 app.use(express.json());
 
-const uploadsDir = path.join(__dirname, '..', 'uploads');
-const creativesDir = path.join(uploadsDir, 'creatives');
-if (!fs.existsSync(creativesDir)) fs.mkdirSync(creativesDir, { recursive: true });
+app.use('/api', apiLimiter);
+
+const creativesDir = getCreativesDir();
+const resolvedCreativesDir = path.resolve(creativesDir);
 
 app.get('/creatives/:filename', async (req, res, next) => {
-  const filePath = path.join(creativesDir, req.params.filename);
-  if (fs.existsSync(filePath)) {
-    const stat = fs.statSync(filePath);
-    if (stat.size > 15000) return next();
-    try { fs.unlinkSync(filePath); } catch {}
+  const filename = req.params.filename;
+  if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+    return res.status(403).send('Forbidden');
   }
 
-  const adId = req.params.filename.replace(/\.\w+$/, '').split('_').pop();
+  const filePath = path.resolve(creativesDir, filename);
+  if (!filePath.startsWith(resolvedCreativesDir + path.sep) && filePath !== resolvedCreativesDir) {
+    return res.status(403).send('Forbidden');
+  }
+
+  if (fsSync.existsSync(filePath)) {
+    const stat = fsSync.statSync(filePath);
+    if (stat.size > 15000) return next();
+    try { fsSync.unlinkSync(filePath); } catch {}
+  }
+
+  const adId = filename.replace(/\.\w+$/, '').split('_').pop();
   if (!adId) return res.status(404).send('Not found');
 
   try {
-    const row = await prisma.adPerformance.findFirst({
-      where: { adId },
-      select: { clientId: true, creativeUrl: true },
-    });
-    if (!row) return res.status(404).send('Not found');
+    const result = await downloadCreativeOnDemand(adId);
+    if (!result) return res.status(404).send('Not found');
 
-    const { resolveToken } = await import('./utils/tokenUtils.js');
-    const { fetchAdMedia } = await import('./integrations/metaApi.js');
-    const { accessToken } = await resolveToken(row.clientId);
-    const mediaList = await fetchAdMedia(row.clientId, accessToken, [adId]);
-
-    for (const media of mediaList) {
-      let sourceUrl: string;
-      let ext: string;
-
-      if (media.type === 'video' && media.videoUrl) {
-        sourceUrl = media.videoUrl;
-        ext = 'mp4';
-      } else if (media.imageUrl) {
-        sourceUrl = media.imageUrl;
-        ext = 'jpg';
-      } else {
-        continue;
-      }
-
-      const resp = await axios.get(sourceUrl, {
-        responseType: 'arraybuffer',
-        timeout: 30000,
-        maxContentLength: 50 * 1024 * 1024,
-      });
-
-      const ct = resp.headers['content-type'] || '';
-      if (media.type !== 'video') {
-        if (ct.includes('png')) ext = 'png';
-        else if (ct.includes('webp')) ext = 'webp';
-      }
-
-      const finalName = `${row.clientId}_${adId}.${ext}`;
-      fs.writeFileSync(path.join(creativesDir, finalName), resp.data);
-
-      if (media.type === 'video' && media.thumbnailUrl) {
-        try {
-          const thumbRes = await axios.get(media.thumbnailUrl, { responseType: 'arraybuffer', timeout: 10000 });
-          fs.writeFileSync(path.join(creativesDir, `${row.clientId}_${adId}_thumb.jpg`), thumbRes.data);
-        } catch {}
-      }
-
-      await prisma.adPerformance.updateMany({
-        where: { adId },
-        data: {
-          creativeUrl: `/creatives/${finalName}`,
-          creativeType: media.type,
-        },
-      });
-      return res.redirect(`/creatives/${finalName}`);
-    }
+    const ct = result.contentType || 'image/jpeg';
+    res.setHeader('Content-Type', ct);
+    res.setHeader('Content-Length', result.data.length);
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    return res.end(result.data);
   } catch (err) {
     console.warn(`[CREATIVE] Falha ao baixar sob demanda ${adId}:`, (err as Error).message);
   }
@@ -113,7 +96,7 @@ app.get('/creatives/:filename', async (req, res, next) => {
 
 app.use('/creatives', express.static(creativesDir));
 
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/invites', inviteRoutes);
 app.use('/api/managers', managerRoutes);
 app.use('/api/sync', syncRoutes);

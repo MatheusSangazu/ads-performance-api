@@ -17,8 +17,13 @@ class AlertController {
 
   public async markRead(req: AuthRequest, res: Response): Promise<void> {
     const { id } = req.params;
-    const alert = await alertService.markRead(id);
-    res.json(alert);
+    const managerId = req.manager!.id;
+    try {
+      const alert = await alertService.markRead(id, managerId);
+      res.json(alert);
+    } catch (err: any) {
+      res.status(403).json({ error: err.message });
+    }
   }
 
   public async markAllRead(req: AuthRequest, res: Response): Promise<void> {
@@ -29,8 +34,13 @@ class AlertController {
 
   public async dismiss(req: AuthRequest, res: Response): Promise<void> {
     const { id } = req.params;
-    const alert = await alertService.dismiss(id);
-    res.json(alert);
+    const managerId = req.manager!.id;
+    try {
+      const alert = await alertService.dismiss(id, managerId);
+      res.json(alert);
+    } catch (err: any) {
+      res.status(403).json({ error: err.message });
+    }
   }
 }
 

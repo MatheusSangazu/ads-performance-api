@@ -13,7 +13,7 @@ const envSchema = z.object({
   JWT_EXPIRES_IN: z.string().default('15m'),
   JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
   ADMIN_EMAIL: z.string().default('admin@growthads.com'),
-  ADMIN_PASSWORD: z.string().default('changeme123'),
+  ADMIN_PASSWORD: z.string().min(8, 'ADMIN_PASSWORD deve ter no mínimo 8 caracteres').default('changeme123'),
   EVO_API_URL: z.string().optional(),
   EVO_API_KEY: z.string().optional(),
   EVO_INSTANCE_NAME: z.string().optional(),

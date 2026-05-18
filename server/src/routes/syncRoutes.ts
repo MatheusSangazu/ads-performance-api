@@ -17,7 +17,7 @@ const breakdownSchema = syncSchema.extend({
   type: z.enum(['audience', 'placement', 'region']),
 });
 
-router.get('/progress', (req, res) => {
+router.get('/progress', authMiddleware, (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');

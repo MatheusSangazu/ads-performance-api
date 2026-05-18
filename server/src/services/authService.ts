@@ -112,14 +112,25 @@ class AuthService {
     const tokenHash = await bcrypt.hash(token, 10);
     const stored = await refreshTokenRepository.findByTokenHash(tokenHash);
 
-    if (!stored) throw new Error('Refresh token inválido.');
+    if (!stored) {
+      throw new Error('Refresh token inválido.');
+    }
+
     if (stored.expiresAt < new Date()) {
       await refreshTokenRepository.delete(stored.id);
       throw new Error('Refresh token expirado.');
     }
+
     if (!stored.manager.active) throw new Error('Conta desativada.');
 
-    await refreshTokenRepository.delete(stored.id);
+    try {
+      await refreshTokenRepository.delete(stored.id);
+    } catch {
+      await refreshTokenRepository.deleteAllByManager(stored.managerId);
+      console.error(`[SECURITY] Possível reuso de refresh token detectado para manager ${stored.managerId}. Todos os tokens revogados.`);
+      throw new Error('Token reutilizado. Por segurança, faça login novamente.');
+    }
+
     return this.generateTokens(stored.manager.id, stored.manager.role);
   }
 

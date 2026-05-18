@@ -15,7 +15,7 @@ const setAutoSyncSchema = z.object({
   enabled: z.boolean(),
 });
 
-router.get('/global-token', authMiddleware, (req, res, next) => {
+router.get('/global-token', authMiddleware, adminOnly, (req, res, next) => {
   settingsController.getGlobalToken(req, res).catch(next);
 });
 

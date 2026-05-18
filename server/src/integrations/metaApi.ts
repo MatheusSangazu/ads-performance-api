@@ -144,7 +144,7 @@ export async function fetchCreativeThumbnails(
   return results;
 }
 
-interface AdMedia {
+export interface AdMedia {
   adId: string;
   type: 'image' | 'video';
   imageUrl?: string;
