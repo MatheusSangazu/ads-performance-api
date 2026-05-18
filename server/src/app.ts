@@ -41,7 +41,7 @@ app.get('/creatives/:filename', async (req, res, next) => {
   const filePath = path.join(creativesDir, req.params.filename);
   if (fs.existsSync(filePath)) {
     const stat = fs.statSync(filePath);
-    if (stat.size > 5000) return next();
+    if (stat.size > 15000) return next();
     try { fs.unlinkSync(filePath); } catch {}
   }
 
