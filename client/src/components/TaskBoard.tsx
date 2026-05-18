@@ -10,7 +10,7 @@ import {
   type DragEndEvent,
   type DragOverEvent,
 } from '@dnd-kit/core';
-import { Plus } from 'lucide-react';
+import { Plus, AlertTriangle, Clock, CheckCircle, X } from 'lucide-react';
 import TaskColumn from './TaskColumn';
 import TaskForm from './TaskForm';
 import { taskApi, clientApi, type TaskItem } from '../lib/api';
@@ -30,6 +30,7 @@ export default function TaskBoard() {
   const [showForm, setShowForm] = useState(false);
   const [editingTask, setEditingTask] = useState<TaskItem | undefined>(undefined);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'warning' | 'error'; message: string } | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -126,7 +127,9 @@ export default function TaskBoard() {
   }) => {
     await taskApi.create(data);
     setShowForm(false);
+    setFeedback({ type: 'success', message: `Tarefa "${data.title}" criada com sucesso!` });
     fetchTasks();
+    setTimeout(() => setFeedback(null), 4000);
   };
 
   const handleUpdate = async (data: {
@@ -158,6 +161,18 @@ export default function TaskBoard() {
 
   const activeTask = activeId ? tasks.find((t) => t.id === activeId) : null;
 
+  const now = new Date();
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(23, 59, 59, 999);
+
+  const overdueTasks = tasks.filter((t) =>
+    t.status !== 'done' && t.dueDate && new Date(t.dueDate + 'T23:59:59') < now,
+  );
+  const upcomingTasks = tasks.filter((t) =>
+    t.status !== 'done' && t.dueDate && new Date(t.dueDate + 'T23:59:59') >= now && new Date(t.dueDate) <= tomorrow,
+  );
+
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
@@ -173,6 +188,42 @@ export default function TaskBoard() {
           Nova Tarefa
         </button>
       </div>
+
+      {feedback && (
+        <div className={`mb-4 flex items-center gap-2 rounded-lg border px-4 py-3 text-sm ${
+          feedback.type === 'success' ? 'border-green-800 bg-green-900/30 text-green-300' :
+          feedback.type === 'warning' ? 'border-yellow-800 bg-yellow-900/30 text-yellow-300' :
+          'border-red-800 bg-red-900/30 text-red-300'
+        }`}>
+          {feedback.type === 'success' && <CheckCircle size={16} />}
+          {feedback.type === 'warning' && <Clock size={16} />}
+          {feedback.type === 'error' && <AlertTriangle size={16} />}
+          <span className="flex-1">{feedback.message}</span>
+          <button onClick={() => setFeedback(null)} className="text-gray-500 hover:text-white">
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
+      {overdueTasks.length > 0 && (
+        <div className="mb-4 flex items-center gap-2 rounded-lg border border-red-800 bg-red-900/20 px-4 py-3 text-sm text-red-300">
+          <AlertTriangle size={16} className="shrink-0" />
+          <span>
+            <strong>{overdueTasks.length}</strong> tarefa{overdueTasks.length > 1 ? 's' : ''} atrasada{overdueTasks.length > 1 ? 's' : ''}:
+            {' '}{overdueTasks.map((t) => t.title).join(', ')}
+          </span>
+        </div>
+      )}
+
+      {upcomingTasks.length > 0 && (
+        <div className="mb-4 flex items-center gap-2 rounded-lg border border-yellow-800 bg-yellow-900/20 px-4 py-3 text-sm text-yellow-300">
+          <Clock size={16} className="shrink-0" />
+          <span>
+            <strong>{upcomingTasks.length}</strong> tarefa{upcomingTasks.length > 1 ? 's' : ''} próxima{upcomingTasks.length > 1 ? 's' : ''} do prazo:
+            {' '}{upcomingTasks.map((t) => t.title).join(', ')}
+          </span>
+        </div>
+      )}
 
       <DndContext
         sensors={sensors}

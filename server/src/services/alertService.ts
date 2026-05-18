@@ -45,10 +45,14 @@ class AlertService {
     if (managers.length === 0) return;
 
     const now = new Date();
-    const thirtyDaysAgo = new Date(now);
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthStartStr = monthStart.toISOString().split('T')[0];
+    const todayStr = now.toISOString().split('T')[0];
 
-    const performance = await dashboardRepository.getOverview([clientId]);
+    const performance = await dashboardRepository.getOverview([clientId], {
+      since: monthStartStr,
+      until: todayStr,
+    });
     const totalSpend = performance.totalSpend;
     const metrics = performance.clientMetrics[0];
 

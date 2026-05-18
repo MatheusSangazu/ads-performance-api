@@ -35,9 +35,12 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
   useEffect(() => {
     const fetchMetrics = async () => {
       try {
-        const { data } = await clientApi.metrics();
-        const clientMetric = data.clientMetrics.find((c) => c.actId === client.actId);
-        if (clientMetric) {
+        const now = new Date();
+        const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+        const today = now.toISOString().split('T')[0];
+        const { data } = await clientApi.metrics({ since: monthStart, until: today, clientId: client.actId });
+        if (data.clientMetrics && data.clientMetrics.length > 0) {
+          const clientMetric = data.clientMetrics[0];
           setCurrentSpend(clientMetric.spend);
           setCurrentMetrics({
             leads: clientMetric.leads,

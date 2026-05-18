@@ -4,6 +4,14 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { clientApi, type DashboardMetrics, type Client } from '../lib/api';
 import DatePicker from '../components/DatePicker';
 
+const API_BASE = (import.meta.env.VITE_API_URL || '/api').replace(/\/api$/, '');
+
+function mediaUrl(url?: string) {
+  if (!url) return '';
+  if (url.startsWith('http')) return url;
+  return `${API_BASE}${url}`;
+}
+
 function fmtCurrency(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
@@ -358,12 +366,12 @@ export default function Dashboard() {
                     {ad.creativeUrl ? (
                       <div
                         className="relative w-full cursor-pointer bg-gray-800 group"
-                        onClick={() => setMediaViewer({ url: ad.creativeUrl, type: ad.creativeType || 'image', name: ad.adName })}
+                        onClick={() => setMediaViewer({ url: mediaUrl(ad.creativeUrl) || '', type: ad.creativeType || 'image', name: ad.adName })}
                       >
                         {ad.creativeType === 'video' ? (
                           <>
                             <video
-                              src={ad.creativeUrl}
+                              src={mediaUrl(ad.creativeUrl)}
                               className="h-48 w-full object-cover"
                               muted
                               preload="metadata"
@@ -376,7 +384,7 @@ export default function Dashboard() {
                           </>
                         ) : (
                           <img
-                            src={ad.creativeUrl}
+                            src={mediaUrl(ad.creativeUrl)}
                             alt={ad.adName}
                             className="h-48 w-full object-cover transition-opacity group-hover:opacity-80"
                             loading="lazy"
