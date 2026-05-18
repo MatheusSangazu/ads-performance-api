@@ -1,6 +1,7 @@
 import prisma from '../config/db.js';
 import { env } from '../config/env.js';
 import alertService from './alertService.js';
+import evoService from './evoService.js';
 
 class HealthCheckService {
   private readonly baseUrl = 'https://graph.facebook.com/v19.0';
@@ -83,6 +84,70 @@ class HealthCheckService {
       4: 'Conta Permanente Desativada',
     };
     return reasons[reason] || 'Outro';
+  }
+
+  public async sendHealthSummary(managerId: string, phone: string, clientIds: string[]) {
+    if (!evoService.isConfigured) return;
+
+    const results: { name: string; status: string; ok: boolean }[] = [];
+
+    for (const actId of clientIds) {
+      const client = await prisma.client.findUnique({
+        where: { actId },
+        select: { clientName: true, accountStatus: true },
+      });
+
+      if (!client) continue;
+
+      const health = await this.checkAccountHealth(actId);
+      if (health) {
+        await prisma.client.update({
+          where: { actId },
+          data: {
+            accountStatus: health.accountStatus,
+            disableReason: health.disableReason,
+            healthLastCheck: new Date(),
+          },
+        });
+
+        if (health.accountStatus !== 1) {
+          const statusLabel = this.getStatusLabel(health.accountStatus);
+          const reasonLabel = this.getDisableReasonLabel(health.disableReason);
+          await alertService.onAccountIssue(actId, statusLabel, reasonLabel).catch(() => {});
+        }
+
+        const label = this.getStatusLabel(health.accountStatus);
+        results.push({ name: client.clientName, status: label, ok: health.accountStatus === 1 });
+      } else {
+        results.push({ name: client.clientName, status: 'Não verificado', ok: false });
+      }
+    }
+
+    if (results.length === 0) return;
+
+    const now = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+    const lines = [
+      '🏥 *Resumo de Saúde das Contas*',
+      `📅 ${now}`,
+      '',
+    ];
+
+    for (const r of results) {
+      const icon = r.ok ? '✅' : '🔴';
+      lines.push(`${icon} ${r.name} — ${r.status}`);
+    }
+
+    const allOk = results.every((r) => r.ok);
+    lines.push('');
+    if (allOk) {
+      lines.push('✨ Todas as contas estão operando normalmente!');
+    } else {
+      const problems = results.filter((r) => !r.ok);
+      lines.push(`⚠️ ${problems.length} conta(s) com atenção necessária.`);
+    }
+    lines.push('', '_Growth Ads_');
+
+    await evoService.sendText(phone, lines.join('\n'));
   }
 }
 

@@ -8,31 +8,35 @@ import healthCheckService from './healthCheckService.js';
 import managerRepository from '../repositories/managerRepository.js';
 import prisma from '../config/db.js';
 
+const TZ = 'America/Sao_Paulo';
+
 class SchedulerService {
   private task: cron.ScheduledTask | null = null;
   private healthTask: cron.ScheduledTask | null = null;
+  private healthSummaryTask: cron.ScheduledTask | null = null;
   private weeklyTask: cron.ScheduledTask | null = null;
 
   public start() {
     if (this.task) return;
 
-    // Daily Sync at 02:00
     this.task = cron.schedule('0 2 * * *', async () => {
       await this.runDailySync();
-    });
+    }, { timezone: TZ });
 
-    // Health Checks at 08:00, 12:00, 18:00
     this.healthTask = cron.schedule('0 8,12,18 * * *', async () => {
-      const hour = new Date().getHours().toString().padStart(2, '0');
+      const hour = new Date().toLocaleString('en-US', { timeZone: TZ, hour: '2-digit', hour12: false });
       await this.runScheduledHealthChecks(hour);
-    });
+    }, { timezone: TZ });
 
-    // Weekly Summary on Mondays at 09:00
+    this.healthSummaryTask = cron.schedule('30 8 * * *', async () => {
+      await this.runHealthSummary();
+    }, { timezone: TZ });
+
     this.weeklyTask = cron.schedule('0 9 * * 1', async () => {
       await summaryService.sendWeeklySummaryToAllManagers();
-    });
+    }, { timezone: TZ });
 
-    console.log('[SCHEDULER] Scheduler iniciado: sync diário, health checks e resumo semanal');
+    console.log('[SCHEDULER] Scheduler iniciado (America/Sao_Paulo): sync 02:00, health 08/12/18:00, resumo saúde 08:30, semanal seg 09:00');
   }
 
   public stop() {
@@ -43,6 +47,10 @@ class SchedulerService {
     if (this.healthTask) {
       this.healthTask.stop();
       this.healthTask = null;
+    }
+    if (this.healthSummaryTask) {
+      this.healthSummaryTask.stop();
+      this.healthSummaryTask = null;
     }
     if (this.weeklyTask) {
       this.weeklyTask.stop();
@@ -58,7 +66,6 @@ class SchedulerService {
   private async runScheduledHealthChecks(hour: string) {
     console.log(`[SCHEDULER] Iniciando health checks agendados para as ${hour}:00...`);
     
-    // Find managers who want health checks at this hour
     const managers = await prisma.manager.findMany({
       where: {
         active: true,
@@ -72,9 +79,25 @@ class SchedulerService {
     for (const manager of managers) {
       const clientIds = await managerRepository.getClientIds(manager.id);
       for (const actId of clientIds) {
-        // This will update health and trigger alerts if needed
         await healthCheckService.updateClientHealth(actId).catch(() => {});
       }
+    }
+  }
+
+  private async runHealthSummary() {
+    console.log('[SCHEDULER] Enviando resumo de saúde via WhatsApp...');
+
+    const managers = await prisma.manager.findMany({
+      where: { active: true, whatsappNotify: true, phone: { not: null } },
+    });
+
+    for (const manager of managers) {
+      const clientIds = await managerRepository.getClientIds(manager.id);
+      if (clientIds.length === 0) continue;
+
+      await healthCheckService.sendHealthSummary(manager.id, manager.phone!, clientIds).catch((err) => {
+        console.error(`[SCHEDULER] Erro ao enviar resumo para ${manager.name}:`, err);
+      });
     }
   }
 

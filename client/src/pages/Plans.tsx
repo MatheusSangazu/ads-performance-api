@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Check, X, Crown, Zap, Building2, CreditCard } from 'lucide-react';
+import { Check, X, Crown, Zap, Building2 } from 'lucide-react';
 import { planApi, type PlanInfo, type CurrentPlan, type BillingInfo } from '../lib/api';
-import { useAuth } from '../contexts/AuthContext';
 
 const planIcons: Record<string, typeof Zap> = {
   starter: Zap,
@@ -33,7 +32,6 @@ const featureLabels: Record<string, string> = {
 };
 
 export default function Plans() {
-  const { user } = useAuth();
   const [plans, setPlans] = useState<PlanInfo[]>([]);
   const [current, setCurrent] = useState<CurrentPlan | null>(null);
   const [billing, setBilling] = useState<Record<string, BillingInfo>>({});
