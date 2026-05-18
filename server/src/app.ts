@@ -10,6 +10,8 @@ import inviteRoutes from './routes/inviteRoutes.js';
 import managerRoutes from './routes/managerRoutes.js';
 import alertRoutes from './routes/alertRoutes.js';
 import taskRoutes from './routes/taskRoutes.js';
+import planRoutes from './routes/planRoutes.js';
+import agencyRoutes from './routes/agencyRoutes.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import schedulerService from './services/schedulerService.js';
 import settingsRepository from './repositories/settingsRepository.js';
@@ -38,6 +40,8 @@ app.use('/api/clients', clientRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/alerts', alertRoutes);
 app.use('/api/tasks', taskRoutes);
+app.use('/api/plans', planRoutes);
+app.use('/api/agency', agencyRoutes);
 
 app.get('/', (_req, res) => res.send('[GROWTH-ADS] API Online!'));
 

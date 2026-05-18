@@ -5,6 +5,8 @@ import budgetController from '../controllers/budgetController.js';
 import goalController from '../controllers/goalController.js';
 import { validate } from '../middleware/validate.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { checkClientLimit } from '../middleware/planMiddleware.js';
+import { requireFeature } from '../middleware/planMiddleware.js';
 
 const router = Router();
 
@@ -37,7 +39,7 @@ const setGoalSchema = z.object({
   month: z.string().regex(/^\d{4}-\d{2}$/, 'Formato: YYYY-MM'),
 });
 
-router.post('/', authMiddleware, validate(createClientSchema), (req, res, next) => {
+router.post('/', authMiddleware, checkClientLimit, validate(createClientSchema), (req, res, next) => {
   clientController.create(req, res).catch(next);
 });
 
@@ -49,27 +51,27 @@ router.get('/metrics', authMiddleware, (req, res, next) => {
   clientController.metrics(req, res).catch(next);
 });
 
-router.get('/:actId/budget', authMiddleware, (req, res, next) => {
+router.get('/:actId/budget', authMiddleware, requireFeature('budgetGoals'), (req, res, next) => {
   budgetController.getCurrent(req, res).catch(next);
 });
 
-router.post('/:actId/budget', authMiddleware, validate(setBudgetSchema), (req, res, next) => {
+router.post('/:actId/budget', authMiddleware, requireFeature('budgetGoals'), validate(setBudgetSchema), (req, res, next) => {
   budgetController.setBudget(req, res).catch(next);
 });
 
-router.get('/:actId/budget/history', authMiddleware, (req, res, next) => {
+router.get('/:actId/budget/history', authMiddleware, requireFeature('budgetGoals'), (req, res, next) => {
   budgetController.getHistory(req, res).catch(next);
 });
 
-router.get('/:actId/goals', authMiddleware, (req, res, next) => {
+router.get('/:actId/goals', authMiddleware, requireFeature('budgetGoals'), (req, res, next) => {
   goalController.getCurrent(req, res).catch(next);
 });
 
-router.post('/:actId/goals', authMiddleware, validate(setGoalSchema), (req, res, next) => {
+router.post('/:actId/goals', authMiddleware, requireFeature('budgetGoals'), validate(setGoalSchema), (req, res, next) => {
   goalController.setGoal(req, res).catch(next);
 });
 
-router.delete('/:actId/goals/:id', authMiddleware, (req, res, next) => {
+router.delete('/:actId/goals/:id', authMiddleware, requireFeature('budgetGoals'), (req, res, next) => {
   goalController.remove(req, res).catch(next);
 });
 

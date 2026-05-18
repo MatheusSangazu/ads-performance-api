@@ -18,7 +18,7 @@ export default function ProtectedRoute({ adminOnly }: ProtectedRouteProps) {
   }
 
   if (!user) return <Navigate to="/login" replace />;
-  if (adminOnly && user.role !== 'admin') return <Navigate to="/" replace />;
+  if (adminOnly && user.role !== 'admin' && user.role !== 'agency') return <Navigate to="/" replace />;
 
   return <Outlet />;
 }

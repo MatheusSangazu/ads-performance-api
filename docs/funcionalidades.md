@@ -19,9 +19,14 @@
 | email | String (unique) | Email de login |
 | password_hash | String | Senha hasheada (bcrypt) |
 | company | String? | Nome da empresa/agência |
-| role | Enum (`admin`, `manager`) | Perfil de acesso |
+| role | Enum (`admin`, `manager`, `agency`) | Perfil de acesso |
 | plan | String (default: `"pro"`) | Plano do gestor |
 | max_clients | Int? (default: `null`) | Limite de clientes (null = ilimitado) |
+| agency_id | String? (FK → managers.id) | Gestor dono da agência (self-ref) |
+| max_seats | Int? | Limite de membros da equipe (agency) |
+| subscription_status | Enum (`active`, `past_due`, `canceled`, `trial`) | Status da assinatura |
+| subscription_ends_at | DateTime? | Data de expiração da assinatura |
+| billing_period | String? | Período de cobrança |
 | active | Boolean (default: `true`) | Conta ativa/inativa |
 | created_at | DateTime | Data de criação |
 | updated_at | DateTime | Última atualização |
@@ -644,11 +649,92 @@ JOIN managers m ON mc.manager_id = m.id;
 5. ~~Envio de resumos semanais automáticos para gestores~~
 6. ~~Indicadores visuais de saúde da conta (Ativa, Desativada, Erro de Pagamento)~~
 
-### Sprint 6 — Monetização (Futuro)
-1. Planos e limites
-2. Stripe/MercadoPago
-3. Billing
-4. Feature gating por plano
+### Sprint 6 — Monetização [CONCLUIDA]
+1. ~~Configuração centralizada de planos (`plans.ts`) — Starter, Pro, Agency~~
+2. ~~Feature gating via middleware (`planMiddleware.ts`) — limites de clientes, tarefas, seats, features~~
+3. ~~Plano Agency com gerenciamento de equipe (multi-tenancy via `agencyId`)~~
+4. ~~Rotas de planos (listar, atual, trocar com proteção de downgrade)~~
+5. ~~Rotas de agency (membros, convite, remoção, visão consolidada)~~
+6. ~~Proteção de downgrade (bloqueia se uso atual excede limites do novo plano)~~
+7. ~~Frontend: Página de Planos com comparação e seletor de período de cobrança~~
+8. ~~Frontend: Página Agency com gestão de equipe e visão consolidada~~
+9. ~~Navegação baseada em role (admin vê tudo, agency vê Equipe, manager vê base)~~
+
+#### Planos e Preços
+
+| Plano | Mensal | Trimestral (5% off) | Semestral (10% off) | Anual (15% off) |
+|-------|--------|---------------------|---------------------|-----------------|
+| **Starter** | R$ 97 | R$ 92 | R$ 87 | R$ 82 |
+| **Pro** | R$ 197 | R$ 187 | R$ 177 | R$ 167 |
+| **Agency** | R$ 397 | R$ 377 | R$ 357 | R$ 337 |
+
+#### Features por Plano
+
+| Feature | Starter | Pro | Agency |
+|---------|---------|-----|--------|
+| Clientes máx. | 5 | 20 | Ilimitado |
+| Tarefas máx. | 25 | 100 | Ilimitado |
+| Seats (equipe) | — | — | 10 (padrão) |
+| Auto Sync | ✗ | ✓ | ✓ |
+| Orçamento e Metas | ✗ | ✓ | ✓ |
+| WhatsApp | ✗ | ✓ | ✓ |
+| Exportar Excel | ✗ | ✓ | ✓ |
+| Resumo Semanal | ✗ | ✓ | ✓ |
+| Dashboard Consolidado | ✗ | ✗ | ✓ |
+| Gestão de Equipe | ✗ | ✗ | ✓ |
+| Health Check | ✗ | ✗ | ✓ |
+
+#### Modelo de dados — Alterações no Manager
+
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| role | Enum (`admin`, `manager`, `agency`) | Novo role `agency` |
+| agency_id | String? (FK → managers.id) | Gestor dono da agência (self-ref) |
+| max_seats | Int? | Limite de membros da equipe |
+| subscription_status | Enum (`active`, `past_due`, `canceled`, `trial`) | Status da assinatura |
+| subscription_ends_at | DateTime? | Data de expiração da assinatura |
+| billing_period | String? | Período de cobrança (`monthly`, `quarterly`, `semiannual`, `annual`) |
+
+#### API — Rotas de Planos
+
+| Método | Rota | Descrição | Auth |
+|--------|------|-----------|------|
+| `GET` | `/plans` | Listar todos os planos com preços | ❌ |
+| `GET` | `/plans/current` | Plano atual do gestor + uso + status assinatura | ✅ |
+| `POST` | `/plans/change` | Trocar plano (com proteção de downgrade) | ✅ |
+
+#### API — Rotas de Agency
+
+| Método | Rota | Descrição | Auth |
+|--------|------|-----------|------|
+| `GET` | `/agency/members` | Listar membros da equipe | Agency |
+| `POST` | `/agency/members` | Convidar membro (verifica seat limit) | Agency |
+| `DELETE` | `/agency/members/:memberId` | Remover membro | Agency |
+| `GET` | `/agency/consolidated` | Visão consolidada de todos os gestores e clientes | Agency |
+
+#### Middleware de Feature Gating
+
+- `requireFeature(feature)` — Bloqueia acesso se plano não tem a feature (403 `PLAN_LIMIT`)
+- `checkClientLimit()` — Bloqueia criação de cliente se exceder limite (403 `CLIENT_LIMIT`)
+- `checkTaskLimit()` — Bloqueia criação de tarefa se exceder limite (403 `TASK_LIMIT`)
+- `checkSeatLimit()` — Bloqueia convite de membro se exceder seats (403 `SEAT_LIMIT`)
+- `requireAgencyRole()` — Bloqueia acesso se não for agency (403 `AGENCY_ONLY`)
+
+#### Frontend — Páginas
+
+| Página | Rota | Descrição |
+|--------|------|-----------|
+| Planos | `/plans` | Comparação de planos, preços, seletor de período, plano atual destacado |
+| Agency | `/agency` | Gestão de equipe (convite/remoção), visão consolidada dos clientes |
+
+#### Navegação por Role
+
+| Item | Manager | Agency | Admin |
+|------|---------|--------|-------|
+| Planos | ✓ | ✓ | ✓ |
+| Gestores | ✗ | ✗ | ✓ |
+| Convites | ✗ | ✗ | ✓ |
+| Equipe | ✗ | ✓ | ✓ |
 
 ### Sprint 7 — Agente IA (Futuro)
 1. Resumos inteligentes diários/semanais (LLM)

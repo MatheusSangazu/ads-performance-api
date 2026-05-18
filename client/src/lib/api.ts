@@ -40,7 +40,7 @@ export interface AuthUser {
   name: string;
   email: string;
   company: string | null;
-  role: 'admin' | 'manager';
+  role: 'admin' | 'manager' | 'agency';
   plan: string;
   phone: string | null;
   whatsappNotify: boolean;
@@ -316,5 +316,70 @@ export const taskApi = {
   remove: (id: string) => api.delete(`/tasks/${id}`),
   clearByStatus: (status: string) => api.post<{ success: boolean; deleted: number }>('/tasks/clear', { status }),
 };
+
+export const planApi = {
+  list: () => api.get<{ plans: PlanInfo[]; billing: BillingInfo }>('/plans'),
+  current: () => api.get<CurrentPlan>('/plans/current'),
+  change: (planId: string, billingPeriod?: string) => api.post('/plans/change', { planId, billingPeriod }),
+};
+
+export interface PlanInfo {
+  id: string;
+  name: string;
+  description: string;
+  maxClients: number;
+  maxTasks: number;
+  maxSeats: number;
+  pricePerSeatExtra: number | null;
+  features: PlanFeatures;
+  prices: Record<string, number>;
+}
+
+export interface PlanFeatures {
+  autoSync: boolean;
+  budgetGoals: boolean;
+  whatsapp: boolean;
+  exportExcel: boolean;
+  weeklySummary: boolean;
+  consolidatedDashboard: boolean;
+  teamManagement: boolean;
+  healthCheck: boolean;
+}
+
+export interface BillingInfo {
+  label: string;
+  discount: number;
+  months: number;
+}
+
+export interface CurrentPlan {
+  plan: PlanInfo;
+  usage: { clients: number; tasks: number; seats: number };
+  subscription: { status: string; endsAt: string | null; billingPeriod: string | null };
+}
+
+export const agencyApi = {
+  members: () => api.get<AgencyMember[]>('/agency/members'),
+  invite: (data: { name: string; email: string; password: string }) => api.post('/agency/members', data),
+  remove: (memberId: string) => api.delete(`/agency/members/${memberId}`),
+  consolidated: () => api.get<AgencyConsolidated[]>('/agency/consolidated'),
+};
+
+export interface AgencyMember {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  active: boolean;
+  createdAt: string;
+  managerClients: { clientId: string }[];
+}
+
+export interface AgencyConsolidated {
+  id: string;
+  name: string;
+  clientCount: number;
+  clients: { actId: string; clientName: string; status: string }[];
+}
 
 export default api;

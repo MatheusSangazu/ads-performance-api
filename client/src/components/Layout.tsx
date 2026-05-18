@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { BarChart3, Settings, Users, Shield, MailPlus, LogOut, ClipboardList, Menu, X } from 'lucide-react';
+import { BarChart3, Settings, Users, Shield, MailPlus, LogOut, ClipboardList, Menu, X, CreditCard, Building2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import AlertDropdown from './AlertDropdown';
 
@@ -8,6 +8,7 @@ const baseNavItems = [
   { to: '/', label: 'Dashboard', icon: BarChart3 },
   { to: '/clients', label: 'Clientes', icon: Users },
   { to: '/tasks', label: 'Tarefas', icon: ClipboardList },
+  { to: '/plans', label: 'Planos', icon: CreditCard },
   { to: '/settings', label: 'Configurações', icon: Settings },
 ];
 
@@ -15,6 +16,16 @@ const adminNavItems = [
   { to: '/managers', label: 'Gestores', icon: Shield },
   { to: '/invites', label: 'Convites', icon: MailPlus },
 ];
+
+const agencyOnlyItems = [
+  { to: '/agency', label: 'Equipe', icon: Building2 },
+];
+
+function getVisibleAdminItems(isAdmin: boolean, isAgency: boolean) {
+  if (isAdmin) return [...adminNavItems, ...agencyOnlyItems];
+  if (isAgency) return agencyOnlyItems;
+  return [];
+}
 
 function NavItem({ to, label, icon: Icon, end, admin, onClick }: {
   to: string; label: string; icon: typeof BarChart3; end?: boolean; admin?: boolean; onClick?: () => void;
@@ -40,7 +51,7 @@ function NavItem({ to, label, icon: Icon, end, admin, onClick }: {
 }
 
 export default function Layout() {
-  const { user, logout, isAdmin } = useAuth();
+  const { user, logout, isAdmin, isAgency } = useAuth();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -70,7 +81,7 @@ export default function Layout() {
             {baseNavItems.map(({ to, label, icon }) => (
               <NavItem key={to} to={to} label={label} icon={icon} end={to === '/'} />
             ))}
-            {isAdmin && adminNavItems.map(({ to, label, icon }) => (
+            {getVisibleAdminItems(isAdmin, isAgency).map(({ to, label, icon }) => (
               <NavItem key={to} to={to} label={label} icon={icon} admin />
             ))}
           </div>
@@ -86,6 +97,11 @@ export default function Layout() {
                 {isAdmin && (
                   <span className="rounded-full bg-purple-600/20 px-2.5 py-0.5 text-xs font-semibold text-purple-400">
                     Admin
+                  </span>
+                )}
+                {isAgency && !isAdmin && (
+                  <span className="rounded-full bg-amber-600/20 px-2.5 py-0.5 text-xs font-semibold text-amber-400">
+                    Agency
                   </span>
                 )}
                 <button
@@ -106,10 +122,10 @@ export default function Layout() {
               {baseNavItems.map(({ to, label, icon }) => (
                 <NavItem key={to} to={to} label={label} icon={icon} end={to === '/'} onClick={closeMobile} />
               ))}
-              {isAdmin && (
+              {getVisibleAdminItems(isAdmin, isAgency).length > 0 && (
                 <>
                   <div className="my-2 border-t border-gray-800" />
-                  {adminNavItems.map(({ to, label, icon }) => (
+                  {getVisibleAdminItems(isAdmin, isAgency).map(({ to, label, icon }) => (
                     <NavItem key={to} to={to} label={label} icon={icon} admin onClick={closeMobile} />
                   ))}
                 </>

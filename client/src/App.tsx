@@ -10,6 +10,8 @@ import Settings from './pages/Settings';
 import Managers from './pages/Managers';
 import Invites from './pages/Invites';
 import Tasks from './pages/Tasks';
+import Plans from './pages/Plans';
+import Agency from './pages/Agency';
 
 function AppRoutes() {
   const { user, loading } = useAuth();
@@ -27,6 +29,7 @@ function AppRoutes() {
           <Route path="/clients" element={<Clients />} />
           <Route path="/tasks" element={<Tasks />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/plans" element={<Plans />} />
         </Route>
       </Route>
 
@@ -34,6 +37,7 @@ function AppRoutes() {
         <Route element={<Layout />}>
           <Route path="/managers" element={<Managers />} />
           <Route path="/invites" element={<Invites />} />
+          <Route path="/agency" element={<Agency />} />
         </Route>
       </Route>
 

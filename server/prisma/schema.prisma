@@ -15,6 +15,14 @@ enum ClientStatus {
 enum ManagerRole {
   admin
   manager
+  agency
+}
+
+enum SubscriptionStatus {
+  active
+  past_due
+  canceled
+  trial
 }
 
 enum GoalMetric {
@@ -75,6 +83,11 @@ model Manager {
   whatsappNotify Boolean    @default(false) @map("whatsapp_notify")
   healthCheckTimes String?    @default("08,12,18") @map("health_check_times") @db.VarChar(50)
   weeklySummary Boolean     @default(false) @map("weekly_summary")
+  agencyId         String?      @map("agency_id") @db.Char(36)
+  maxSeats         Int?         @map("max_seats")
+  subscriptionStatus SubscriptionStatus @default(active) @map("subscription_status")
+  subscriptionEndsAt DateTime?  @map("subscription_ends_at") @db.Timestamp(0)
+  billingPeriod    String?      @map("billing_period") @db.VarChar(20)
   createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamp(0)
   updatedAt    DateTime     @updatedAt @map("updated_at") @db.Timestamp(0)
 
@@ -85,6 +98,8 @@ model Manager {
   goals         ClientGoal[]
   alerts        Alert[]
   tasks         Task[]
+  agency        Manager?  @relation("AgencyManagers", fields: [agencyId], references: [id])
+  agencyMembers Manager[] @relation("AgencyManagers")
 
   @@map("managers")
 }
