@@ -17,10 +17,12 @@ const breakdownSchema = syncSchema.extend({
   type: z.enum(['audience', 'placement', 'region']),
 });
 
-router.get('/progress', authMiddleware, (req, res) => {
+router.all('/progress', authMiddleware, (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
   res.setHeader('Connection', 'keep-alive');
+  // Impede que o proxy (como Nginx) faça buffer dos eventos
+  res.setHeader('X-Accel-Buffering', 'no');
   res.flushHeaders();
 
   const unsubscribe = syncProgress.onProgress((event) => {

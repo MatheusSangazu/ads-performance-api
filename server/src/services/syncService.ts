@@ -91,8 +91,7 @@ class SyncService {
     const client = await clientRepository.findByActId(actId);
     if (!client) throw new Error(`Cliente ${actId} não encontrado.`);
 
-    const { accessToken, source } = await resolveToken(actId);
-    console.log(`[TOKEN] Token usado: ${source}`);
+    const { accessToken } = await resolveToken(actId);
 
     syncProgress.send({ type: 'start', message: `[SYNC] Validando acesso à conta ${actId}...`, step: 'main', progress: 0 });
     const validation = await validateAccount(actId, accessToken);

@@ -21,7 +21,11 @@ router.get('/members', requireAgencyRole, async (req: AuthRequest, res, next) =>
 const inviteSchema = z.object({
   name: z.string().min(2, 'Nome é obrigatório'),
   email: z.string().email('Email inválido'),
-  password: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres'),
+  password: z.string()
+    .min(8, 'Senha deve ter no mínimo 8 caracteres')
+    .regex(/[A-Z]/, 'Senha deve conter pelo menos uma letra maiúscula')
+    .regex(/[0-9]/, 'Senha deve conter pelo menos um número')
+    .regex(/[^a-zA-Z0-9]/, 'Senha deve conter pelo menos um caractere especial'),
 });
 
 router.post('/members', requireAgencyRole, checkSeatLimit, validate(inviteSchema), async (req: AuthRequest, res, next) => {

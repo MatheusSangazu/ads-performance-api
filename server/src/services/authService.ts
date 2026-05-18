@@ -38,7 +38,7 @@ class AuthService {
 
   private async generateRefreshToken(managerId: string): Promise<string> {
     const token = crypto.randomBytes(64).toString('hex');
-    const tokenHash = await bcrypt.hash(token, 10);
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
     const expiresSeconds = this.parseExpiry(env.JWT_REFRESH_EXPIRES_IN);
 
     await refreshTokenRepository.create({
@@ -109,7 +109,7 @@ class AuthService {
   }
 
   public async refresh(token: string) {
-    const tokenHash = await bcrypt.hash(token, 10);
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
     const stored = await refreshTokenRepository.findByTokenHash(tokenHash);
 
     if (!stored) {
@@ -135,7 +135,7 @@ class AuthService {
   }
 
   public async logout(token: string) {
-    const tokenHash = await bcrypt.hash(token, 10);
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
     const stored = await refreshTokenRepository.findByTokenHash(tokenHash);
     if (stored) await refreshTokenRepository.delete(stored.id);
   }

@@ -98,7 +98,7 @@ model Manager {
   goals         ClientGoal[]
   alerts        Alert[]
   tasks         Task[]
-  agency        Manager?  @relation("AgencyManagers", fields: [agencyId], references: [id])
+  agency        Manager?  @relation("AgencyManagers", fields: [agencyId], references: [id], onDelete: SetNull)
   agencyMembers Manager[] @relation("AgencyManagers")
 
   @@map("managers")
@@ -114,7 +114,7 @@ model Invite {
   expiresAt DateTime @map("expires_at") @db.Timestamp(0)
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(0)
 
-  creator Manager @relation(fields: [createdBy], references: [id])
+  creator Manager @relation(fields: [createdBy], references: [id], onDelete: Cascade)
 
   @@map("invites")
 }
@@ -124,8 +124,8 @@ model ManagerClient {
   clientId  String   @map("client_id") @db.VarChar(50)
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(0)
 
-  manager Manager @relation(fields: [managerId], references: [id])
-  client  Client  @relation(fields: [clientId], references: [actId])
+  manager Manager @relation(fields: [managerId], references: [id], onDelete: Cascade)
+  client  Client  @relation(fields: [clientId], references: [actId], onDelete: Cascade)
 
   @@id([managerId, clientId])
   @@map("manager_clients")
@@ -138,7 +138,7 @@ model RefreshToken {
   expiresAt DateTime @map("expires_at") @db.Timestamp(0)
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(0)
 
-  manager Manager @relation(fields: [managerId], references: [id])
+  manager Manager @relation(fields: [managerId], references: [id], onDelete: Cascade)
 
   @@index([managerId])
   @@map("refresh_tokens")
@@ -201,7 +201,7 @@ model AdPerformance {
   creativeUrl           String?  @map("creative_url") @db.VarChar(500)
   creativeType          String?  @map("creative_type") @db.VarChar(20)
 
-  client                Client   @relation(fields: [clientId], references: [actId])
+  client                Client   @relation(fields: [clientId], references: [actId], onDelete: Cascade)
 
   @@unique([date, adId], map: "unique_ad_date")
   @@index([clientId], map: "idx_client")
@@ -237,7 +237,7 @@ model AdAudiencePerformance {
   totalConversionValue   Decimal? @default(0.0000) @db.Decimal(15, 4) @map("total_conversion_value")
   roas                   Decimal? @default(0.0000) @db.Decimal(10, 4)
 
-  client                 Client   @relation(fields: [clientId], references: [actId])
+  client                 Client   @relation(fields: [clientId], references: [actId], onDelete: Cascade)
 
   @@unique([date, adId, gender, ageRange], map: "unique_audience_ad_date")
   @@index([clientId], map: "idx_audience_client")
@@ -272,7 +272,7 @@ model AdPlacementPerformance {
   totalConversionValue   Decimal? @default(0.0000) @db.Decimal(15, 4) @map("total_conversion_value")
   roas                   Decimal? @default(0.0000) @db.Decimal(10, 4)
 
-  client                 Client   @relation(fields: [clientId], references: [actId])
+  client                 Client   @relation(fields: [clientId], references: [actId], onDelete: Cascade)
 
   @@unique([date, adId, platform], map: "unique_placement_ad_date")
   @@index([clientId], map: "idx_placement_client")
@@ -307,7 +307,7 @@ model AdRegionPerformance {
   totalConversionValue   Decimal? @default(0.0000) @db.Decimal(15, 4) @map("total_conversion_value")
   roas                   Decimal? @default(0.0000) @db.Decimal(10, 4)
 
-  client                 Client   @relation(fields: [clientId], references: [actId])
+  client                 Client   @relation(fields: [clientId], references: [actId], onDelete: Cascade)
 
   @@unique([date, adId, region], map: "unique_region_ad_date")
   @@index([clientId], map: "idx_region_client")
@@ -327,8 +327,8 @@ model Alert {
   dismissed  Boolean       @default(false)
   createdAt  DateTime      @default(now()) @map("created_at") @db.Timestamp(0)
 
-  manager Manager @relation(fields: [managerId], references: [id])
-  client  Client  @relation(fields: [clientId], references: [actId])
+  manager Manager @relation(fields: [managerId], references: [id], onDelete: Cascade)
+  client  Client  @relation(fields: [clientId], references: [actId], onDelete: Cascade)
 
   @@index([managerId, read, dismissed], map: "idx_alert_manager_unread")
   @@index([managerId, createdAt], map: "idx_alert_manager_date")
@@ -349,8 +349,8 @@ model Task {
   createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamp(0)
   updatedAt   DateTime     @updatedAt @map("updated_at") @db.Timestamp(0)
 
-  manager Manager @relation(fields: [managerId], references: [id])
-  client  Client? @relation(fields: [clientId], references: [actId])
+  manager Manager @relation(fields: [managerId], references: [id], onDelete: Cascade)
+  client  Client? @relation(fields: [clientId], references: [actId], onDelete: Cascade)
 
   @@index([managerId, status, position], map: "idx_task_manager_status")
   @@map("tasks")
@@ -373,8 +373,8 @@ model ClientBudget {
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamp(0)
   updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamp(0)
 
-  manager Manager @relation(fields: [managerId], references: [id])
-  client  Client  @relation(fields: [clientId], references: [actId])
+  manager Manager @relation(fields: [managerId], references: [id], onDelete: Cascade)
+  client  Client  @relation(fields: [clientId], references: [actId], onDelete: Cascade)
 
   @@unique([managerId, clientId, month])
   @@map("client_budgets")
@@ -390,8 +390,8 @@ model ClientGoal {
   createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamp(0)
   updatedAt    DateTime    @updatedAt @map("updated_at") @db.Timestamp(0)
 
-  manager Manager @relation(fields: [managerId], references: [id])
-  client  Client  @relation(fields: [clientId], references: [actId])
+  manager Manager @relation(fields: [managerId], references: [id], onDelete: Cascade)
+  client  Client  @relation(fields: [clientId], references: [actId], onDelete: Cascade)
 
   @@unique([managerId, clientId, metric, month])
   @@map("client_goals")

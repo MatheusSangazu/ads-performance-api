@@ -35,7 +35,7 @@ router.post('/sync-all', authMiddleware, adminOnly, (req, res, next) => {
   settingsController.triggerSyncAll(req, res).catch(next);
 });
 
-router.get('/whatsapp/status', authMiddleware, async (_req, res) => {
+router.get('/whatsapp/status', authMiddleware, adminOnly, async (_req, res) => {
   const status = await evoService.getConnectionState();
   res.json(status);
 });

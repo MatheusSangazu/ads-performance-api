@@ -12,21 +12,14 @@ export interface AuthRequest extends Request {
 
 export function authMiddleware(req: AuthRequest, res: Response, next: NextFunction) {
   const header = req.headers.authorization;
-  let token = '';
 
-  if (header?.startsWith('Bearer ')) {
-    token = header.slice(7);
-  } else if (req.query.token) {
-    // Permite token via query string para conexões SSE (Server-Sent Events)
-    token = req.query.token as string;
-  }
-
-  if (!token) {
-    res.status(401).json({ error: 'Token não fornecido.' });
+  if (!header?.startsWith('Bearer ')) {
+    res.status(401).json({ error: 'Token não fornecido ou formato inválido.' });
     return;
   }
 
   try {
+    const token = header.slice(7);
     const payload = authService.verifyAccessToken(token);
     req.manager = { id: payload.sub, role: payload.role };
     next();
