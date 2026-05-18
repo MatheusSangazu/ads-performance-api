@@ -11,6 +11,8 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+let refreshPromise: Promise<any> | null = null;
+
 api.interceptors.response.use(
   (res) => res,
   async (error) => {
@@ -19,16 +21,29 @@ api.interceptors.response.use(
       original._retry = true;
       const refreshToken = localStorage.getItem('refresh_token');
       if (refreshToken) {
+        if (!refreshPromise) {
+          refreshPromise = axios.post(`${api.defaults.baseURL}/auth/refresh`, { refreshToken })
+            .then(({ data }) => {
+              localStorage.setItem('access_token', data.accessToken);
+              localStorage.setItem('refresh_token', data.refreshToken);
+              return data;
+            })
+            .catch((err) => {
+              localStorage.removeItem('access_token');
+              localStorage.removeItem('refresh_token');
+              window.location.href = '/login';
+              throw err;
+            })
+            .finally(() => {
+              refreshPromise = null;
+            });
+        }
         try {
-          const { data } = await axios.post(`${api.defaults.baseURL}/auth/refresh`, { refreshToken });
-          localStorage.setItem('access_token', data.accessToken);
-          localStorage.setItem('refresh_token', data.refreshToken);
+          const data = await refreshPromise;
           original.headers.Authorization = `Bearer ${data.accessToken}`;
           return api(original);
         } catch {
-          localStorage.removeItem('access_token');
-          localStorage.removeItem('refresh_token');
-          window.location.href = '/login';
+          return Promise.reject(error);
         }
       }
     }
@@ -148,17 +163,30 @@ export interface DashboardMetrics {
     spend: number;
     leads: number;
     impressions: number;
+    linkClicks: number;
+    purchases: number;
+    purchaseValue: number;
+    totalConversionValue: number;
   }[];
   placementData: {
     platform: string;
     spend: number;
     leads: number;
     impressions: number;
+    linkClicks: number;
+    purchases: number;
+    purchaseValue: number;
+    totalConversionValue: number;
   }[];
   regionData: {
     region: string;
     spend: number;
     leads: number;
+    impressions: number;
+    linkClicks: number;
+    purchases: number;
+    purchaseValue: number;
+    totalConversionValue: number;
   }[];
   period: { since: string; until: string };
 }

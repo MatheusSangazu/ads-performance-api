@@ -96,7 +96,7 @@ class AuthService {
       role: 'manager' as ManagerRole,
     });
 
-    await inviteRepository.markUsed(invite.id);
+    await inviteRepository.markUsed(invite.id, manager.id);
     const tokens = await this.generateTokens(manager.id, manager.role);
 
     return {

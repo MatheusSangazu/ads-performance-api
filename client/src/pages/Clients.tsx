@@ -81,10 +81,15 @@ export default function Clients() {
     access_token: string;
     custom_event_id?: string;
   }) => {
-    await clientApi.create(data);
-    setMessage({ type: 'success', text: 'Cliente cadastrado com sucesso!' });
-    setShowForm(false);
-    fetchClients();
+    try {
+      await clientApi.create(data);
+      setMessage({ type: 'success', text: 'Cliente cadastrado com sucesso!' });
+      setShowForm(false);
+      fetchClients();
+    } catch (err: any) {
+      const msg = err?.response?.data?.error || err?.message || 'Erro ao cadastrar cliente.';
+      setMessage({ type: 'error', text: msg });
+    }
   };
 
   const handleSync = async (

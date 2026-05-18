@@ -143,6 +143,7 @@ class DashboardRepository {
 
     const adAgg = new Map<string, {
       adId: string; adName: string; campaignName: string; previewLink: string;
+      creativeUrl?: string; creativeType?: string;
       spend: number; leads: number; linkClicks: number; impressions: number;
       purchases: number; totalConversionValue: number;
     }>();
@@ -159,6 +160,7 @@ class DashboardRepository {
       existing.purchases += r.purchases || 0;
       existing.totalConversionValue += Number(r.totalConversionValue || 0);
       if (!existing.previewLink && r.previewLink) existing.previewLink = r.previewLink;
+      if (r.creativeUrl && !existing.creativeUrl) { existing.creativeUrl = r.creativeUrl; existing.creativeType = r.creativeType || 'image'; }
       adAgg.set(r.adId, existing);
     }
 
@@ -187,42 +189,55 @@ class DashboardRepository {
 
       const audienceRows = await prisma.adAudiencePerformance.findMany({
         where: breakdownFilter,
-        select: { gender: true, ageRange: true, spend: true, leads: true, impressions: true },
+        select: { gender: true, ageRange: true, spend: true, leads: true, impressions: true, linkClicks: true, purchases: true, purchaseValue: true, totalConversionValue: true },
       });
-      const audienceAgg = new Map<string, { gender: string; ageRange: string; spend: number; leads: number; impressions: number }>();
+      const audienceAgg = new Map<string, { gender: string; ageRange: string; spend: number; leads: number; impressions: number; linkClicks: number; purchases: number; purchaseValue: number; totalConversionValue: number }>();
       for (const r of audienceRows) {
         const key = `${r.gender}|${r.ageRange}`;
-        const existing = audienceAgg.get(key) || { gender: r.gender, ageRange: r.ageRange, spend: 0, leads: 0, impressions: 0 };
+        const existing = audienceAgg.get(key) || { gender: r.gender, ageRange: r.ageRange, spend: 0, leads: 0, impressions: 0, linkClicks: 0, purchases: 0, purchaseValue: 0, totalConversionValue: 0 };
         existing.spend += Number(r.spend || 0);
         existing.leads += r.leads || 0;
         existing.impressions += r.impressions || 0;
+        existing.linkClicks += r.linkClicks || 0;
+        existing.purchases += r.purchases || 0;
+        existing.purchaseValue += Number(r.purchaseValue || 0);
+        existing.totalConversionValue += Number(r.totalConversionValue || 0);
         audienceAgg.set(key, existing);
       }
       audienceData = Array.from(audienceAgg.values());
 
       const placementRows = await prisma.adPlacementPerformance.findMany({
         where: breakdownFilter,
-        select: { platform: true, spend: true, leads: true, impressions: true },
+        select: { platform: true, spend: true, leads: true, impressions: true, linkClicks: true, purchases: true, purchaseValue: true, totalConversionValue: true },
       });
-      const placementAgg = new Map<string, { platform: string; spend: number; leads: number; impressions: number }>();
+      const placementAgg = new Map<string, { platform: string; spend: number; leads: number; impressions: number; linkClicks: number; purchases: number; purchaseValue: number; totalConversionValue: number }>();
       for (const r of placementRows) {
-        const existing = placementAgg.get(r.platform) || { platform: r.platform, spend: 0, leads: 0, impressions: 0 };
+        const existing = placementAgg.get(r.platform) || { platform: r.platform, spend: 0, leads: 0, impressions: 0, linkClicks: 0, purchases: 0, purchaseValue: 0, totalConversionValue: 0 };
         existing.spend += Number(r.spend || 0);
         existing.leads += r.leads || 0;
         existing.impressions += r.impressions || 0;
+        existing.linkClicks += r.linkClicks || 0;
+        existing.purchases += r.purchases || 0;
+        existing.purchaseValue += Number(r.purchaseValue || 0);
+        existing.totalConversionValue += Number(r.totalConversionValue || 0);
         placementAgg.set(r.platform, existing);
       }
       placementData = Array.from(placementAgg.values());
 
       const regionRows = await prisma.adRegionPerformance.findMany({
         where: breakdownFilter,
-        select: { region: true, spend: true, leads: true },
+        select: { region: true, spend: true, leads: true, impressions: true, linkClicks: true, purchases: true, purchaseValue: true, totalConversionValue: true },
       });
-      const regionAgg = new Map<string, { region: string; spend: number; leads: number }>();
+      const regionAgg = new Map<string, { region: string; spend: number; leads: number; impressions: number; linkClicks: number; purchases: number; purchaseValue: number; totalConversionValue: number }>();
       for (const r of regionRows) {
-        const existing = regionAgg.get(r.region) || { region: r.region, spend: 0, leads: 0 };
+        const existing = regionAgg.get(r.region) || { region: r.region, spend: 0, leads: 0, impressions: 0, linkClicks: 0, purchases: 0, purchaseValue: 0, totalConversionValue: 0 };
         existing.spend += Number(r.spend || 0);
         existing.leads += r.leads || 0;
+        existing.impressions += r.impressions || 0;
+        existing.linkClicks += r.linkClicks || 0;
+        existing.purchases += r.purchases || 0;
+        existing.purchaseValue += Number(r.purchaseValue || 0);
+        existing.totalConversionValue += Number(r.totalConversionValue || 0);
         regionAgg.set(r.region, existing);
       }
       regionData = Array.from(regionAgg.values())

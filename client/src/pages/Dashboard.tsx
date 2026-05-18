@@ -28,11 +28,22 @@ const METRIC_LABELS: Record<string, string> = {
   clicks: 'Cliques',
   impressions: 'Impressões',
   purchases: 'Vendas',
+  purchaseValue: 'Valor de Venda',
   purchase_value: 'Valor de Venda',
   spend: 'Investimento',
   totalConversionValue: 'Valor de Conversão',
   linkClicks: 'Cliques no Link',
 };
+
+const CURRENCY_METRICS = new Set(['spend', 'purchaseValue', 'totalConversionValue', 'purchase_value']);
+
+function isCurrencyMetric(metric: string) {
+  return CURRENCY_METRICS.has(metric);
+}
+
+function fmtBreakdownValue(metric: string, value: number) {
+  return isCurrencyMetric(metric) ? fmtCurrency(value) : fmtNumber(value);
+}
 
 export default function Dashboard() {
   const [data, setData] = useState<DashboardMetrics | null>(null);
@@ -48,6 +59,7 @@ export default function Dashboard() {
   const [until, setUntil] = useState(today);
   const [selectedClient, setSelectedClient] = useState<string>('');
   const [topAdsMetric, setTopAdsMetric] = useState<string>('roas');
+  const [breakdownMetric, setBreakdownMetric] = useState<string>('spend');
   const [mediaViewer, setMediaViewer] = useState<{ url: string; type: string; name: string } | null>(null);
 
   const fetchMetrics = useCallback(async (isInitial = false) => {
@@ -412,8 +424,8 @@ export default function Dashboard() {
                           'bg-green-500/10 text-green-400'
                         }`}>
                           {topAdsMetric === 'roas' ? `${Number(metricVal).toFixed(2)}x` :
-                           topAdsMetric === 'ctr' || topAdsMetric === 'cpl' ? fmtCurrency(Number(metricVal)) :
-                           topAdsMetric === 'spend' || topAdsMetric === 'totalConversionValue' ? fmtCurrency(Number(metricVal)) :
+                           topAdsMetric === 'ctr' ? `${Number(metricVal).toFixed(2)}%` :
+                           isCurrencyMetric(topAdsMetric) ? fmtCurrency(Number(metricVal)) :
                            fmtNumber(Number(metricVal))}
                           {' '}{METRIC_LABELS[topAdsMetric] || topAdsMetric}
                         </span>
@@ -432,125 +444,155 @@ export default function Dashboard() {
       )}
 
       {(data.audienceData.length > 0 || data.placementData.length > 0 || data.regionData.length > 0) && (
-        <div className="grid gap-6 lg:grid-cols-3">
-          {data.placementData.length > 0 && (
-            <div className="rounded-xl border border-gray-800 bg-gray-900 p-4 sm:p-6">
-              <h3 className="mb-4 text-sm font-semibold text-gray-400 flex items-center gap-2">
-                <Monitor size={16} /> Plataformas
-              </h3>
-              <ResponsiveContainer width="100%" height={250}>
-                <PieChart>
-                  <Pie
-                    data={data.placementData.map(p => ({ name: p.platform, value: Number(p.spend) }))}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={80}
-                    paddingAngle={3}
-                    dataKey="value"
-                  >
-                    {data.placementData.map((_, i) => (
-                      <Cell key={i} fill={['#3B82F6', '#8B5CF6', '#EC4899', '#F59E0B'][i % 4]} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{ backgroundColor: '#111827', border: '1px solid #374151', borderRadius: '12px' }}
-                    formatter={(value) => [fmtCurrency(Number(value)), 'Investimento']}
-                  />
-                  <Legend
-                    verticalAlign="bottom"
-                    iconType="circle"
-                    iconSize={8}
-                    formatter={(val) => <span className="text-xs text-gray-400">{val}</span>}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="mt-2 space-y-1">
-                {data.placementData.map(p => (
-                  <div key={p.platform} className="flex items-center justify-between text-xs">
-                    <span className="text-gray-400">{p.platform}</span>
-                    <span className="text-gray-300">{fmtCurrency(Number(p.spend))} · {fmtNumber(p.leads)} leads</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-white">Segmentação</h3>
+            <select
+              value={breakdownMetric}
+              onChange={(e) => setBreakdownMetric(e.target.value)}
+              className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-1 text-xs text-white focus:border-blue-500 focus:outline-none"
+            >
+              <option value="spend">Investimento</option>
+              <option value="leads">Leads</option>
+              <option value="purchases">Vendas</option>
+              <option value="purchaseValue">Valor de Venda</option>
+              <option value="totalConversionValue">Valor de Conversão</option>
+              <option value="linkClicks">Cliques no Link</option>
+              <option value="impressions">Impressões</option>
+            </select>
+          </div>
 
-          {data.audienceData.length > 0 && (
-            <div className="rounded-xl border border-gray-800 bg-gray-900 p-4 sm:p-6">
-              <h3 className="mb-4 text-sm font-semibold text-gray-400 flex items-center gap-2">
-                <UserCircle size={16} /> Público (Sexo × Idade)
-              </h3>
-              {(() => {
-                const ageRanges = [...new Set(data.audienceData.map(a => a.ageRange))];
-                const maleMap = new Map(data.audienceData.filter(a => a.gender === 'male').map(a => [a.ageRange, Number(a.spend)]));
-                const femaleMap = new Map(data.audienceData.filter(a => a.gender === 'female').map(a => [a.ageRange, Number(a.spend)]));
-                const chartData = ageRanges.map(age => ({
-                  age,
-                  Masculino: maleMap.get(age) || 0,
-                  Feminino: femaleMap.get(age) || 0,
-                }));
-                return (
-                  <ResponsiveContainer width="100%" height={250}>
-                    <BarChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                      <XAxis dataKey="age" stroke="#4B5563" tick={{ fontSize: 9 }} />
-                      <YAxis stroke="#4B5563" tick={{ fontSize: 9 }} />
-                      <Tooltip
-                        contentStyle={{ backgroundColor: '#111827', border: '1px solid #374151', borderRadius: '12px' }}
-                        formatter={(value) => fmtCurrency(Number(value))}
-                      />
-                      <Bar dataKey="Masculino" fill="#3B82F6" radius={[4, 4, 0, 0]} barSize={16} />
-                      <Bar dataKey="Feminino" fill="#EC4899" radius={[4, 4, 0, 0]} barSize={16} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                );
-              })()}
-              <div className="mt-2 flex items-center gap-4 text-xs text-gray-500">
-                <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-blue-500" /> Masculino</span>
-                <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-pink-500" /> Feminino</span>
-              </div>
-              <div className="mt-2 space-y-1">
-                {data.audienceData
-                  .sort((a, b) => Number(b.spend) - Number(a.spend))
-                  .slice(0, 6)
-                  .map((a, i) => (
-                    <div key={i} className="flex items-center justify-between text-xs">
-                      <span className="text-gray-400">{a.gender === 'male' ? '♂' : '♀'} {a.ageRange}</span>
-                      <span className="text-gray-300">{fmtCurrency(Number(a.spend))} · {fmtNumber(a.leads)} leads</span>
+          <div className="grid gap-6 lg:grid-cols-3">
+            {data.placementData.length > 0 && (
+              <div className="rounded-xl border border-gray-800 bg-gray-900 p-4 sm:p-6">
+                <h3 className="mb-4 text-sm font-semibold text-gray-400 flex items-center gap-2">
+                  <Monitor size={16} /> Plataformas
+                </h3>
+                <ResponsiveContainer width="100%" height={250}>
+                  <PieChart>
+                    <Pie
+                      data={data.placementData.map(p => ({ name: p.platform, value: Number(p[breakdownMetric as keyof typeof p] || 0) }))}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={50}
+                      outerRadius={80}
+                      paddingAngle={3}
+                      dataKey="value"
+                    >
+                      {data.placementData.map((_, i) => (
+                        <Cell key={i} fill={['#3B82F6', '#8B5CF6', '#EC4899', '#F59E0B'][i % 4]} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{ backgroundColor: '#111827', border: '1px solid #374151', borderRadius: '12px' }}
+                      formatter={(value) => [fmtBreakdownValue(breakdownMetric, Number(value)), METRIC_LABELS[breakdownMetric] || breakdownMetric]}
+                    />
+                    <Legend
+                      verticalAlign="bottom"
+                      iconType="circle"
+                      iconSize={8}
+                      formatter={(val) => <span className="text-xs text-gray-400">{val}</span>}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="mt-2 space-y-1">
+                  {data.placementData.map(p => (
+                    <div key={p.platform} className="flex items-center justify-between text-xs">
+                      <span className="text-gray-400">{p.platform}</span>
+                      <span className="text-gray-300">
+                        {fmtBreakdownValue(breakdownMetric, Number(p[breakdownMetric as keyof typeof p] || 0))} · {fmtNumber(p.leads)} leads
+                      </span>
                     </div>
                   ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {data.regionData.length > 0 && (
-            <div className="rounded-xl border border-gray-800 bg-gray-900 p-4 sm:p-6">
-              <h3 className="mb-4 text-sm font-semibold text-gray-400 flex items-center gap-2">
-                <MapPin size={16} /> Top Regiões
-              </h3>
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={data.regionData} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" horizontal={false} />
-                  <XAxis type="number" stroke="#4B5563" tick={{ fontSize: 9 }} />
-                  <YAxis type="category" dataKey="region" stroke="#4B5563" tick={{ fontSize: 9 }} width={100} />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: '#111827', border: '1px solid #374151', borderRadius: '12px' }}
-                    formatter={(value) => [fmtCurrency(Number(value)), 'Investimento']}
-                  />
-                  <Bar dataKey="spend" fill="#F59E0B" name="Investimento" radius={[0, 4, 4, 0]} barSize={14} />
-                </BarChart>
-              </ResponsiveContainer>
-              <div className="mt-2 space-y-1">
-                {data.regionData.slice(0, 6).map((r) => (
-                  <div key={r.region} className="flex items-center justify-between text-xs">
-                    <span className="text-gray-400">{r.region}</span>
-                    <span className="text-gray-300">{fmtCurrency(Number(r.spend))} · {fmtNumber(r.leads)} leads</span>
-                  </div>
-                ))}
+            {data.audienceData.length > 0 && (
+              <div className="rounded-xl border border-gray-800 bg-gray-900 p-4 sm:p-6">
+                <h3 className="mb-4 text-sm font-semibold text-gray-400 flex items-center gap-2">
+                  <UserCircle size={16} /> Público (Sexo × Idade)
+                </h3>
+                {(() => {
+                  const ageRanges = [...new Set(data.audienceData.map(a => a.ageRange))];
+                  const maleMap = new Map(data.audienceData.filter(a => a.gender === 'male').map(a => [a.ageRange, Number(a[breakdownMetric as keyof typeof a] || 0)]));
+                  const femaleMap = new Map(data.audienceData.filter(a => a.gender === 'female').map(a => [a.ageRange, Number(a[breakdownMetric as keyof typeof a] || 0)]));
+                  const chartData = ageRanges.map(age => ({
+                    age,
+                    Masculino: maleMap.get(age) || 0,
+                    Feminino: femaleMap.get(age) || 0,
+                  }));
+                  return (
+                    <ResponsiveContainer width="100%" height={250}>
+                      <BarChart data={chartData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                        <XAxis dataKey="age" stroke="#4B5563" tick={{ fontSize: 9 }} />
+                        <YAxis stroke="#4B5563" tick={{ fontSize: 9 }} />
+                        <Tooltip
+                          contentStyle={{ backgroundColor: '#111827', border: '1px solid #374151', borderRadius: '12px' }}
+                          formatter={(value) => [fmtBreakdownValue(breakdownMetric, Number(value)), '']}
+                        />
+                        <Bar dataKey="Masculino" fill="#3B82F6" radius={[4, 4, 0, 0]} barSize={16} />
+                        <Bar dataKey="Feminino" fill="#EC4899" radius={[4, 4, 0, 0]} barSize={16} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  );
+                })()}
+                <div className="mt-2 flex items-center gap-4 text-xs text-gray-500">
+                  <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-blue-500" /> Masculino</span>
+                  <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-pink-500" /> Feminino</span>
+                </div>
+                <div className="mt-2 space-y-1">
+                  {[...data.audienceData]
+                    .sort((a, b) => Number(b[breakdownMetric as keyof typeof b] || 0) - Number(a[breakdownMetric as keyof typeof a] || 0))
+                    .slice(0, 6)
+                    .map((a, i) => (
+                      <div key={i} className="flex items-center justify-between text-xs">
+                        <span className="text-gray-400">{a.gender === 'male' ? '♂' : '♀'} {a.ageRange}</span>
+                        <span className="text-gray-300">
+                          {fmtBreakdownValue(breakdownMetric, Number(a[breakdownMetric as keyof typeof a] || 0))} · {fmtNumber(a.leads)} leads
+                        </span>
+                      </div>
+                    ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
+
+            {data.regionData.length > 0 && (() => {
+              const sortedRegions = [...data.regionData].sort((a, b) =>
+                Number(b[breakdownMetric as keyof typeof b] || 0) - Number(a[breakdownMetric as keyof typeof a] || 0)
+              );
+              return (
+              <div className="rounded-xl border border-gray-800 bg-gray-900 p-4 sm:p-6">
+                <h3 className="mb-4 text-sm font-semibold text-gray-400 flex items-center gap-2">
+                  <MapPin size={16} /> Top Regiões
+                </h3>
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={sortedRegions} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" horizontal={false} />
+                    <XAxis type="number" stroke="#4B5563" tick={{ fontSize: 9 }} />
+                    <YAxis type="category" dataKey="region" stroke="#4B5563" tick={{ fontSize: 9 }} width={100} />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: '#111827', border: '1px solid #374151', borderRadius: '12px' }}
+                      formatter={(value) => [fmtBreakdownValue(breakdownMetric, Number(value)), METRIC_LABELS[breakdownMetric] || breakdownMetric]}
+                    />
+                    <Bar dataKey={breakdownMetric} fill="#F59E0B" name={METRIC_LABELS[breakdownMetric] || breakdownMetric} radius={[0, 4, 4, 0]} barSize={14} />
+                  </BarChart>
+                </ResponsiveContainer>
+                <div className="mt-2 space-y-1">
+                  {sortedRegions.slice(0, 6).map((r) => (
+                    <div key={r.region} className="flex items-center justify-between text-xs">
+                      <span className="text-gray-400">{r.region}</span>
+                      <span className="text-gray-300">
+                        {fmtBreakdownValue(breakdownMetric, Number(r[breakdownMetric as keyof typeof r] || 0))} · {fmtNumber(r.leads)} leads
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              );
+            })()}
+          </div>
         </div>
       )}
 

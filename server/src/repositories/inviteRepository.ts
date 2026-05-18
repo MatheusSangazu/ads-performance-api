@@ -18,16 +18,20 @@ class InviteRepository {
     return prisma.invite.findUnique({ where: { token } });
   }
 
-  public async markUsed(id: string) {
-    return prisma.invite.update({ where: { id }, data: { used: true } });
+  public async markUsed(id: string, usedById: string) {
+    return prisma.invite.update({
+      where: { id },
+      data: { used: true, usedById, usedAt: new Date() },
+    });
   }
 
   public async findAll() {
     return prisma.invite.findMany({
       select: {
         id: true, token: true, email: true, plan: true,
-        used: true, expiresAt: true, createdAt: true,
+        used: true, usedAt: true, expiresAt: true, createdAt: true,
         creator: { select: { id: true, name: true } },
+        usedBy: { select: { id: true, name: true, email: true } },
       },
       orderBy: { createdAt: 'desc' },
     });

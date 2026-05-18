@@ -32,16 +32,16 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false,
 }));
 
-const authLimiter = rateLimit({
+const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
-  message: { error: 'Muitas tentativas. Tente novamente em 15 minutos.' },
+  message: { error: 'Muitas tentativas de login. Tente novamente em 15 minutos.' },
   standardHeaders: true,
   legacyHeaders: false,
 });
 const apiLimiter = rateLimit({
   windowMs: 1 * 60 * 1000,
-  max: 200,
+  max: 300,
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -103,7 +103,8 @@ app.use('/creatives', (req, res, next) => {
   next();
 }, express.static(creativesDir));
 
-app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/auth/login', loginLimiter);
+app.use('/api/auth', authRoutes);
 app.use('/api/invites', inviteRoutes);
 app.use('/api/managers', managerRoutes);
 app.use('/api/sync', syncRoutes);

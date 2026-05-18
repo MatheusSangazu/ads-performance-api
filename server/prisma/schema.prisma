@@ -93,7 +93,8 @@ model Manager {
 
   refreshTokens RefreshToken[]
   managerClients ManagerClient[]
-  invites       Invite[]
+  invites       Invite[]      @relation("CreatedInvites")
+  usedInvites   Invite[]      @relation("UsedInvites")
   budgets       ClientBudget[]
   goals         ClientGoal[]
   alerts        Alert[]
@@ -110,11 +111,14 @@ model Invite {
   email     String?  @db.VarChar(150)
   plan      String   @default("pro") @db.VarChar(30)
   used      Boolean  @default(false)
+  usedById  String?  @map("used_by") @db.Char(36)
+  usedAt    DateTime? @map("used_at") @db.Timestamp(0)
   createdBy String   @map("created_by") @db.Char(36)
   expiresAt DateTime @map("expires_at") @db.Timestamp(0)
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(0)
 
-  creator Manager @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  creator Manager  @relation("CreatedInvites", fields: [createdBy], references: [id], onDelete: Cascade)
+  usedBy   Manager? @relation("UsedInvites", fields: [usedById], references: [id], onDelete: SetNull)
 
   @@map("invites")
 }
