@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { fetchEventSource } from '@microsoft/fetch-event-source';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',
@@ -164,20 +165,36 @@ export interface DashboardMetrics {
 
 export function createProgressStream(onEvent: (event: SyncProgressEvent) => void): () => void {
   const baseUrl = import.meta.env.VITE_API_URL || '/api';
-  const es = new EventSource(`${baseUrl}/sync/progress`);
+  const token = localStorage.getItem('access_token');
+  const ctrl = new AbortController();
 
-  es.onmessage = (e) => {
-    try {
-      const data = JSON.parse(e.data) as SyncProgressEvent;
-      onEvent(data);
-    } catch { /* ignore parse errors */ }
-  };
+  fetchEventSource(`${baseUrl}/sync/progress`, {
+    method: 'POST', // Usando POST para evitar problemas com headers em GET em alguns proxies
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'text/event-stream',
+    },
+    signal: ctrl.signal,
+    onmessage(ev) {
+      try {
+        const data = JSON.parse(ev.data) as SyncProgressEvent;
+        onEvent(data);
+      } catch { /* ignore parse errors */ }
+    },
+    onclose() {
+      console.log('SSE connection closed');
+    },
+    onerror(err) {
+      console.error('SSE Error:', err);
+      // fetchEventSource tenta reconectar automaticamente por padrão
+      // Se for 401, talvez queiramos parar
+      if (err instanceof Error && err.message.includes('401')) {
+        ctrl.abort();
+      }
+    }
+  });
 
-  es.onerror = () => {
-    es.close();
-  };
-
-  return () => es.close();
+  return () => ctrl.abort();
 }
 
 export interface Budget {
