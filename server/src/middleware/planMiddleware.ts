@@ -13,6 +13,11 @@ export function requireFeature(feature: FeatureGate) {
       return;
     }
 
+    if (req.manager.role === 'admin') {
+      next();
+      return;
+    }
+
     const manager = await prisma.manager.findUnique({
       where: { id: req.manager.id },
       select: { plan: true },
@@ -40,6 +45,11 @@ export function requireFeature(feature: FeatureGate) {
 export async function checkClientLimit(req: AuthRequest, res: Response, next: NextFunction) {
   if (!req.manager) {
     res.status(401).json({ error: 'Não autenticado.' });
+    return;
+  }
+
+  if (req.manager.role === 'admin') {
+    next();
     return;
   }
 
@@ -74,6 +84,11 @@ export async function checkTaskLimit(req: AuthRequest, res: Response, next: Next
     return;
   }
 
+  if (req.manager.role === 'admin') {
+    next();
+    return;
+  }
+
   const manager = await prisma.manager.findUnique({
     where: { id: req.manager.id },
     select: { plan: true, tasks: { select: { id: true } } },
@@ -102,6 +117,11 @@ export async function checkTaskLimit(req: AuthRequest, res: Response, next: Next
 export async function checkSeatLimit(req: AuthRequest, res: Response, next: NextFunction) {
   if (!req.manager) {
     res.status(401).json({ error: 'Não autenticado.' });
+    return;
+  }
+
+  if (req.manager.role === 'admin') {
+    next();
     return;
   }
 

@@ -16,7 +16,7 @@ class ClientController {
       is_ecommerce ?? false,
     );
 
-    if (req.manager && req.manager.role !== 'admin') {
+    if (req.manager) {
       await managerRepository.linkClient(req.manager.id, act_id);
     }
 
@@ -24,13 +24,14 @@ class ClientController {
   }
 
   public async list(req: AuthRequest, res: Response): Promise<void> {
-    if (req.manager?.role === 'admin') {
-      const clients = await clientService.listClients();
-      res.json(clients);
-      return;
+    let clientIds: string[];
+
+    if (req.manager?.role === 'agency') {
+      clientIds = await managerRepository.getAgencyClientIds(req.manager.id);
+    } else {
+      clientIds = await managerRepository.getClientIds(req.manager!.id);
     }
 
-    const clientIds = await managerRepository.getClientIds(req.manager!.id);
     const allClients = await clientService.listClients();
     const filtered = allClients.filter((c: any) => clientIds.includes(c.actId));
     res.json(filtered);
@@ -44,14 +45,14 @@ class ClientController {
       specificClientId: clientId as string,
     };
 
-    if (req.manager?.role === 'admin') {
-      const data = await dashboardRepository.getOverview(undefined, filters);
-      res.json(data);
-      return;
+    let clientIds: string[] | undefined;
+    if (req.manager?.role === 'agency') {
+      clientIds = await managerRepository.getAgencyClientIds(req.manager.id);
+    } else {
+      clientIds = await managerRepository.getClientIds(req.manager!.id);
     }
 
-    const clientIds = await managerRepository.getClientIds(req.manager!.id);
-    const data = await dashboardRepository.getOverview(clientIds, filters);
+    const data = await dashboardRepository.getOverview(clientIds.length > 0 ? clientIds : undefined, filters);
     res.json(data);
   }
 

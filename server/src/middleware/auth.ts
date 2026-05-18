@@ -41,13 +41,18 @@ export async function clientAccess(req: AuthRequest, res: Response, next: NextFu
     return;
   }
 
-  if (req.manager.role === 'admin') {
-    return next();
-  }
-
   const actId = req.params.actId;
   if (!actId) {
     return next();
+  }
+
+  if (req.manager.role === 'agency') {
+    const agencyClientIds = await managerRepository.getAgencyClientIds(req.manager.id);
+    if (agencyClientIds.includes(actId)) {
+      return next();
+    }
+    res.status(403).json({ error: 'Você não tem acesso a este cliente.' });
+    return;
   }
 
   const hasAccess = await managerRepository.hasAccess(req.manager.id, actId);

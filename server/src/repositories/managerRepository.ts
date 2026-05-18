@@ -100,6 +100,17 @@ class ManagerRepository {
     return links.map((l) => l.manager);
   }
 
+  public async getAgencyClientIds(agencyId: string): Promise<string[]> {
+    const members = await prisma.manager.findMany({
+      where: {
+        OR: [{ id: agencyId }, { agencyId }],
+        active: true,
+      },
+      select: { managerClients: { select: { clientId: true } } },
+    });
+    return members.flatMap((m) => m.managerClients.map((mc) => mc.clientId));
+  }
+
   public async findAdminIds(): Promise<string[]> {
     const admins = await prisma.manager.findMany({
       where: { role: 'admin', active: true },

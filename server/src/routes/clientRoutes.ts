@@ -4,7 +4,7 @@ import clientController from '../controllers/clientController.js';
 import budgetController from '../controllers/budgetController.js';
 import goalController from '../controllers/goalController.js';
 import { validate } from '../middleware/validate.js';
-import { authMiddleware } from '../middleware/auth.js';
+import { authMiddleware, clientAccess } from '../middleware/auth.js';
 import { checkClientLimit } from '../middleware/planMiddleware.js';
 import { requireFeature } from '../middleware/planMiddleware.js';
 
@@ -51,43 +51,43 @@ router.get('/metrics', authMiddleware, (req, res, next) => {
   clientController.metrics(req, res).catch(next);
 });
 
-router.get('/:actId/budget', authMiddleware, requireFeature('budgetGoals'), (req, res, next) => {
+router.get('/:actId/budget', authMiddleware, clientAccess, requireFeature('budgetGoals'), (req, res, next) => {
   budgetController.getCurrent(req, res).catch(next);
 });
 
-router.post('/:actId/budget', authMiddleware, requireFeature('budgetGoals'), validate(setBudgetSchema), (req, res, next) => {
+router.post('/:actId/budget', authMiddleware, clientAccess, requireFeature('budgetGoals'), validate(setBudgetSchema), (req, res, next) => {
   budgetController.setBudget(req, res).catch(next);
 });
 
-router.get('/:actId/budget/history', authMiddleware, requireFeature('budgetGoals'), (req, res, next) => {
+router.get('/:actId/budget/history', authMiddleware, clientAccess, requireFeature('budgetGoals'), (req, res, next) => {
   budgetController.getHistory(req, res).catch(next);
 });
 
-router.get('/:actId/goals', authMiddleware, requireFeature('budgetGoals'), (req, res, next) => {
+router.get('/:actId/goals', authMiddleware, clientAccess, requireFeature('budgetGoals'), (req, res, next) => {
   goalController.getCurrent(req, res).catch(next);
 });
 
-router.post('/:actId/goals', authMiddleware, requireFeature('budgetGoals'), validate(setGoalSchema), (req, res, next) => {
+router.post('/:actId/goals', authMiddleware, clientAccess, requireFeature('budgetGoals'), validate(setGoalSchema), (req, res, next) => {
   goalController.setGoal(req, res).catch(next);
 });
 
-router.delete('/:actId/goals/:id', authMiddleware, requireFeature('budgetGoals'), (req, res, next) => {
+router.delete('/:actId/goals/:id', authMiddleware, clientAccess, requireFeature('budgetGoals'), (req, res, next) => {
   goalController.remove(req, res).catch(next);
 });
 
-router.patch('/:actId', authMiddleware, validate(updateClientSchema), (req, res, next) => {
+router.patch('/:actId', authMiddleware, clientAccess, validate(updateClientSchema), (req, res, next) => {
   clientController.update(req, res).catch(next);
 });
 
-router.patch('/:actId/token', authMiddleware, validate(updateTokenSchema), (req, res, next) => {
+router.patch('/:actId/token', authMiddleware, clientAccess, validate(updateTokenSchema), (req, res, next) => {
   clientController.updateToken(req, res).catch(next);
 });
 
-router.delete('/:actId', authMiddleware, (req, res, next) => {
+router.delete('/:actId', authMiddleware, clientAccess, (req, res, next) => {
   clientController.remove(req, res).catch(next);
 });
 
-router.get('/:actId/download', authMiddleware, (req, res, next) => {
+router.get('/:actId/download', authMiddleware, clientAccess, (req, res, next) => {
   clientController.downloadReport(req, res).catch(next);
 });
 

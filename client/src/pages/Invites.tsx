@@ -116,9 +116,9 @@ export default function Invites() {
               onChange={(e) => setPlan(e.target.value)}
               className="rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 text-white focus:border-blue-500 focus:outline-none"
             >
-              <option value="pro">Pro</option>
-              <option value="basic">Basic</option>
-              <option value="enterprise">Enterprise</option>
+              <option value="starter">Starter</option>
+            <option value="pro">Pro</option>
+            <option value="agency">Agency</option>
             </select>
           </div>
           <button

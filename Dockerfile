@@ -33,6 +33,8 @@ COPY --from=base /app/server/src/generated ./server/src/generated
 
 RUN mkdir -p /app/server/uploads/creatives
 
+VOLUME ["/app/server/uploads/creatives"]
+
 ENV NODE_ENV=production
 EXPOSE 3001
 
