@@ -41,6 +41,7 @@ class DashboardRepository {
         purchases: true,
         purchaseValue: true,
         totalConversionValue: true,
+        messagingConversations: true,
         clientId: true,
         date: true,
       },
@@ -54,14 +55,16 @@ class DashboardRepository {
     const totalPurchases = performance.reduce((sum, p) => sum + (p.purchases || 0), 0);
     const totalPurchaseValue = performance.reduce((sum, p) => sum + Number(p.purchaseValue || 0), 0);
     const totalConversionValue = performance.reduce((sum, p) => sum + Number(p.totalConversionValue || 0), 0);
+    const totalMessaging = performance.reduce((sum, p) => sum + (p.messagingConversations || 0), 0);
 
     const avgCpl = totalLeads > 0 ? totalSpend / totalLeads : 0;
     const avgCpc = totalClicks > 0 ? totalSpend / totalClicks : 0;
     const avgCpm = totalImpressions > 0 ? (totalSpend / totalImpressions) * 1000 : 0;
     const avgCtr = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0;
     const avgRoas = totalSpend > 0 ? totalConversionValue / totalSpend : 0;
+    const avgCpmsg = totalMessaging > 0 ? totalSpend / totalMessaging : 0;
 
-    const clientMap = new Map<string, { name: string; spend: number; leads: number; conversionValue: number; purchases: number }>();
+    const clientMap = new Map<string, { name: string; spend: number; leads: number; conversionValue: number; purchases: number; messaging: number }>();
     const clients = await prisma.client.findMany({
       where: filters?.specificClientId 
         ? { actId: filters.specificClientId }
@@ -75,11 +78,12 @@ class DashboardRepository {
     const clientNames = new Map(clients.map((c) => [c.actId, c.clientName]));
 
     for (const p of performance) {
-      const existing = clientMap.get(p.clientId) || { name: clientNames.get(p.clientId) || p.clientId, spend: 0, leads: 0, conversionValue: 0, purchases: 0 };
+      const existing = clientMap.get(p.clientId) || { name: clientNames.get(p.clientId) || p.clientId, spend: 0, leads: 0, conversionValue: 0, purchases: 0, messaging: 0 };
       existing.spend += Number(p.spend || 0);
       existing.leads += p.leads || 0;
       existing.conversionValue += Number(p.totalConversionValue || 0);
       existing.purchases += p.purchases || 0;
+      existing.messaging += p.messagingConversations || 0;
       clientMap.set(p.clientId, existing);
     }
 
@@ -90,18 +94,21 @@ class DashboardRepository {
       leads: data.leads,
       conversionValue: data.conversionValue,
       purchases: data.purchases,
+      messaging: data.messaging,
       roas: data.spend > 0 ? data.conversionValue / data.spend : 0,
+      cpmsg: data.messaging > 0 ? data.spend / data.messaging : 0,
     }));
 
-    const dailyMap = new Map<string, { spend: number; leads: number; clicks: number; conversionValue: number; purchases: number }>();
+    const dailyMap = new Map<string, { spend: number; leads: number; clicks: number; conversionValue: number; purchases: number; messaging: number }>();
     for (const p of performance) {
       const dateKey = p.date.toISOString().split('T')[0];
-      const existing = dailyMap.get(dateKey) || { spend: 0, leads: 0, clicks: 0, conversionValue: 0, purchases: 0 };
+      const existing = dailyMap.get(dateKey) || { spend: 0, leads: 0, clicks: 0, conversionValue: 0, purchases: 0, messaging: 0 };
       existing.spend += Number(p.spend || 0);
       existing.leads += p.leads || 0;
       existing.clicks += p.linkClicks || 0;
       existing.conversionValue += Number(p.totalConversionValue || 0);
       existing.purchases += p.purchases || 0;
+      existing.messaging += p.messagingConversations || 0;
       dailyMap.set(dateKey, existing);
     }
 
@@ -136,6 +143,7 @@ class DashboardRepository {
         impressions: true,
         purchases: true,
         totalConversionValue: true,
+        messagingConversations: true,
         roas: true,
         ctr: true,
       },
@@ -145,13 +153,13 @@ class DashboardRepository {
       adId: string; adName: string; campaignName: string; previewLink: string;
       creativeUrl?: string; creativeType?: string;
       spend: number; leads: number; linkClicks: number; impressions: number;
-      purchases: number; totalConversionValue: number;
+      purchases: number; totalConversionValue: number; messaging: number;
     }>();
     for (const r of topAdsRaw) {
       const existing = adAgg.get(r.adId) || {
         adId: r.adId, adName: r.adName || '', campaignName: r.campaignName || '',
         previewLink: r.previewLink || '', creativeUrl: r.creativeUrl || '', creativeType: r.creativeType || '', spend: 0, leads: 0, linkClicks: 0,
-        impressions: 0, purchases: 0, totalConversionValue: 0,
+        impressions: 0, purchases: 0, totalConversionValue: 0, messaging: 0,
       };
       existing.spend += Number(r.spend || 0);
       existing.leads += r.leads || 0;
@@ -159,6 +167,7 @@ class DashboardRepository {
       existing.impressions += r.impressions || 0;
       existing.purchases += r.purchases || 0;
       existing.totalConversionValue += Number(r.totalConversionValue || 0);
+      existing.messaging += r.messagingConversations || 0;
       if (!existing.previewLink && r.previewLink) existing.previewLink = r.previewLink;
       if (r.creativeUrl && !existing.creativeUrl) { existing.creativeUrl = r.creativeUrl; existing.creativeType = r.creativeType || 'image'; }
       adAgg.set(r.adId, existing);
@@ -169,6 +178,7 @@ class DashboardRepository {
       roas: a.spend > 0 ? a.totalConversionValue / a.spend : 0,
       cpl: a.leads > 0 ? a.spend / a.leads : 0,
       ctr: a.impressions > 0 ? (a.linkClicks / a.impressions) * 100 : 0,
+      cpmsg: a.messaging > 0 ? a.spend / a.messaging : 0,
     }));
 
     let audienceData: any[] = [];
@@ -255,11 +265,13 @@ class DashboardRepository {
       totalPurchases,
       totalPurchaseValue,
       totalConversionValue,
+      totalMessaging,
       avgCpl,
       avgCpc,
       avgCpm,
       avgCtr,
       avgRoas,
+      avgCpmsg,
       clientMetrics,
       dailyMetrics,
       goals,

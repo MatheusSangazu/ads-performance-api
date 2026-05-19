@@ -69,15 +69,15 @@ export default function DatePicker({ value, onChange, placeholder = 'Selecionar 
         onClick={() => setOpen(!open)}
         className="flex w-full items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 transition-all hover:border-blue-500/50 focus:border-blue-500 focus:outline-none dark:border-gray-800 dark:bg-gray-950 dark:text-white"
       >
-        <Calendar size={14} className="text-gray-400 dark:text-gray-500" />
-        <span className={value ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-gray-500'}>
+        <Calendar size={14} className="text-blue-500" />
+        <span className={value ? 'text-gray-900 font-bold dark:text-white' : 'text-gray-400 dark:text-gray-500'}>
           {value ? formatDisplay(value) : placeholder}
         </span>
         {value && (
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); onChange(''); }}
-            className="ml-auto text-gray-400 hover:text-red-500 dark:hover:text-gray-300"
+            className="ml-auto text-gray-400 hover:text-red-500 transition-colors"
           >
             <X size={14} />
           </button>

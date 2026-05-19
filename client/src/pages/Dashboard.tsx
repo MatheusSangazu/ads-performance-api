@@ -1,9 +1,10 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Users, DollarSign, Target, TrendingUp, MousePointerClick, Eye, BarChart3, Loader2, Calendar as CalendarIcon, Filter, CheckCircle2, AlertCircle, ExternalLink, MapPin, Monitor, UserCircle, X, Play } from 'lucide-react';
+import { Users, DollarSign, Target, TrendingUp, MousePointerClick, Eye, BarChart3, Loader2, Calendar as CalendarIcon, Filter, CheckCircle2, AlertCircle, ExternalLink, MapPin, Monitor, UserCircle, X, Play, MessageCircle, Info, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie, Legend } from 'recharts';
 import { clientApi, syncApi, type DashboardMetrics, type Client } from '../lib/api';
 import { useTheme } from '../contexts/ThemeContext';
 import DatePicker from '../components/DatePicker';
+import ClientSelector from '../components/ClientSelector';
 
 const API_BASE = (import.meta.env.VITE_API_URL || '/api').replace(/\/api$/, '');
 
@@ -34,9 +35,11 @@ const METRIC_LABELS: Record<string, string> = {
   spend: 'Investimento',
   totalConversionValue: 'Valor de Conversão',
   linkClicks: 'Cliques no Link',
+  messaging: 'Mensagens',
+  cpmsg: 'Custo por Msg',
 };
 
-const CURRENCY_METRICS = new Set(['spend', 'purchaseValue', 'totalConversionValue', 'purchase_value']);
+const CURRENCY_METRICS = new Set(['spend', 'purchaseValue', 'totalConversionValue', 'purchase_value', 'cpl', 'avgCpl', 'avgCpmsg', 'cpmsg']);
 
 function isCurrencyMetric(metric: string) {
   return CURRENCY_METRICS.has(metric);
@@ -66,7 +69,7 @@ export default function Dashboard() {
   const [refreshedMedia, setRefreshedMedia] = useState<Record<string, string>>({});
 
   const handleMediaError = async (adId: string) => {
-    if (refreshedMedia[adId]) return; // Já tentou atualizar uma vez
+    if (refreshedMedia[adId]) return;
 
     try {
       const { data } = await syncApi.refreshCreative(adId);
@@ -133,10 +136,10 @@ export default function Dashboard() {
     { icon: Target, label: 'Leads', value: data.totalLeads, fmt: fmtNumber, color: 'text-green-600 dark:text-green-400', bgColor: 'bg-green-600 dark:bg-green-400' },
     { icon: DollarSign, label: 'CPL Médio', value: data.avgCpl, fmt: fmtCurrency, color: 'text-orange-600 dark:text-orange-400', bgColor: 'bg-orange-600 dark:bg-orange-400' },
     { icon: TrendingUp, label: 'ROAS Médio', value: data.avgRoas, fmt: (v: number) => v.toFixed(2) + 'x', color: 'text-purple-600 dark:text-purple-400', bgColor: 'bg-purple-600 dark:bg-purple-400' },
+    { icon: MessageCircle, label: 'Mensagens', value: data.totalMessaging, fmt: fmtNumber, color: 'text-blue-600 dark:text-blue-400', bgColor: 'bg-blue-600 dark:bg-blue-400' },
+    { icon: DollarSign, label: 'CPMsg Médio', value: data.avgCpmsg, fmt: fmtCurrency, color: 'text-indigo-600 dark:text-indigo-400', bgColor: 'bg-indigo-600 dark:bg-indigo-400' },
     { icon: DollarSign, label: 'Valor de Conversão', value: data.totalConversionValue, fmt: fmtCurrency, color: 'text-emerald-600 dark:text-emerald-400', bgColor: 'bg-emerald-600 dark:bg-emerald-400' },
     { icon: MousePointerClick, label: 'Cliques', value: data.totalClicks, fmt: fmtNumber, color: 'text-cyan-600 dark:text-cyan-400', bgColor: 'bg-cyan-600 dark:bg-cyan-400' },
-    { icon: BarChart3, label: 'CTR Médio', value: data.avgCtr, fmt: (v: number) => v.toFixed(2) + '%', color: 'text-teal-600 dark:text-teal-400', bgColor: 'bg-teal-600 dark:bg-teal-400' },
-    { icon: Eye, label: 'Impressões', value: data.totalImpressions, fmt: fmtNumber, color: 'text-pink-600 dark:text-pink-400', bgColor: 'bg-pink-600 dark:bg-pink-400' },
   ];
 
   const getGoalCurrentValue = (metric: string): number => {
@@ -149,6 +152,8 @@ export default function Dashboard() {
       case 'impressions': return data.totalImpressions;
       case 'purchases': return data.totalPurchases;
       case 'purchase_value': return data.totalConversionValue;
+      case 'messaging': return data.totalMessaging;
+      case 'cpmsg': return data.avgCpmsg;
       default: return 0;
     }
   };
@@ -166,190 +171,262 @@ export default function Dashboard() {
       }));
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+    <div className="max-w-[1600px] mx-auto space-y-10 pb-20">
+      {/* Header com Contexto */}
+      <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between border-b border-gray-200 dark:border-gray-800 pb-8">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h2>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Análise de performance em tempo real (v1.0.1)</p>
+          <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">Análise de Performance</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-2">
+            Monitoramento de tráfego pago em tempo real
+            <span className="inline-flex items-center rounded-md bg-blue-50 dark:bg-blue-900/20 px-2 py-1 text-xs font-medium text-blue-700 dark:text-blue-400 ring-1 ring-inset ring-blue-700/10 dark:ring-blue-400/20">
+              v2.0.0
+            </span>
+          </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-800 dark:bg-gray-900/50">
-          <div className="flex items-center gap-2">
-            <Filter size={14} className="text-gray-400 dark:text-gray-500" />
-            <select
-              value={selectedClient}
-              onChange={(e) => setSelectedClient(e.target.value)}
-              className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs text-gray-900 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-            >
-              <option value="">Todos os Clientes</option>
-              {clients.map(c => (
-                <option key={c.actId} value={c.actId}>{c.clientName}</option>
-              ))}
-            </select>
+        <div className="flex flex-wrap items-center gap-4 bg-white dark:bg-gray-900 p-2 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
+          <div className="flex items-center gap-2 px-3 py-0 bg-gray-50 dark:bg-gray-950 rounded-xl border border-gray-100 dark:border-gray-800">
+            <Filter size={16} className="text-blue-500" />
+            <ClientSelector
+              clients={clients}
+              selectedId={selectedClient}
+              onChange={setSelectedClient}
+              placeholder="Todos os Clientes"
+              showIcon={false}
+              variant="ghost"
+              className="!space-y-0 min-w-[180px]"
+            />
           </div>
 
-          <div className="h-6 w-px bg-gray-200 dark:bg-gray-800 hidden sm:block" />
-
-          <div className="flex items-center gap-2">
-            <CalendarIcon size={14} className="text-gray-400 dark:text-gray-500" />
-            <div className="flex items-center gap-1 text-gray-900 dark:text-white">
+          <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-950 rounded-xl border border-gray-100 dark:border-gray-800">
+            <CalendarIcon size={16} className="text-purple-500" />
+            <div className="flex items-center gap-2">
               <DatePicker value={since} onChange={setSince} />
-              <span className="text-gray-400 dark:text-gray-600 text-xs">até</span>
+              <span className="text-gray-300 dark:text-gray-700">—</span>
               <DatePicker value={until} onChange={setUntil} />
             </div>
           </div>
 
-          {refreshing && <Loader2 size={16} className="animate-spin text-blue-500" />}
+          {refreshing && (
+            <div className="pr-2">
+              <Loader2 size={20} className="animate-spin text-blue-500" />
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
-        {cards.map((card) => (
-          <div key={card.label} className="group relative overflow-hidden rounded-xl border border-gray-200 bg-white p-3 sm:p-4 transition-all hover:border-blue-500/50 dark:border-gray-800 dark:bg-gray-900">
-            <div className="flex items-center gap-2 text-gray-400 dark:text-gray-500">
-              <card.icon size={14} />
-              <span className="text-[10px] font-medium uppercase tracking-wider">{card.label}</span>
-            </div>
-            <p className={`mt-2 text-lg font-bold sm:text-xl ${card.color}`}>
-              {card.fmt(card.value)}
-            </p>
-            <div className={`absolute bottom-0 left-0 h-1 w-0 transition-all group-hover:w-full ${card.bgColor}`} />
-          </div>
-        ))}
-      </div>
-
-      {data.goals.length > 0 && selectedClient && (
-        <div className="grid gap-4 md:grid-cols-3">
-          {data.goals.map((goal) => {
-            const currentVal = getGoalCurrentValue(goal.metric);
-            // Handle CPL separately (lower is better)
-            const isInverse = goal.metric === 'cpl';
-            const progress = isInverse 
-              ? (Number(currentVal) <= Number(goal.targetValue) ? 100 : Math.max(0, 100 - ((Number(currentVal) - Number(goal.targetValue)) / Number(goal.targetValue) * 100)))
-              : (Number(currentVal) / Number(goal.targetValue)) * 100;
-            
-            const isAtingida = isInverse ? Number(currentVal) <= Number(goal.targetValue) : Number(currentVal) >= Number(goal.targetValue);
-
-            return (
-              <div key={goal.id} className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{METRIC_LABELS[goal.metric] || goal.metric}</span>
-                  {isAtingida ? (
-                    <CheckCircle2 size={14} className="text-green-500" />
-                  ) : (
-                    <AlertCircle size={14} className="text-amber-500" />
-                  )}
+      {/* Seção 1: KPIs Principais */}
+      <section className="space-y-4">
+        <div className="flex items-center gap-2">
+          <TrendingUp size={20} className="text-blue-500" />
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white uppercase tracking-wider">Métricas de Resultado</h3>
+        </div>
+        <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+          {cards.map((card) => (
+            <div key={card.label} className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-5 transition-all hover:shadow-xl hover:border-blue-500/20 dark:border-gray-800 dark:bg-gray-900">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-50 dark:bg-gray-950 border border-gray-100 dark:border-gray-800 group-hover:scale-110 transition-transform">
+                  <card.icon size={20} className={card.color} />
                 </div>
-                <div className="flex items-end justify-between">
-                  <p className="text-lg font-bold text-gray-900 dark:text-white">
-                    {goal.metric === 'spend' || goal.metric === 'cpl' || goal.metric === 'purchase_value' 
-                      ? fmtCurrency(Number(currentVal)) 
-                      : fmtNumber(Number(currentVal))}
-                  </p>
-                  <p className="text-[10px] text-gray-500">Meta: {goal.targetValue}</p>
-                </div>
-                <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
-                  <div 
-                    className={`h-full transition-all duration-500 ${isAtingida ? 'bg-green-500' : 'bg-amber-500'}`} 
-                    style={{ width: `${Math.min(100, progress)}%` }}
-                  />
+                <div className="flex items-center gap-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                  KPI <span title={`Métrica de ${card.label}`} className="cursor-help"><Info size={12} /></span>
                 </div>
               </div>
-            );
-          })}
+              <div>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">{card.label}</p>
+                <h4 className={`text-2xl font-black tracking-tight ${card.color}`}>
+                  {card.fmt(card.value)}
+                </h4>
+              </div>
+              <div className={`absolute bottom-0 left-0 h-1.5 w-0 transition-all group-hover:w-full ${card.bgColor}`} />
+            </div>
+          ))}
         </div>
+      </section>
+
+      {/* Seção 2: Objetivos e Metas */}
+      {data.goals.length > 0 && selectedClient && (
+        <section className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Target size={20} className="text-purple-500" />
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white uppercase tracking-wider">Objetivos da Campanha</h3>
+          </div>
+          <div className="grid gap-6 md:grid-cols-3">
+            {data.goals.map((goal) => {
+              const currentVal = getGoalCurrentValue(goal.metric);
+              const isInverse = goal.metric === 'cpl' || goal.metric === 'cpmsg';
+              const progress = isInverse 
+                ? (Number(currentVal) <= Number(goal.targetValue) ? 100 : Math.max(0, 100 - ((Number(currentVal) - Number(goal.targetValue)) / Number(goal.targetValue) * 100)))
+                : (Number(currentVal) / Number(goal.targetValue)) * 100;
+              
+              const isAtingida = isInverse ? Number(currentVal) <= Number(goal.targetValue) : Number(currentVal) >= Number(goal.targetValue);
+
+              return (
+                <div key={goal.id} className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex flex-col">
+                      <span className="text-xs font-black text-gray-400 uppercase tracking-widest">{METRIC_LABELS[goal.metric] || goal.metric}</span>
+                      <span className="text-2xl font-black text-gray-900 dark:text-white">
+                        {isCurrencyMetric(goal.metric) ? fmtCurrency(Number(currentVal)) : fmtNumber(Number(currentVal))}
+                      </span>
+                    </div>
+                    <div className={`flex h-12 w-12 items-center justify-center rounded-full ${isAtingida ? 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400' : 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400'}`}>
+                      {isAtingida ? <CheckCircle2 size={24} /> : <TrendingUp size={24} className={isInverse ? 'rotate-180' : ''} />}
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-xs font-bold uppercase tracking-tighter">
+                      <span className="text-gray-500">Progresso</span>
+                      <span className={isAtingida ? 'text-green-600' : 'text-amber-600'}>
+                        {progress.toFixed(0)}% da Meta
+                      </span>
+                    </div>
+                    <div className="h-3 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                      <div 
+                        className={`h-full transition-all duration-1000 ease-out rounded-full ${isAtingida ? 'bg-gradient-to-r from-green-400 to-green-600 shadow-[0_0_10px_rgba(34,197,94,0.4)]' : 'bg-gradient-to-r from-amber-400 to-amber-600 shadow-[0_0_10px_rgba(245,158,11,0.4)]'}`} 
+                        style={{ width: `${Math.min(100, progress)}%` }}
+                      />
+                    </div>
+                    <p className="text-center text-[10px] font-bold text-gray-400 uppercase mt-2">
+                      Meta Estabelecida: <span className="text-gray-900 dark:text-white">{isCurrencyMetric(goal.metric) ? fmtCurrency(Number(goal.targetValue)) : goal.targetValue}</span>
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6 dark:border-gray-800 dark:bg-gray-900">
-          <h3 className="mb-4 sm:mb-6 text-sm font-semibold text-gray-500 dark:text-gray-400 flex items-center gap-2">
-            <BarChart3 size={16} /> Tendência de Investimento e Leads
-          </h3>
-          <ResponsiveContainer width="100%" height={300}>
+      {/* Seção 3: Visualizações de Performance */}
+      <section className="grid gap-8 lg:grid-cols-2">
+        <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900 transition-all hover:shadow-md">
+          <div className="flex items-center justify-between mb-8">
+            <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
+              <BarChart3 size={18} className="text-blue-500" /> Tendência de Investimento
+            </h3>
+            <div className="flex gap-2">
+               <span className="flex items-center gap-1 text-[10px] font-bold text-gray-400 uppercase"><span className="w-2 h-2 rounded-full bg-yellow-500" /> Gasto</span>
+               <span className="flex items-center gap-1 text-[10px] font-bold text-gray-400 uppercase"><span className="w-2 h-2 rounded-full bg-emerald-500" /> Leads</span>
+            </div>
+          </div>
+          <ResponsiveContainer width="100%" height={320}>
             <AreaChart data={data.dailyMetrics}>
               <defs>
                 <linearGradient id="colorSpend" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#F59E0B" stopOpacity={0.3}/>
+                  <stop offset="5%" stopColor="#F59E0B" stopOpacity={0.2}/>
                   <stop offset="95%" stopColor="#F59E0B" stopOpacity={0}/>
                 </linearGradient>
                 <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10B981" stopOpacity={0.3}/>
+                  <stop offset="5%" stopColor="#10B981" stopOpacity={0.2}/>
                   <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
-              <XAxis dataKey="date" stroke="#4B5563" tick={{ fontSize: 10 }} tickFormatter={(val) => val.split('-').slice(1).reverse().join('/')} />
-              <YAxis stroke="#4B5563" tick={{ fontSize: 10 }} />
+              <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#374151' : '#E5E7EB'} vertical={false} />
+              <XAxis 
+                dataKey="date" 
+                stroke={theme === 'dark' ? '#4B5563' : '#9CA3AF'} 
+                tick={{ fontSize: 10, fontWeight: 700 }} 
+                tickFormatter={(val) => val.split('-').slice(1).reverse().join('/')} 
+              />
+              <YAxis stroke={theme === 'dark' ? '#4B5563' : '#9CA3AF'} tick={{ fontSize: 10, fontWeight: 700 }} />
               <Tooltip
-                contentStyle={{ backgroundColor: '#111827', border: '1px solid #374151', borderRadius: '12px' }}
-                itemStyle={{ fontSize: '12px' }}
+                contentStyle={{ 
+                  backgroundColor: theme === 'dark' ? '#111827' : '#FFFFFF', 
+                  border: 'none', 
+                  borderRadius: '16px',
+                  boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+                  padding: '12px'
+                }}
+                itemStyle={{ fontSize: '12px', fontWeight: 800, padding: '4px 0' }}
                 formatter={(value, name) => {
                   const v = Number(value);
                   if (name === 'spend') return [fmtCurrency(v), 'Investimento'];
-                  return [fmtNumber(v), name === 'leads' ? 'Leads' : name];
+                  if (name === 'leads') return [fmtNumber(v), 'Leads'];
+                  if (name === 'messaging') return [fmtNumber(v), 'Mensagens'];
+                  return [v, name];
                 }}
               />
-              <Area type="monotone" dataKey="spend" stroke="#F59E0B" fillOpacity={1} fill="url(#colorSpend)" strokeWidth={2} />
-              <Area type="monotone" dataKey="leads" stroke="#10B981" fillOpacity={1} fill="url(#colorLeads)" strokeWidth={2} />
+              <Area type="monotone" dataKey="spend" stroke="#F59E0B" fillOpacity={1} fill="url(#colorSpend)" strokeWidth={3} />
+              <Area type="monotone" dataKey="leads" stroke="#10B981" fillOpacity={1} fill="url(#colorLeads)" strokeWidth={3} />
             </AreaChart>
           </ResponsiveContainer>
         </div>
 
-        <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6 dark:border-gray-800 dark:bg-gray-900">
-          <h3 className="mb-4 sm:mb-6 text-sm font-semibold text-gray-500 dark:text-gray-400 flex items-center gap-2">
-            <Users size={16} /> {selectedClient ? 'Performance Diária' : 'Comparativo entre Clientes'}
-          </h3>
-          <ResponsiveContainer width="100%" height={300}>
+        <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900 transition-all hover:shadow-md">
+          <div className="flex items-center justify-between mb-8">
+            <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
+              <Users size={18} className="text-purple-500" /> {selectedClient ? 'Performance Diária' : 'Comparativo de Clientes'}
+            </h3>
+          </div>
+          <ResponsiveContainer width="100%" height={320}>
             <BarChart data={barChartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
-              <XAxis dataKey="label" stroke="#4B5563" tick={{ fontSize: 10 }} />
-              <YAxis stroke="#4B5563" tick={{ fontSize: 10 }} />
+              <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#374151' : '#E5E7EB'} vertical={false} />
+              <XAxis dataKey="label" stroke={theme === 'dark' ? '#4B5563' : '#9CA3AF'} tick={{ fontSize: 10, fontWeight: 700 }} />
+              <YAxis stroke={theme === 'dark' ? '#4B5563' : '#9CA3AF'} tick={{ fontSize: 10, fontWeight: 700 }} />
               <Tooltip
-                contentStyle={{ backgroundColor: '#111827', border: '1px solid #374151', borderRadius: '12px' }}
-                itemStyle={{ fontSize: '12px' }}
-                formatter={(value) => {
-                  const v = Number(value);
-                  return [fmtNumber(v), ''];
+                cursor={{ fill: theme === 'dark' ? '#1F2937' : '#F9FAFB', radius: 8 }}
+                contentStyle={{ 
+                  backgroundColor: theme === 'dark' ? '#111827' : '#FFFFFF', 
+                  border: 'none', 
+                  borderRadius: '16px',
+                  boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+                  padding: '12px'
                 }}
+                formatter={(value) => [fmtNumber(Number(value)), '']}
               />
-              <Bar dataKey="spend" name="Investimento" fill="#F59E0B" radius={[4, 4, 0, 0]} barSize={20} />
-              <Bar dataKey="leads" name="Leads" fill="#10B981" radius={[4, 4, 0, 0]} barSize={20} />
+              <Bar dataKey="spend" name="Investimento" fill="#F59E0B" radius={[6, 6, 0, 0]} barSize={selectedClient ? 12 : 24} />
+              <Bar dataKey="leads" name="Leads" fill="#10B981" radius={[6, 6, 0, 0]} barSize={selectedClient ? 12 : 24} />
             </BarChart>
           </ResponsiveContainer>
         </div>
-      </div>
+      </section>
 
-      <div className="rounded-xl border border-gray-200 bg-white overflow-hidden dark:border-gray-800 dark:bg-gray-900">
-        <div className="border-b border-gray-200 bg-gray-50 px-4 sm:px-6 py-4 dark:border-gray-800 dark:bg-gray-900/50">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Ranking de Performance</h3>
+      {/* Seção 4: Ranking e Tabelas */}
+      <section className="rounded-3xl border border-gray-200 bg-white overflow-hidden shadow-sm dark:border-gray-800 dark:bg-gray-900 transition-all hover:shadow-md">
+        <div className="border-b border-gray-200 bg-gray-50/50 px-8 py-6 dark:border-gray-800 dark:bg-gray-900/50 flex items-center justify-between">
+          <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
+            <BarChart3 size={18} className="text-emerald-500" /> Ranking de Performance
+          </h3>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs min-w-[600px]">
-            <thead className="bg-gray-50 text-gray-500 uppercase tracking-wider font-bold dark:bg-gray-900/80 dark:text-gray-400">
-              <tr>
-                <th className="px-6 py-4">Cliente</th>
-                <th className="px-6 py-4 text-right">Investimento</th>
-                <th className="px-6 py-4 text-right">Leads</th>
-                <th className="px-6 py-4 text-right">CPL</th>
-                <th className="px-6 py-4 text-right">Conversão (R$)</th>
-                <th className="px-6 py-4 text-right">ROAS</th>
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-gray-50/30 text-gray-400 uppercase text-[10px] font-black tracking-widest dark:bg-gray-950/30">
+                <th className="px-8 py-5 border-b border-gray-100 dark:border-gray-800">Cliente</th>
+                <th className="px-6 py-5 border-b border-gray-100 dark:border-gray-800 text-right">Investimento</th>
+                <th className="px-6 py-5 border-b border-gray-100 dark:border-gray-800 text-right">Leads</th>
+                <th className="px-6 py-5 border-b border-gray-100 dark:border-gray-800 text-right">Msgs</th>
+                <th className="px-6 py-5 border-b border-gray-100 dark:border-gray-800 text-right">CPMsg</th>
+                <th className="px-6 py-5 border-b border-gray-100 dark:border-gray-800 text-right">CPL</th>
+                <th className="px-6 py-5 border-b border-gray-100 dark:border-gray-800 text-right">Conversão</th>
+                <th className="px-8 py-5 border-b border-gray-100 dark:border-gray-800 text-right">ROAS</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
               {(selectedClient ? data.clientMetrics.filter(c => c.actId === selectedClient) : data.clientMetrics)
                 .sort((a, b) => b.spend - a.spend)
                 .map((c) => (
-                  <tr key={c.actId} className="bg-white transition-colors hover:bg-gray-50 dark:bg-gray-950 dark:hover:bg-gray-900/80">
-                    <td className="px-6 py-4 font-semibold text-gray-900 dark:text-white">{c.name}</td>
-                    <td className="px-6 py-4 text-right text-yellow-600 dark:text-yellow-400">{fmtCurrency(c.spend)}</td>
-                    <td className="px-6 py-4 text-right text-green-600 dark:text-green-400">{fmtNumber(c.leads)}</td>
-                    <td className="px-6 py-4 text-right text-orange-600 dark:text-orange-400">
+                  <tr key={c.actId} className="transition-colors hover:bg-blue-50/30 dark:hover:bg-blue-900/5">
+                    <td className="px-8 py-5">
+                      <div className="flex items-center gap-3">
+                        <div className="h-2 w-2 rounded-full bg-blue-500" />
+                        <span className="font-bold text-gray-900 dark:text-white">{c.name}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-5 text-right font-black text-gray-700 dark:text-gray-300">{fmtCurrency(c.spend)}</td>
+                    <td className="px-6 py-5 text-right font-black text-gray-700 dark:text-gray-300">{fmtNumber(c.leads)}</td>
+                    <td className="px-6 py-5 text-right font-black text-gray-700 dark:text-gray-300">{fmtNumber(c.messaging)}</td>
+                    <td className="px-6 py-5 text-right font-black text-indigo-600 dark:text-indigo-400">{fmtCurrency(c.cpmsg)}</td>
+                    <td className="px-6 py-5 text-right font-black text-orange-600 dark:text-orange-400">
                       {Number(c.leads) > 0 ? fmtCurrency(Number(c.spend) / Number(c.leads)) : '—'}
                     </td>
-                    <td className="px-6 py-4 text-right text-emerald-600 dark:text-emerald-400">{fmtCurrency(c.conversionValue)}</td>
-                    <td className="px-6 py-4 text-right">
-                      <span className={`rounded-full px-2 py-0.5 font-bold ${Number(c.roas) >= 2 ? 'bg-purple-600/10 text-purple-600 dark:bg-purple-500/10 dark:text-purple-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'}`}>
+                    <td className="px-6 py-5 text-right font-black text-emerald-600 dark:text-emerald-400">{fmtCurrency(c.conversionValue)}</td>
+                    <td className="px-8 py-5 text-right">
+                      <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-black border ${Number(c.roas) >= 2 ? 'bg-purple-50 text-purple-600 border-purple-200 dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-800' : 'bg-gray-50 text-gray-500 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700'}`}>
                         {Number(c.roas).toFixed(2)}x
+                        {Number(c.roas) >= 2 ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
                       </span>
                     </td>
                   </tr>
@@ -357,90 +434,86 @@ export default function Dashboard() {
             </tbody>
           </table>
         </div>
-      </div>
+      </section>
 
+      {/* Seção 5: Top Criativos */}
       {data.topAds.length > 0 && (
-        <div className="rounded-xl border border-gray-200 bg-white overflow-hidden dark:border-gray-800 dark:bg-gray-900">
-          <div className="border-b border-gray-200 bg-gray-50 px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 dark:border-gray-800 dark:bg-gray-900/50">
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-              <TrendingUp size={16} /> Top Anúncios
-            </h3>
-            <select
-              value={topAdsMetric}
-              onChange={(e) => setTopAdsMetric(e.target.value)}
-              className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-1 text-xs text-gray-900 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-            >
-              <option value="roas">ROAS</option>
-              <option value="leads">Leads</option>
-              <option value="spend">Investimento</option>
-              <option value="cpl">CPL</option>
-              <option value="ctr">CTR</option>
-              <option value="purchases">Vendas</option>
-              <option value="totalConversionValue">Valor de Conversão</option>
-            </select>
+        <section className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <Eye size={20} className="text-indigo-500" />
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white uppercase tracking-wider">Top Anúncios por Performance</h3>
+            </div>
+            <div className="flex items-center gap-2 bg-white dark:bg-gray-900 p-1.5 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
+              <span className="text-[10px] font-black text-gray-400 uppercase pl-2 pr-1">Filtrar por:</span>
+              <select
+                value={topAdsMetric}
+                onChange={(e) => setTopAdsMetric(e.target.value)}
+                className="bg-gray-50 dark:bg-gray-950 rounded-lg px-3 py-1.5 text-xs font-bold text-gray-900 dark:text-white focus:outline-none border border-gray-100 dark:border-gray-800"
+              >
+                <option value="roas">ROAS</option>
+                <option value="leads">Leads</option>
+                <option value="messaging">Mensagens</option>
+                <option value="cpmsg">Custo por Msg</option>
+                <option value="spend">Investimento</option>
+                <option value="cpl">CPL</option>
+                <option value="ctr">CTR</option>
+                <option value="purchases">Vendas</option>
+                <option value="totalConversionValue">Valor de Conversão</option>
+              </select>
+            </div>
           </div>
-          <div className="grid gap-4 p-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             {[...data.topAds]
               .sort((a, b) => {
-                const aVal = topAdsMetric === 'cpl' ? -a[topAdsMetric as keyof typeof a] : a[topAdsMetric as keyof typeof a];
-                const bVal = topAdsMetric === 'cpl' ? -b[topAdsMetric as keyof typeof b] : b[topAdsMetric as keyof typeof b];
-                return Number(bVal) - Number(aVal);
+                const metricKey = topAdsMetric as keyof typeof a;
+                const aVal = (topAdsMetric === 'cpl' || topAdsMetric === 'cpmsg') ? -Number(a[metricKey]) : Number(a[metricKey]);
+                const bVal = (topAdsMetric === 'cpl' || topAdsMetric === 'cpmsg') ? -Number(b[metricKey]) : Number(b[metricKey]);
+                return bVal - aVal;
               })
               .slice(0, 8)
               .map((ad, idx) => {
                 const displayUrl = refreshedMedia[ad.adId] || ad.creativeUrl;
                 const metricVal = ad[topAdsMetric as keyof typeof ad];
                 return (
-                  <div key={ad.adId} className="rounded-lg border border-gray-200 bg-gray-50 overflow-hidden dark:border-gray-800 dark:bg-gray-950">
-                    {displayUrl ? (
-                      <div
-                        className="relative w-full cursor-pointer bg-gray-200 dark:bg-gray-800 group"
-                        onClick={() => setMediaViewer({ url: mediaUrl(displayUrl) || '', type: ad.creativeType || 'image', name: ad.adName })}
-                      >
-                        {ad.creativeType === 'video' ? (
-                          <>
-                            <video
-                              src={mediaUrl(displayUrl)}
-                              className="h-48 w-full object-cover"
-                              muted
-                              preload="metadata"
-                              onError={() => handleMediaError(ad.adId)}
-                            />
-                            <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/50 transition-colors">
-                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
-                                <Play size={18} className="text-white ml-0.5" fill="white" />
+                  <div key={ad.adId} className="group overflow-hidden rounded-3xl border border-gray-200 bg-white transition-all hover:shadow-2xl hover:-translate-y-1 dark:border-gray-800 dark:bg-gray-950">
+                    <div className="relative">
+                      {displayUrl ? (
+                        <div
+                          className="relative w-full aspect-square cursor-pointer bg-gray-100 dark:bg-gray-900 overflow-hidden"
+                          onClick={() => setMediaViewer({ url: mediaUrl(displayUrl) || '', type: ad.creativeType || 'image', name: ad.adName })}
+                        >
+                          {ad.creativeType === 'video' ? (
+                            <>
+                              <video src={mediaUrl(displayUrl)} className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-700" muted preload="metadata" onError={() => handleMediaError(ad.adId)} />
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-colors">
+                                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/30 backdrop-blur-md shadow-xl border border-white/20">
+                                  <Play size={20} className="text-white ml-1" fill="white" />
+                                </div>
                               </div>
-                            </div>
-                          </>
-                        ) : (
-                          <img
-                            src={mediaUrl(displayUrl)}
-                            alt={ad.adName}
-                            className="h-48 w-full object-cover transition-opacity group-hover:opacity-80"
-                            loading="lazy"
-                            onError={() => handleMediaError(ad.adId)}
-                          />
-                        )}
-                      </div>
-                    ) : (
-                      <div className="flex h-48 items-center justify-center bg-gray-200 dark:bg-gray-800">
-                        <Eye size={24} className="text-gray-400 dark:text-gray-600" />
-                      </div>
-                    )}
-                    <div className="p-3">
-                      <div className="mb-1 flex items-center gap-2">
-                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[10px] font-bold text-white">
-                          {idx + 1}
-                        </span>
-                        <p className="truncate text-xs font-semibold text-gray-900 dark:text-white">{ad.adName}</p>
-                      </div>
-                      <p className="mb-2 truncate text-[10px] text-gray-500">{ad.campaignName}</p>
-                      <div className="flex items-center justify-between">
-                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                          topAdsMetric === 'roas' ? (Number(metricVal) >= 2 ? 'bg-purple-600/10 text-purple-600 dark:bg-purple-500/10 dark:text-purple-400' : 'bg-gray-200 text-gray-500 dark:bg-gray-800 dark:text-gray-400') :
-                          topAdsMetric === 'ctr' ? 'bg-teal-600/10 text-teal-600 dark:bg-teal-500/10 dark:text-teal-400' :
-                          topAdsMetric === 'cpl' ? 'bg-orange-600/10 text-orange-600 dark:bg-orange-500/10 dark:text-orange-400' :
-                          'bg-green-600/10 text-green-600 dark:bg-green-500/10 dark:text-green-400'
+                            </>
+                          ) : (
+                            <img src={mediaUrl(displayUrl)} alt={ad.adName} className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-700" loading="lazy" onError={() => handleMediaError(ad.adId)} />
+                          )}
+                          <div className="absolute top-4 left-4 h-7 w-7 flex items-center justify-center rounded-full bg-black/50 backdrop-blur-md text-[10px] font-black text-white border border-white/20">
+                            #{idx + 1}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex aspect-square items-center justify-center bg-gray-100 dark:bg-gray-900">
+                          <Eye size={32} className="text-gray-300 dark:text-gray-700" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-5">
+                      <h4 className="truncate text-sm font-black text-gray-900 dark:text-white mb-1">{ad.adName}</h4>
+                      <p className="mb-4 truncate text-[10px] font-bold text-gray-400 uppercase tracking-widest">{ad.campaignName}</p>
+                      
+                      <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-800">
+                        <span className={`inline-flex items-center rounded-lg px-2.5 py-1.5 text-[11px] font-black uppercase border ${
+                          topAdsMetric === 'roas' ? (Number(metricVal) >= 2 ? 'bg-purple-50 text-purple-600 border-purple-100 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800' : 'bg-gray-50 text-gray-500 border-gray-100 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700') :
+                          'bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800'
                         }`}>
                           {topAdsMetric === 'roas' ? `${Number(metricVal).toFixed(2)}x` :
                            topAdsMetric === 'ctr' ? `${Number(metricVal).toFixed(2)}%` :
@@ -448,31 +521,38 @@ export default function Dashboard() {
                            fmtNumber(Number(metricVal))}
                           {' '}{METRIC_LABELS[topAdsMetric] || topAdsMetric}
                         </span>
-                        {ad.previewLink && (
-                          <a href={ad.previewLink} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-gray-600 dark:text-gray-600 dark:hover:text-gray-400">
-                            <ExternalLink size={12} />
-                          </a>
-                        )}
+                        <div className="flex gap-2">
+                          {ad.previewLink && (
+                            <a href={ad.previewLink} target="_blank" rel="noopener noreferrer" className="p-2 rounded-lg bg-gray-50 text-gray-400 hover:bg-blue-50 hover:text-blue-500 dark:bg-gray-900 dark:hover:bg-blue-900/20 transition-all">
+                              <ExternalLink size={14} />
+                            </a>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
                 );
               })}
           </div>
-        </div>
+        </section>
       )}
 
+      {/* Seção 6: Breakdowns (Segmentação) */}
       {(data.audienceData.length > 0 || data.placementData.length > 0 || data.regionData.length > 0) && (
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Segmentação</h3>
+        <section className="space-y-6">
+          <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-800 pb-4">
+            <div className="flex items-center gap-2">
+              <MapPin size={20} className="text-orange-500" />
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white uppercase tracking-wider">Análise de Segmentação</h3>
+            </div>
             <select
               value={breakdownMetric}
               onChange={(e) => setBreakdownMetric(e.target.value)}
-              className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-1 text-xs text-gray-900 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+              className="bg-white dark:bg-gray-900 rounded-xl px-4 py-2 text-xs font-black text-gray-900 dark:text-white focus:outline-none border border-gray-200 dark:border-gray-800 shadow-sm"
             >
               <option value="spend">Investimento</option>
               <option value="leads">Leads</option>
+              <option value="messaging">Mensagens</option>
               <option value="purchases">Vendas</option>
               <option value="purchaseValue">Valor de Venda</option>
               <option value="totalConversionValue">Valor de Conversão</option>
@@ -481,50 +561,38 @@ export default function Dashboard() {
             </select>
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-3">
+          <div className="grid gap-8 lg:grid-cols-3">
+            {/* Plataformas */}
             {data.placementData.length > 0 && (
-              <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6 dark:border-gray-800 dark:bg-gray-900">
-                <h3 className="mb-4 text-sm font-semibold text-gray-500 dark:text-gray-400 flex items-center gap-2">
-                  <Monitor size={16} /> Plataformas
-                </h3>
-                <ResponsiveContainer width="100%" height={250}>
+              <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                <h4 className="mb-8 text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                  <Monitor size={16} /> Distribuição por Canal
+                </h4>
+                <ResponsiveContainer width="100%" height={220}>
                   <PieChart>
                     <Pie
                       data={data.placementData.map(p => ({ name: p.platform, value: Number(p[breakdownMetric as keyof typeof p] || 0) }))}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={50}
-                      outerRadius={80}
-                      paddingAngle={3}
-                      dataKey="value"
+                      cx="50%" cy="50%" innerRadius={60} outerRadius={85} paddingAngle={5} dataKey="value"
                     >
                       {data.placementData.map((_, i) => (
-                        <Cell key={i} fill={['#3B82F6', '#8B5CF6', '#EC4899', '#F59E0B'][i % 4]} />
+                        <Cell key={i} fill={['#3B82F6', '#8B5CF6', '#EC4899', '#F59E0B'][i % 4]} stroke="none" />
                       ))}
                     </Pie>
                     <Tooltip
-                      contentStyle={{ 
-                        backgroundColor: theme === 'dark' ? '#111827' : '#FFFFFF', 
-                        border: theme === 'dark' ? '1px solid #374151' : '1px solid #E5E7EB', 
-                        borderRadius: '12px',
-                        color: theme === 'dark' ? '#F3F4F6' : '#111827'
-                      }}
-                      formatter={(value) => [fmtBreakdownValue(breakdownMetric, Number(value)), METRIC_LABELS[breakdownMetric] || breakdownMetric]}
-                    />
-                    <Legend
-                      verticalAlign="bottom"
-                      iconType="circle"
-                      iconSize={8}
-                      formatter={(val) => <span className="text-xs text-gray-500 dark:text-gray-400">{val}</span>}
+                      contentStyle={{ backgroundColor: theme === 'dark' ? '#111827' : '#FFFFFF', border: 'none', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
+                      formatter={(value) => [fmtBreakdownValue(breakdownMetric, Number(value)), METRIC_LABELS[breakdownMetric]]}
                     />
                   </PieChart>
                 </ResponsiveContainer>
-                <div className="mt-2 space-y-1">
-                  {data.placementData.map(p => (
-                    <div key={p.platform} className="flex items-center justify-between text-xs">
-                      <span className="text-gray-500 dark:text-gray-400">{p.platform}</span>
-                      <span className="text-gray-700 dark:text-gray-300">
-                        {fmtBreakdownValue(breakdownMetric, Number(p[breakdownMetric as keyof typeof p] || 0))} · {fmtNumber(p.leads)} leads
+                <div className="mt-6 space-y-3">
+                  {data.placementData.map((p, i) => (
+                    <div key={p.platform} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className={`h-2 w-2 rounded-full ${['bg-blue-500', 'bg-purple-500', 'bg-pink-500', 'bg-orange-500'][i % 4]}`} />
+                        <span className="text-xs font-bold text-gray-700 dark:text-gray-300 capitalize">{p.platform}</span>
+                      </div>
+                      <span className="text-[11px] font-black text-gray-900 dark:text-white">
+                        {fmtBreakdownValue(breakdownMetric, Number(p[breakdownMetric as keyof typeof p] || 0))}
                       </span>
                     </div>
                   ))}
@@ -532,139 +600,91 @@ export default function Dashboard() {
               </div>
             )}
 
+            {/* Público */}
             {data.audienceData.length > 0 && (
-              <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6 dark:border-gray-800 dark:bg-gray-900">
-                <h3 className="mb-4 text-sm font-semibold text-gray-500 dark:text-gray-400 flex items-center gap-2">
-                  <UserCircle size={16} /> Público (Sexo × Idade)
-                </h3>
+              <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                <h4 className="mb-8 text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                  <UserCircle size={16} /> Perfil Demográfico
+                </h4>
                 {(() => {
                   const ageRanges = [...new Set(data.audienceData.map(a => a.ageRange))];
                   const maleMap = new Map(data.audienceData.filter(a => a.gender === 'male').map(a => [a.ageRange, Number(a[breakdownMetric as keyof typeof a] || 0)]));
                   const femaleMap = new Map(data.audienceData.filter(a => a.gender === 'female').map(a => [a.ageRange, Number(a[breakdownMetric as keyof typeof a] || 0)]));
-                  const chartData = ageRanges.map(age => ({
-                    age,
-                    Masculino: maleMap.get(age) || 0,
-                    Feminino: femaleMap.get(age) || 0,
-                  }));
+                  const chartData = ageRanges.map(age => ({ age, Masculino: maleMap.get(age) || 0, Feminino: femaleMap.get(age) || 0 }));
                   return (
-                    <ResponsiveContainer width="100%" height={250}>
+                    <ResponsiveContainer width="100%" height={220}>
                       <BarChart data={chartData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#374151' : '#E5E7EB'} />
-                        <XAxis dataKey="age" stroke={theme === 'dark' ? '#4B5563' : '#9CA3AF'} tick={{ fontSize: 9 }} />
-                        <YAxis stroke={theme === 'dark' ? '#4B5563' : '#9CA3AF'} tick={{ fontSize: 9 }} />
+                        <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#374151' : '#E5E7EB'} vertical={false} />
+                        <XAxis dataKey="age" stroke={theme === 'dark' ? '#4B5563' : '#9CA3AF'} tick={{ fontSize: 9, fontWeight: 700 }} />
+                        <YAxis hide />
                         <Tooltip
-                          contentStyle={{ 
-                            backgroundColor: theme === 'dark' ? '#111827' : '#FFFFFF', 
-                            border: theme === 'dark' ? '1px solid #374151' : '1px solid #E5E7EB', 
-                            borderRadius: '12px',
-                            color: theme === 'dark' ? '#F3F4F6' : '#111827'
-                          }}
+                          contentStyle={{ backgroundColor: theme === 'dark' ? '#111827' : '#FFFFFF', border: 'none', borderRadius: '12px' }}
                           formatter={(value) => [fmtBreakdownValue(breakdownMetric, Number(value)), '']}
                         />
-                        <Bar dataKey="Masculino" fill="#3B82F6" radius={[4, 4, 0, 0]} barSize={16} />
-                        <Bar dataKey="Feminino" fill="#EC4899" radius={[4, 4, 0, 0]} barSize={16} />
+                        <Bar dataKey="Masculino" fill="#3B82F6" radius={[4, 4, 0, 0]} barSize={10} />
+                        <Bar dataKey="Feminino" fill="#EC4899" radius={[4, 4, 0, 0]} barSize={10} />
                       </BarChart>
                     </ResponsiveContainer>
                   );
                 })()}
-                <div className="mt-2 flex items-center gap-4 text-xs text-gray-500">
-                  <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-blue-500" /> Masculino</span>
-                  <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-pink-500" /> Feminino</span>
-                </div>
-                <div className="mt-2 space-y-1">
-                  {[...data.audienceData]
-                    .sort((a, b) => Number(b[breakdownMetric as keyof typeof b] || 0) - Number(a[breakdownMetric as keyof typeof a] || 0))
-                    .slice(0, 6)
-                    .map((a, i) => (
-                      <div key={i} className="flex items-center justify-between text-xs">
-                        <span className="text-gray-500 dark:text-gray-400">{a.gender === 'male' ? '♂' : '♀'} {a.ageRange}</span>
-                        <span className="text-gray-700 dark:text-gray-300">
-                          {fmtBreakdownValue(breakdownMetric, Number(a[breakdownMetric as keyof typeof a] || 0))} · {fmtNumber(a.leads)} leads
-                        </span>
-                      </div>
-                    ))}
+                <div className="mt-6 flex justify-center gap-6">
+                  <span className="flex items-center gap-1 text-[10px] font-black text-gray-400 uppercase"><span className="w-2 h-2 rounded-full bg-blue-500" /> Masc</span>
+                  <span className="flex items-center gap-1 text-[10px] font-black text-gray-400 uppercase"><span className="w-2 h-2 rounded-full bg-pink-500" /> Fem</span>
                 </div>
               </div>
             )}
 
-            {data.regionData.length > 0 && (() => {
-              const sortedRegions = [...data.regionData].sort((a, b) =>
-                Number(b[breakdownMetric as keyof typeof b] || 0) - Number(a[breakdownMetric as keyof typeof a] || 0)
-              );
-              return (
-              <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6 dark:border-gray-800 dark:bg-gray-900">
-                <h3 className="mb-4 text-sm font-semibold text-gray-500 dark:text-gray-400 flex items-center gap-2">
-                  <MapPin size={16} /> Top Regiões
-                </h3>
-                <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={sortedRegions} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#374151' : '#E5E7EB'} horizontal={false} />
-                    <XAxis type="number" stroke={theme === 'dark' ? '#4B5563' : '#9CA3AF'} tick={{ fontSize: 9 }} />
-                    <YAxis type="category" dataKey="region" stroke={theme === 'dark' ? '#4B5563' : '#9CA3AF'} tick={{ fontSize: 9 }} width={100} />
-                    <Tooltip
-                      contentStyle={{ 
-                        backgroundColor: theme === 'dark' ? '#111827' : '#FFFFFF', 
-                        border: theme === 'dark' ? '1px solid #374151' : '1px solid #E5E7EB', 
-                        borderRadius: '12px',
-                        color: theme === 'dark' ? '#F3F4F6' : '#111827'
-                      }}
-                      formatter={(value) => [fmtBreakdownValue(breakdownMetric, Number(value)), METRIC_LABELS[breakdownMetric] || breakdownMetric]}
-                    />
-                    <Bar dataKey={breakdownMetric} fill="#F59E0B" name={METRIC_LABELS[breakdownMetric] || breakdownMetric} radius={[0, 4, 4, 0]} barSize={14} />
-                  </BarChart>
-                </ResponsiveContainer>
-                <div className="mt-2 space-y-1">
-                  {sortedRegions.slice(0, 6).map((r) => (
-                    <div key={r.region} className="flex items-center justify-between text-xs">
-                      <span className="text-gray-500 dark:text-gray-400">{r.region}</span>
-                      <span className="text-gray-700 dark:text-gray-300">
-                        {fmtBreakdownValue(breakdownMetric, Number(r[breakdownMetric as keyof typeof r] || 0))} · {fmtNumber(r.leads)} leads
-                      </span>
-                    </div>
-                  ))}
+            {/* Regiões */}
+            {data.regionData.length > 0 && (
+              <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                <h4 className="mb-8 text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                  <MapPin size={16} /> Top Localizações
+                </h4>
+                <div className="space-y-4">
+                  {data.regionData.slice(0, 5).map((r, i) => {
+                    const maxVal = Math.max(...data.regionData.map(reg => Number(reg[breakdownMetric as keyof typeof reg] || 0)));
+                    const val = Number(r[breakdownMetric as keyof typeof r] || 0);
+                    const width = (val / maxVal) * 100;
+                    return (
+                      <div key={r.region} className="space-y-1.5">
+                        <div className="flex justify-between text-[11px] font-bold">
+                          <span className="text-gray-700 dark:text-gray-300">{r.region}</span>
+                          <span className="text-gray-900 dark:text-white">{fmtBreakdownValue(breakdownMetric, val)}</span>
+                        </div>
+                        <div className="h-1.5 w-full bg-gray-50 dark:bg-gray-800 rounded-full overflow-hidden">
+                          <div className={`h-full bg-orange-500 transition-all duration-1000 delay-${i*100}`} style={{ width: `${width}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
-              );
-            })()}
+            )}
           </div>
-        </div>
+        </section>
       )}
 
       {mediaViewer && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/95 backdrop-blur-xl p-4 animate-in fade-in duration-300"
           onClick={() => setMediaViewer(null)}
         >
-          <div
-            className="relative max-h-[90vh] max-w-4xl w-full rounded-2xl bg-gray-900 border border-gray-700 overflow-hidden shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between border-b border-gray-800 px-4 py-3">
-              <p className="truncate text-sm font-medium text-white pr-4">{mediaViewer.name}</p>
-              <button
-                onClick={() => setMediaViewer(null)}
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white transition-colors"
-              >
-                <X size={16} />
-              </button>
-            </div>
-            <div className="flex items-center justify-center bg-black p-2" style={{ maxHeight: 'calc(90vh - 56px)' }}>
+          <div className="relative w-full max-w-4xl" onClick={e => e.stopPropagation()}>
+            <button
+              onClick={() => setMediaViewer(null)}
+              className="absolute -top-12 right-0 p-2 text-white/50 hover:text-white transition-colors"
+            >
+              <X size={32} />
+            </button>
+            <div className="rounded-3xl overflow-hidden shadow-2xl border border-white/10">
               {mediaViewer.type === 'video' ? (
-                <video
-                  src={mediaViewer.url}
-                  controls
-                  autoPlay
-                  className="max-h-[calc(90vh-72px)] w-auto rounded-lg"
-                  style={{ maxWidth: '100%' }}
-                />
+                <video src={mediaViewer.url} className="w-full max-h-[80vh]" controls autoPlay />
               ) : (
-                <img
-                  src={mediaViewer.url}
-                  alt={mediaViewer.name}
-                  className="max-h-[calc(90vh-72px)] w-auto rounded-lg object-contain"
-                  style={{ maxWidth: '100%' }}
-                />
+                <img src={mediaViewer.url} alt={mediaViewer.name} className="w-full max-h-[80vh] object-contain" />
               )}
+            </div>
+            <div className="mt-4 text-center">
+              <h5 className="text-white font-black text-lg">{mediaViewer.name}</h5>
             </div>
           </div>
         </div>

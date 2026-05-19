@@ -117,11 +117,13 @@ export interface DashboardMetrics {
   totalPurchases: number;
   totalPurchaseValue: number;
   totalConversionValue: number;
+  totalMessaging: number;
   avgCpl: number;
   avgCpc: number;
   avgCpm: number;
   avgCtr: number;
   avgRoas: number;
+  avgCpmsg: number;
   clientMetrics: {
     actId: string;
     name: string;
@@ -129,7 +131,9 @@ export interface DashboardMetrics {
     leads: number;
     conversionValue: number;
     purchases: number;
+    messaging: number;
     roas: number;
+    cpmsg: number;
   }[];
   dailyMetrics: {
     date: string;
@@ -138,6 +142,7 @@ export interface DashboardMetrics {
     clicks: number;
     conversionValue: number;
     purchases: number;
+    messaging: number;
   }[];
   goals: Goal[];
   topAds: {
@@ -153,9 +158,11 @@ export interface DashboardMetrics {
     impressions: number;
     purchases: number;
     totalConversionValue: number;
+    messaging: number;
     roas: number;
     cpl: number;
     ctr: number;
+    cpmsg: number;
   }[];
   audienceData: {
     gender: string;

@@ -34,6 +34,8 @@ enum GoalMetric {
   impressions
   purchases
   purchase_value
+  messaging
+  cpmsg
 }
 
 enum AlertType {

@@ -11,6 +11,8 @@ const METRIC_LABELS: Record<string, string> = {
   impressions: 'Impressões',
   purchases: 'Compras',
   purchase_value: 'Valor de Compras',
+  messaging: 'Mensagens',
+  cpmsg: 'Custo por Mensagem',
 };
 
 interface BudgetCardProps {
