@@ -116,15 +116,15 @@ export default function SyncForm({ clients, syncing, onSubmit }: SyncFormProps) 
       
       <form
         onSubmit={handleSubmit(handleFormSubmit)}
-        className="rounded-2xl border border-gray-200 bg-white p-6 shadow-xl shadow-purple-900/5 dark:border-gray-800 dark:bg-gray-900/40 dark:backdrop-blur-sm"
+        className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 shadow-xl shadow-purple-900/5 dark:border-gray-800 dark:bg-gray-900/40 dark:backdrop-blur-sm"
       >
-        <div className="mb-6 flex flex-wrap gap-2">
+        <div className="mb-4 sm:mb-6 flex flex-wrap gap-1.5 sm:gap-2">
           {presets.map((p) => (
             <button
               key={p.key}
               type="button"
               onClick={() => handlePreset(p.key)}
-              className="flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-2 text-xs font-semibold text-gray-500 transition-all hover:border-purple-500/50 hover:bg-purple-50 hover:text-purple-600 dark:border-gray-800 dark:bg-gray-900/80 dark:text-gray-400 dark:hover:bg-purple-500/5 dark:hover:text-purple-400 active:scale-95"
+              className="flex items-center gap-1.5 sm:gap-2 rounded-xl border border-gray-200 bg-gray-50 px-2.5 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs font-semibold text-gray-500 transition-all hover:border-purple-500/50 hover:bg-purple-50 hover:text-purple-600 dark:border-gray-800 dark:bg-gray-900/80 dark:text-gray-400 dark:hover:bg-purple-500/5 dark:hover:text-purple-400 active:scale-95"
             >
               <p.icon size={14} />
               {p.label}
@@ -132,7 +132,7 @@ export default function SyncForm({ clients, syncing, onSubmit }: SyncFormProps) 
           ))}
         </div>
 
-        <div className="grid gap-6 md:grid-cols-4 items-end">
+        <div className="grid gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-4 items-end">
           <Controller
             name="act_id"
             control={control}

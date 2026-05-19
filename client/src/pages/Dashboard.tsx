@@ -171,12 +171,12 @@ export default function Dashboard() {
       }));
 
   return (
-    <div className="max-w-[1600px] mx-auto space-y-10 pb-20">
+    <div className="max-w-[1600px] mx-auto px-2 sm:px-0 space-y-6 sm:space-y-10 pb-20">
       {/* Header com Contexto */}
-      <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between border-b border-gray-200 dark:border-gray-800 pb-8">
+      <div className="flex flex-col gap-4 sm:gap-6 md:flex-row md:items-center md:justify-between border-b border-gray-200 dark:border-gray-800 pb-6 sm:pb-8">
         <div>
-          <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">Análise de Performance</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-2">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">Análise de Performance</h2>
+          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-2 flex-wrap">
             Monitoramento de tráfego pago em tempo real
             <span className="inline-flex items-center rounded-md bg-blue-50 dark:bg-blue-900/20 px-2 py-1 text-xs font-medium text-blue-700 dark:text-blue-400 ring-1 ring-inset ring-blue-700/10 dark:ring-blue-400/20">
               v2.0.0
@@ -184,9 +184,9 @@ export default function Dashboard() {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-4 bg-white dark:bg-gray-900 p-2 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 bg-white dark:bg-gray-900 p-2 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
           <div className="flex items-center gap-2 px-3 py-0 bg-gray-50 dark:bg-gray-950 rounded-xl border border-gray-100 dark:border-gray-800">
-            <Filter size={16} className="text-blue-500" />
+            <Filter size={16} className="text-blue-500 shrink-0" />
             <ClientSelector
               clients={clients}
               selectedId={selectedClient}
@@ -194,13 +194,13 @@ export default function Dashboard() {
               placeholder="Todos os Clientes"
               showIcon={false}
               variant="ghost"
-              className="!space-y-0 min-w-[180px]"
+              className="!space-y-0 min-w-0 sm:min-w-[180px]"
             />
           </div>
 
           <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-950 rounded-xl border border-gray-100 dark:border-gray-800">
-            <CalendarIcon size={16} className="text-purple-500" />
-            <div className="flex items-center gap-2">
+            <CalendarIcon size={16} className="text-purple-500 shrink-0" />
+            <div className="flex flex-wrap items-center gap-2">
               <DatePicker value={since} onChange={setSince} />
               <span className="text-gray-300 dark:text-gray-700">—</span>
               <DatePicker value={until} onChange={setUntil} />
@@ -216,25 +216,25 @@ export default function Dashboard() {
       </div>
 
       {/* Seção 1: KPIs Principais */}
-      <section className="space-y-4">
+      <section className="space-y-3 sm:space-y-4">
         <div className="flex items-center gap-2">
           <TrendingUp size={20} className="text-blue-500" />
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white uppercase tracking-wider">Métricas de Resultado</h3>
+          <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white uppercase tracking-wider">Métricas de Resultado</h3>
         </div>
-        <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
           {cards.map((card) => (
-            <div key={card.label} className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-5 transition-all hover:shadow-xl hover:border-blue-500/20 dark:border-gray-800 dark:bg-gray-900">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-50 dark:bg-gray-950 border border-gray-100 dark:border-gray-800 group-hover:scale-110 transition-transform">
-                  <card.icon size={20} className={card.color} />
+            <div key={card.label} className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-3 sm:p-5 transition-all hover:shadow-xl hover:border-blue-500/20 dark:border-gray-800 dark:bg-gray-900">
+              <div className="flex items-center justify-between mb-2 sm:mb-3">
+                <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-gray-50 dark:bg-gray-950 border border-gray-100 dark:border-gray-800 group-hover:scale-110 transition-transform">
+                  <card.icon size={16} className={`sm:!w-[20px] sm:!h-[20px] ${card.color}`} />
                 </div>
-                <div className="flex items-center gap-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                <div className="hidden sm:flex items-center gap-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                   KPI <span title={`Métrica de ${card.label}`} className="cursor-help"><Info size={12} /></span>
                 </div>
               </div>
               <div>
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">{card.label}</p>
-                <h4 className={`text-2xl font-black tracking-tight ${card.color}`}>
+                <p className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider mb-0.5 sm:mb-1">{card.label}</p>
+                <h4 className={`text-lg sm:text-2xl font-black tracking-tight ${card.color}`}>
                   {card.fmt(card.value)}
                 </h4>
               </div>
@@ -246,12 +246,12 @@ export default function Dashboard() {
 
       {/* Seção 2: Objetivos e Metas */}
       {data.goals.length > 0 && selectedClient && (
-        <section className="space-y-4">
+        <section className="space-y-3 sm:space-y-4">
           <div className="flex items-center gap-2">
             <Target size={20} className="text-purple-500" />
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white uppercase tracking-wider">Objetivos da Campanha</h3>
+            <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white uppercase tracking-wider">Objetivos da Campanha</h3>
           </div>
-          <div className="grid gap-6 md:grid-cols-3">
+          <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
             {data.goals.map((goal) => {
               const currentVal = getGoalCurrentValue(goal.metric);
               const isInverse = goal.metric === 'cpl' || goal.metric === 'cpmsg';
@@ -262,7 +262,7 @@ export default function Dashboard() {
               const isAtingida = isInverse ? Number(currentVal) <= Number(goal.targetValue) : Number(currentVal) >= Number(goal.targetValue);
 
               return (
-                <div key={goal.id} className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                <div key={goal.id} className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex flex-col">
                       <span className="text-xs font-black text-gray-400 uppercase tracking-widest">{METRIC_LABELS[goal.metric] || goal.metric}</span>
@@ -300,9 +300,9 @@ export default function Dashboard() {
       )}
 
       {/* Seção 3: Visualizações de Performance */}
-      <section className="grid gap-8 lg:grid-cols-2">
-        <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900 transition-all hover:shadow-md">
-          <div className="flex items-center justify-between mb-8">
+      <section className="grid gap-6 sm:gap-8 lg:grid-cols-2">
+        <div className="rounded-3xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900 transition-all hover:shadow-md">
+          <div className="flex items-center justify-between mb-4 sm:mb-8">
             <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
               <BarChart3 size={18} className="text-blue-500" /> Tendência de Investimento
             </h3>
@@ -311,7 +311,7 @@ export default function Dashboard() {
                <span className="flex items-center gap-1 text-[10px] font-bold text-gray-400 uppercase"><span className="w-2 h-2 rounded-full bg-emerald-500" /> Leads</span>
             </div>
           </div>
-          <ResponsiveContainer width="100%" height={320}>
+          <ResponsiveContainer width="100%" height={240} className="sm:!h-[320px]">
             <AreaChart data={data.dailyMetrics}>
               <defs>
                 <linearGradient id="colorSpend" x1="0" y1="0" x2="0" y2="1">
@@ -354,13 +354,13 @@ export default function Dashboard() {
           </ResponsiveContainer>
         </div>
 
-        <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900 transition-all hover:shadow-md">
-          <div className="flex items-center justify-between mb-8">
+        <div className="rounded-3xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900 transition-all hover:shadow-md">
+          <div className="flex items-center justify-between mb-4 sm:mb-8">
             <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
               <Users size={18} className="text-purple-500" /> {selectedClient ? 'Performance Diária' : 'Comparativo de Clientes'}
             </h3>
           </div>
-          <ResponsiveContainer width="100%" height={320}>
+          <ResponsiveContainer width="100%" height={240} className="sm:!h-[320px]">
             <BarChart data={barChartData}>
               <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#374151' : '#E5E7EB'} vertical={false} />
               <XAxis dataKey="label" stroke={theme === 'dark' ? '#4B5563' : '#9CA3AF'} tick={{ fontSize: 10, fontWeight: 700 }} />
@@ -385,8 +385,8 @@ export default function Dashboard() {
 
       {/* Seção 4: Ranking e Tabelas */}
       <section className="rounded-3xl border border-gray-200 bg-white overflow-hidden shadow-sm dark:border-gray-800 dark:bg-gray-900 transition-all hover:shadow-md">
-        <div className="border-b border-gray-200 bg-gray-50/50 px-8 py-6 dark:border-gray-800 dark:bg-gray-900/50 flex items-center justify-between">
-          <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
+        <div className="border-b border-gray-200 bg-gray-50/50 px-4 sm:px-8 py-4 sm:py-6 dark:border-gray-800 dark:bg-gray-900/50 flex items-center justify-between">
+          <h3 className="text-xs sm:text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
             <BarChart3 size={18} className="text-emerald-500" /> Ranking de Performance
           </h3>
         </div>
@@ -394,14 +394,14 @@ export default function Dashboard() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-gray-50/30 text-gray-400 uppercase text-[10px] font-black tracking-widest dark:bg-gray-950/30">
-                <th className="px-8 py-5 border-b border-gray-100 dark:border-gray-800">Cliente</th>
-                <th className="px-6 py-5 border-b border-gray-100 dark:border-gray-800 text-right">Investimento</th>
-                <th className="px-6 py-5 border-b border-gray-100 dark:border-gray-800 text-right">Leads</th>
-                <th className="px-6 py-5 border-b border-gray-100 dark:border-gray-800 text-right">Msgs</th>
-                <th className="px-6 py-5 border-b border-gray-100 dark:border-gray-800 text-right">CPMsg</th>
-                <th className="px-6 py-5 border-b border-gray-100 dark:border-gray-800 text-right">CPL</th>
-                <th className="px-6 py-5 border-b border-gray-100 dark:border-gray-800 text-right">Conversão</th>
-                <th className="px-8 py-5 border-b border-gray-100 dark:border-gray-800 text-right">ROAS</th>
+                <th className="px-4 sm:px-8 py-4 sm:py-5 border-b border-gray-100 dark:border-gray-800">Cliente</th>
+                <th className="px-3 sm:px-6 py-4 sm:py-5 border-b border-gray-100 dark:border-gray-800 text-right">Investimento</th>
+                <th className="px-3 sm:px-6 py-4 sm:py-5 border-b border-gray-100 dark:border-gray-800 text-right">Leads</th>
+                <th className="hidden sm:table-cell px-3 sm:px-6 py-4 sm:py-5 border-b border-gray-100 dark:border-gray-800 text-right">Msgs</th>
+                <th className="hidden sm:table-cell px-3 sm:px-6 py-4 sm:py-5 border-b border-gray-100 dark:border-gray-800 text-right">CPMsg</th>
+                <th className="px-3 sm:px-6 py-4 sm:py-5 border-b border-gray-100 dark:border-gray-800 text-right">CPL</th>
+                <th className="hidden md:table-cell px-3 sm:px-6 py-4 sm:py-5 border-b border-gray-100 dark:border-gray-800 text-right">Conversão</th>
+                <th className="px-4 sm:px-8 py-4 sm:py-5 border-b border-gray-100 dark:border-gray-800 text-right">ROAS</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -409,22 +409,22 @@ export default function Dashboard() {
                 .sort((a, b) => b.spend - a.spend)
                 .map((c) => (
                   <tr key={c.actId} className="transition-colors hover:bg-blue-50/30 dark:hover:bg-blue-900/5">
-                    <td className="px-8 py-5">
-                      <div className="flex items-center gap-3">
+                    <td className="px-4 sm:px-8 py-4 sm:py-5">
+                      <div className="flex items-center gap-2 sm:gap-3">
                         <div className="h-2 w-2 rounded-full bg-blue-500" />
-                        <span className="font-bold text-gray-900 dark:text-white">{c.name}</span>
+                        <span className="font-bold text-sm sm:text-base text-gray-900 dark:text-white">{c.name}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-5 text-right font-black text-gray-700 dark:text-gray-300">{fmtCurrency(c.spend)}</td>
-                    <td className="px-6 py-5 text-right font-black text-gray-700 dark:text-gray-300">{fmtNumber(c.leads)}</td>
-                    <td className="px-6 py-5 text-right font-black text-gray-700 dark:text-gray-300">{fmtNumber(c.messaging)}</td>
-                    <td className="px-6 py-5 text-right font-black text-indigo-600 dark:text-indigo-400">{fmtCurrency(c.cpmsg)}</td>
-                    <td className="px-6 py-5 text-right font-black text-orange-600 dark:text-orange-400">
+                    <td className="px-3 sm:px-6 py-4 sm:py-5 text-right font-black text-xs sm:text-sm text-gray-700 dark:text-gray-300">{fmtCurrency(c.spend)}</td>
+                    <td className="px-3 sm:px-6 py-4 sm:py-5 text-right font-black text-xs sm:text-sm text-gray-700 dark:text-gray-300">{fmtNumber(c.leads)}</td>
+                    <td className="hidden sm:table-cell px-3 sm:px-6 py-4 sm:py-5 text-right font-black text-xs sm:text-sm text-gray-700 dark:text-gray-300">{fmtNumber(c.messaging)}</td>
+                    <td className="hidden sm:table-cell px-3 sm:px-6 py-4 sm:py-5 text-right font-black text-xs sm:text-sm text-indigo-600 dark:text-indigo-400">{fmtCurrency(c.cpmsg)}</td>
+                    <td className="px-3 sm:px-6 py-4 sm:py-5 text-right font-black text-xs sm:text-sm text-orange-600 dark:text-orange-400">
                       {Number(c.leads) > 0 ? fmtCurrency(Number(c.spend) / Number(c.leads)) : '—'}
                     </td>
-                    <td className="px-6 py-5 text-right font-black text-emerald-600 dark:text-emerald-400">{fmtCurrency(c.conversionValue)}</td>
-                    <td className="px-8 py-5 text-right">
-                      <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-black border ${Number(c.roas) >= 2 ? 'bg-purple-50 text-purple-600 border-purple-200 dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-800' : 'bg-gray-50 text-gray-500 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700'}`}>
+                    <td className="hidden md:table-cell px-3 sm:px-6 py-4 sm:py-5 text-right font-black text-xs sm:text-sm text-emerald-600 dark:text-emerald-400">{fmtCurrency(c.conversionValue)}</td>
+                    <td className="px-4 sm:px-8 py-4 sm:py-5 text-right">
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2 sm:px-3 py-1 text-[10px] sm:text-xs font-black border ${Number(c.roas) >= 2 ? 'bg-purple-50 text-purple-600 border-purple-200 dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-800' : 'bg-gray-50 text-gray-500 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700'}`}>
                         {Number(c.roas).toFixed(2)}x
                         {Number(c.roas) >= 2 ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
                       </span>
@@ -438,11 +438,11 @@ export default function Dashboard() {
 
       {/* Seção 5: Top Criativos */}
       {data.topAds.length > 0 && (
-        <section className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <section className="space-y-4 sm:space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
             <div className="flex items-center gap-2">
               <Eye size={20} className="text-indigo-500" />
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white uppercase tracking-wider">Top Anúncios por Performance</h3>
+              <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white uppercase tracking-wider">Top Anúncios por Performance</h3>
             </div>
             <div className="flex items-center gap-2 bg-white dark:bg-gray-900 p-1.5 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
               <span className="text-[10px] font-black text-gray-400 uppercase pl-2 pr-1">Filtrar por:</span>
@@ -464,7 +464,7 @@ export default function Dashboard() {
             </div>
           </div>
           
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {[...data.topAds]
               .sort((a, b) => {
                 const metricKey = topAdsMetric as keyof typeof a;
@@ -539,16 +539,16 @@ export default function Dashboard() {
 
       {/* Seção 6: Breakdowns (Segmentação) */}
       {(data.audienceData.length > 0 || data.placementData.length > 0 || data.regionData.length > 0) && (
-        <section className="space-y-6">
-          <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-800 pb-4">
+        <section className="space-y-4 sm:space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-200 dark:border-gray-800 pb-4">
             <div className="flex items-center gap-2">
               <MapPin size={20} className="text-orange-500" />
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white uppercase tracking-wider">Análise de Segmentação</h3>
+              <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white uppercase tracking-wider">Análise de Segmentação</h3>
             </div>
             <select
               value={breakdownMetric}
               onChange={(e) => setBreakdownMetric(e.target.value)}
-              className="bg-white dark:bg-gray-900 rounded-xl px-4 py-2 text-xs font-black text-gray-900 dark:text-white focus:outline-none border border-gray-200 dark:border-gray-800 shadow-sm"
+              className="w-full sm:w-auto bg-white dark:bg-gray-900 rounded-xl px-4 py-2 text-xs font-black text-gray-900 dark:text-white focus:outline-none border border-gray-200 dark:border-gray-800 shadow-sm"
             >
               <option value="spend">Investimento</option>
               <option value="leads">Leads</option>
@@ -561,11 +561,11 @@ export default function Dashboard() {
             </select>
           </div>
 
-          <div className="grid gap-8 lg:grid-cols-3">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {/* Plataformas */}
             {data.placementData.length > 0 && (
-              <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-                <h4 className="mb-8 text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+              <div className="rounded-3xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                <h4 className="mb-4 sm:mb-8 text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
                   <Monitor size={16} /> Distribuição por Canal
                 </h4>
                 <ResponsiveContainer width="100%" height={220}>
@@ -602,8 +602,8 @@ export default function Dashboard() {
 
             {/* Público */}
             {data.audienceData.length > 0 && (
-              <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-                <h4 className="mb-8 text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+              <div className="rounded-3xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                <h4 className="mb-4 sm:mb-8 text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
                   <UserCircle size={16} /> Perfil Demográfico
                 </h4>
                 {(() => {
@@ -636,8 +636,8 @@ export default function Dashboard() {
 
             {/* Regiões */}
             {data.regionData.length > 0 && (
-              <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-                <h4 className="mb-8 text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+              <div className="rounded-3xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                <h4 className="mb-4 sm:mb-8 text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
                   <MapPin size={16} /> Top Localizações
                 </h4>
                 <div className="space-y-4">
@@ -666,13 +666,13 @@ export default function Dashboard() {
 
       {mediaViewer && (
         <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/95 backdrop-blur-xl p-4 animate-in fade-in duration-300"
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/95 backdrop-blur-xl p-2 sm:p-4 animate-in fade-in duration-300"
           onClick={() => setMediaViewer(null)}
         >
           <div className="relative w-full max-w-4xl" onClick={e => e.stopPropagation()}>
             <button
               onClick={() => setMediaViewer(null)}
-              className="absolute -top-12 right-0 p-2 text-white/50 hover:text-white transition-colors"
+              className="absolute -top-10 sm:-top-12 right-0 p-2 text-white/50 hover:text-white transition-colors"
             >
               <X size={32} />
             </button>

@@ -179,10 +179,10 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
   };
 
   return (
-    <div className="group relative rounded-2xl border border-gray-200 bg-white p-6 transition-all hover:border-blue-500/30 hover:bg-gray-50 shadow-sm hover:shadow-blue-900/5 dark:border-gray-800 dark:bg-gray-900/50 dark:hover:bg-gray-900 dark:hover:shadow-blue-900/10">
+    <div className="group relative rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 transition-all hover:border-blue-500/30 hover:bg-gray-50 shadow-sm hover:shadow-blue-900/5 dark:border-gray-800 dark:bg-gray-900/50 dark:hover:bg-gray-900 dark:hover:shadow-blue-900/10">
       <div className="mb-4 flex items-start justify-between">
         <div>
-          <h4 className="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors dark:text-white dark:group-hover:text-blue-400">{client.clientName}</h4>
+          <h4 className="text-base sm:text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors dark:text-white dark:group-hover:text-blue-400">{client.clientName}</h4>
           <div className="flex items-center gap-2 mt-1">
             <span className="text-[11px] font-mono text-gray-500 bg-gray-100 px-2 py-0.5 rounded border border-gray-200 dark:bg-gray-950 dark:border-gray-800">
               {client.actId}
@@ -210,7 +210,7 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
         <button
           onClick={handleQuickSync}
           disabled={quickSyncing}
-          className="flex items-center justify-center gap-2 rounded-xl bg-green-600/10 px-3 py-2.5 text-xs font-semibold text-green-600 transition-all hover:bg-green-600 hover:text-white disabled:opacity-50 dark:text-green-400 dark:hover:bg-green-600"
+          className="flex items-center justify-center gap-1.5 sm:gap-2 rounded-xl bg-green-600/10 px-2 sm:px-3 py-2 sm:py-2.5 text-[10px] sm:text-xs font-semibold text-green-600 transition-all hover:bg-green-600 hover:text-white disabled:opacity-50 dark:text-green-400 dark:hover:bg-green-600"
         >
           {quickSyncing ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
           Sincronizar
@@ -219,7 +219,7 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
         <button
           onClick={() => onDownload(client.actId)}
           disabled={downloading === client.actId}
-          className="flex items-center justify-center gap-2 rounded-xl bg-blue-600/10 px-3 py-2.5 text-xs font-semibold text-blue-600 transition-all hover:bg-blue-600 hover:text-white disabled:opacity-50 dark:text-blue-400 dark:hover:bg-blue-600"
+          className="flex items-center justify-center gap-1.5 sm:gap-2 rounded-xl bg-blue-600/10 px-2 sm:px-3 py-2 sm:py-2.5 text-[10px] sm:text-xs font-semibold text-blue-600 transition-all hover:bg-blue-600 hover:text-white disabled:opacity-50 dark:text-blue-400 dark:hover:bg-blue-600"
         >
           {downloading === client.actId ? (
             <Loader2 size={14} className="animate-spin" />
@@ -231,7 +231,7 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
 
         <button
           onClick={() => { setShowTokenEdit(!showTokenEdit); setShowDeleteConfirm(false); setShowEdit(false); }}
-          className="flex items-center justify-center gap-2 rounded-xl bg-gray-100 px-3 py-2.5 text-xs font-semibold text-gray-600 transition-all hover:bg-gray-200 hover:text-gray-900 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white"
+          className="flex items-center justify-center gap-1.5 sm:gap-2 rounded-xl bg-gray-100 px-2 sm:px-3 py-2 sm:py-2.5 text-[10px] sm:text-xs font-semibold text-gray-600 transition-all hover:bg-gray-200 hover:text-gray-900 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white"
         >
           <Key size={14} />
           Token
@@ -239,7 +239,7 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
 
         <button
           onClick={() => { setShowDeleteConfirm(!showDeleteConfirm); setShowTokenEdit(false); setShowEdit(false); }}
-          className="flex items-center justify-center gap-2 rounded-xl bg-red-600/10 px-3 py-2.5 text-xs font-semibold text-red-600 transition-all hover:bg-red-600 hover:text-white dark:text-red-400 dark:hover:bg-red-600"
+          className="flex items-center justify-center gap-1.5 sm:gap-2 rounded-xl bg-red-600/10 px-2 sm:px-3 py-2 sm:py-2.5 text-[10px] sm:text-xs font-semibold text-red-600 transition-all hover:bg-red-600 hover:text-white dark:text-red-400 dark:hover:bg-red-600"
         >
           <Trash2 size={14} />
           Excluir

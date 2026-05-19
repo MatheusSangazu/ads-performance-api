@@ -164,7 +164,7 @@ export default function Clients() {
   });
 
   return (
-    <div className="max-w-[1400px] mx-auto pb-20">
+    <div className="max-w-[1400px] mx-auto px-2 sm:px-0 pb-20">
       <ClientHeader 
         onSearch={setSearchTerm}
         onFilterChange={setFilterStatus}
@@ -186,7 +186,7 @@ export default function Clients() {
 
       <div className="space-y-6">
         <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-800 pb-4">
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+          <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
             Resultados
             <span className="text-xs font-medium bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 px-2 py-0.5 rounded-full">
               {filteredClients.length}
@@ -207,7 +207,7 @@ export default function Clients() {
             </p>
           </div>
         ) : viewMode === 'grid' ? (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {filteredClients.map((client) => (
               <ClientCard
                 key={client.actId}
