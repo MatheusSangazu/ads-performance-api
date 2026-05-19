@@ -1,4 +1,4 @@
-import { Download, Key, RefreshCw, Trash2, Pencil, ShieldCheck, ShieldAlert, AlertCircle } from 'lucide-react';
+import { Download, RefreshCw, Trash2, Pencil, ShieldCheck, ShieldAlert, AlertCircle } from 'lucide-react';
 import type { Client } from '../lib/api';
 
 interface ClientTableProps {

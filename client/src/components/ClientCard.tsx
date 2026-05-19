@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Download, Key, Loader2, RefreshCw, Trash2, X, Globe, ShieldCheck, ShieldAlert, AlertCircle, Pencil } from 'lucide-react';
+import { Download, Key, Loader2, RefreshCw, Trash2, X, ShieldCheck, ShieldAlert, AlertCircle, Pencil } from 'lucide-react';
 import { clientApi, syncApi, type Client } from '../lib/api';
 import BudgetCard from './BudgetCard';
 import GoalCard from './GoalCard';
@@ -271,8 +271,20 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
                   className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 outline-none transition-all dark:border-gray-800 dark:bg-gray-950 dark:text-white"
                 />
               </div>
+              <div>
+                <label className="mb-1 block text-[10px] font-bold text-gray-400 uppercase">Custom Event ID</label>
+                <input
+                  value={editCustomEvent}
+                  onChange={(e) => setEditCustomEvent(e.target.value)}
+                  placeholder="Opcional"
+                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 outline-none transition-all dark:border-gray-800 dark:bg-gray-950 dark:text-white dark:placeholder-gray-600"
+                />
+              </div>
               <div className="flex gap-2 pt-2">
-                <button onClick={handleSaveEdit} className="flex-1 rounded-lg bg-blue-600 py-2 text-xs font-bold text-white hover:bg-blue-500">Salvar Alterações</button>
+                <button onClick={handleSaveEdit} disabled={editLoading} className="flex-1 rounded-lg bg-blue-600 py-2 text-xs font-bold text-white hover:bg-blue-500 disabled:opacity-50 flex items-center justify-center gap-2">
+                  {editLoading && <Loader2 size={14} className="animate-spin" />}
+                  Salvar Alterações
+                </button>
               </div>
             </div>
           </div>

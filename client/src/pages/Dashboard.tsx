@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Users, DollarSign, Target, TrendingUp, MousePointerClick, Eye, BarChart3, Loader2, Calendar as CalendarIcon, Filter, CheckCircle2, AlertCircle, ExternalLink, MapPin, Monitor, UserCircle, X, Play, MessageCircle, Info, ArrowUpRight, ArrowDownRight } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie, Legend } from 'recharts';
+import { Users, DollarSign, Target, TrendingUp, MousePointerClick, Eye, BarChart3, Loader2, Calendar as CalendarIcon, Filter, CheckCircle2, ExternalLink, MapPin, Monitor, UserCircle, X, Play, MessageCircle, Info, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie } from 'recharts';
 import { clientApi, syncApi, type DashboardMetrics, type Client } from '../lib/api';
 import { useTheme } from '../contexts/ThemeContext';
 import DatePicker from '../components/DatePicker';
