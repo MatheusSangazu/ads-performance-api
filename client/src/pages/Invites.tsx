@@ -89,33 +89,33 @@ export default function Invites() {
   return (
     <div>
       <div className="mb-6 flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-600/20">
-          <MailPlus size={20} className="text-green-400" />
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-600/10 dark:bg-green-600/20">
+          <MailPlus size={20} className="text-green-600 dark:text-green-400" />
         </div>
-        <h2 className="text-2xl font-bold">Convites</h2>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Convites</h2>
       </div>
 
       {message && <Message type={message.type}>{message.text}</Message>}
 
-      <div className="mb-8 rounded-xl border border-gray-800 bg-gray-900 p-4 sm:p-6">
-        <h3 className="mb-4 text-lg font-semibold">Novo Convite</h3>
+      <div className="mb-8 rounded-xl border border-gray-200 bg-white p-4 sm:p-6 dark:border-gray-800 dark:bg-gray-900">
+        <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Novo Convite</h3>
         <form onSubmit={handleCreate} className="flex flex-col gap-4 sm:flex-row sm:items-end">
           <div className="flex-1">
-            <label className="mb-1 block text-sm text-gray-400">Email (opcional)</label>
+            <label className="mb-1 block text-sm text-gray-500 dark:text-gray-400">Email (opcional)</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none"
+              className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500"
               placeholder="gestor@email.com"
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm text-gray-400">Plano</label>
+            <label className="mb-1 block text-sm text-gray-500 dark:text-gray-400">Plano</label>
             <select
               value={plan}
               onChange={(e) => setPlan(e.target.value)}
-              className="rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 text-white focus:border-blue-500 focus:outline-none"
+              className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-2 text-gray-900 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white"
             >
               <option value="starter">Starter</option>
             <option value="pro">Pro</option>
@@ -133,10 +133,10 @@ export default function Invites() {
         </form>
       </div>
 
-      <h3 className="mb-4 text-lg font-semibold">Todos os Convites</h3>
+      <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Todos os Convites</h3>
 
       {invites.length === 0 ? (
-        <p className="text-gray-500">Nenhum convite criado ainda.</p>
+        <p className="text-gray-500 dark:text-gray-400 text-sm italic">Nenhum convite criado ainda.</p>
       ) : (
         <div className="space-y-3">
           {invites.map((inv) => {
@@ -147,35 +147,35 @@ export default function Invites() {
             return (
               <div
                 key={inv.id}
-                className={`rounded-xl border bg-gray-900 p-4 ${
+                className={`rounded-xl border bg-white p-4 transition-all dark:bg-gray-900 ${
                   used
-                    ? 'border-green-900/30'
+                    ? 'border-green-200 dark:border-green-900/30'
                     : expired
-                    ? 'border-red-900/30 opacity-60'
-                    : 'border-gray-800'
+                    ? 'border-red-200 opacity-60 dark:border-red-900/30'
+                    : 'border-gray-200 dark:border-gray-800'
                 }`}
               >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-3">
                     {used ? (
-                      <CheckCircle size={18} className="text-green-400" />
+                      <CheckCircle size={18} className="text-green-500 dark:text-green-400" />
                     ) : expired ? (
-                      <XCircle size={18} className="text-red-400" />
+                      <XCircle size={18} className="text-red-500 dark:text-red-400" />
                     ) : (
-                      <Clock size={18} className="text-yellow-400" />
+                      <Clock size={18} className="text-yellow-500 dark:text-yellow-400" />
                     )}
                     <div>
-                      <p className="text-sm font-medium">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">
                         {inv.email || 'Email nao definido'}
                       </p>
-                      <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500">
+                      <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
                         <span>Plano: {inv.plan}</span>
                         <span>Criado: {formatDate(inv.createdAt)}</span>
                         <span>Expira: {formatDate(inv.expiresAt)}</span>
                         {inv.createdBy && <span>Por: {inv.createdBy.name}</span>}
                       </div>
                       {used && inv.usedBy && (
-                        <p className="mt-1 text-xs text-green-400">
+                        <p className="mt-1 text-xs text-green-600 dark:text-green-400">
                           Usado por {inv.usedBy.name} ({inv.usedBy.email})
                         </p>
                       )}
@@ -187,7 +187,7 @@ export default function Invites() {
                       <>
                         <button
                           onClick={() => copyLink(inv.token, inv.id)}
-                          className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs text-blue-400 transition-colors hover:bg-blue-900/30"
+                          className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs text-blue-600 transition-colors hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30"
                           title="Copiar link"
                         >
                           {copiedId === inv.id ? (
@@ -204,7 +204,7 @@ export default function Invites() {
                         </button>
                         <button
                           onClick={() => handleRevoke(inv.id)}
-                          className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs text-red-400 transition-colors hover:bg-red-900/30"
+                          className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs text-red-600 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30"
                         >
                           <Trash2 size={14} />
                           Revogar

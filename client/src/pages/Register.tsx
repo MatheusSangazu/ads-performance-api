@@ -65,7 +65,7 @@ export default function Register() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 dark:bg-gray-950 transition-colors">
+    <div className="flex min-h-screen items-center justify-center px-4 transition-colors">
       <div className="absolute right-4 top-4">
         <button
           onClick={toggleTheme}

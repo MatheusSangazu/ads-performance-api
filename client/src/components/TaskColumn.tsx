@@ -34,20 +34,22 @@ export default function TaskColumn({
     <div
       ref={setNodeRef}
       className={`flex min-h-[300px] min-w-[280px] flex-1 flex-col rounded-xl border transition-colors md:min-w-0 ${
-        isOver ? 'border-blue-500/50 bg-gray-900/80' : 'border-gray-800 bg-gray-900/50'
+        isOver 
+          ? 'border-blue-500/50 bg-blue-50 dark:bg-gray-900/80' 
+          : 'border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900/50'
       }`}
     >
-      <div className="flex items-center gap-2 border-b border-gray-800 px-4 py-3">
+      <div className="flex items-center gap-2 border-b border-gray-200 px-4 py-3 dark:border-gray-800">
         <div className={`h-2.5 w-2.5 rounded-full ${color}`} />
-        <h3 className="text-sm font-semibold text-white">{title}</h3>
-        <span className="ml-auto rounded-full bg-gray-800 px-2 py-0.5 text-xs text-gray-400">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-white">{title}</h3>
+        <span className="ml-auto rounded-full bg-gray-200 px-2 py-0.5 text-xs text-gray-500 dark:bg-gray-800 dark:text-gray-400">
           {tasks.length}
         </span>
         {onClear && tasks.length > 0 && (
           <button
             onClick={onClear}
             title="Limpar concluídos"
-            className="rounded p-1 text-gray-500 transition-colors hover:bg-gray-800 hover:text-red-400"
+            className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-200 hover:text-red-600 dark:hover:bg-gray-800 dark:hover:text-red-400"
           >
             <Trash2 size={13} />
           </button>

@@ -270,6 +270,7 @@ export const syncApi = {
   manual: (data: SyncPayload) => api.post('/sync/manual', data),
   breakdown: (data: BreakdownSyncPayload) => api.post('/sync/breakdown', data),
   breakdownAll: (data: SyncPayload) => api.post('/sync/breakdown/all', data),
+  refreshCreative: (adId: string) => api.post<{ success: boolean; url: string }>(`/sync/creative/${adId}/refresh`),
 };
 
 export const settingsApi = {

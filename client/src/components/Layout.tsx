@@ -66,7 +66,7 @@ export default function Layout() {
   const closeMobile = () => setMobileOpen(false);
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 transition-colors dark:bg-gray-950 dark:text-gray-100">
+    <div className="min-h-screen">
       <nav className="border-b border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
         <div className="mx-auto flex max-w-7xl items-center px-4 py-3 md:px-6 md:py-4">
           <h1 className="text-lg font-bold text-gray-900 md:text-xl dark:text-white">Growth Ads</h1>

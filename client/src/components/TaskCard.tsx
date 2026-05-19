@@ -48,23 +48,23 @@ export default function TaskCard({ task, clientName, onEdit, onDelete }: TaskCar
     <div
       ref={setNodeRef}
       style={style}
-      className={`group rounded-lg border border-gray-700/60 bg-gray-800/80 p-2.5 transition-shadow ${
-        isDragging ? 'z-50 shadow-2xl shadow-black/50' : 'hover:shadow-md hover:border-gray-600'
+      className={`group rounded-lg border border-gray-200 bg-white p-2.5 transition-all dark:border-gray-700/60 dark:bg-gray-800/80 ${
+        isDragging ? 'z-50 shadow-2xl shadow-black/20 dark:shadow-black/50' : 'hover:shadow-md hover:border-blue-500/50 dark:hover:border-gray-600'
       }`}
     >
       <div className="flex items-start gap-1.5">
         <button
           {...attributes}
           {...listeners}
-          className="mt-0.5 shrink-0 cursor-grab text-gray-600 hover:text-gray-400"
+          className="mt-0.5 shrink-0 cursor-grab text-gray-400 hover:text-gray-600 dark:text-gray-600 dark:hover:text-gray-400"
         >
           <GripVertical size={12} />
         </button>
 
         <div className="min-w-0 flex-1 overflow-hidden">
-          <p className="truncate text-xs font-medium text-white">{task.title}</p>
+          <p className="truncate text-xs font-medium text-gray-900 dark:text-white">{task.title}</p>
           {task.description && (
-            <p className="mt-0.5 line-clamp-2 text-[11px] leading-tight text-gray-500">{task.description}</p>
+            <p className="mt-0.5 line-clamp-2 text-[11px] leading-tight text-gray-500 dark:text-gray-500">{task.description}</p>
           )}
 
           <div className="mt-1.5 flex flex-wrap items-center gap-1">
@@ -75,7 +75,7 @@ export default function TaskCard({ task, clientName, onEdit, onDelete }: TaskCar
             </span>
 
             {clientName && (
-              <span className="max-w-[80px] truncate rounded-full bg-purple-500/20 px-1.5 py-px text-[9px] font-medium leading-tight text-purple-400">
+              <span className="max-w-[80px] truncate rounded-full bg-purple-100 px-1.5 py-px text-[9px] font-medium leading-tight text-purple-700 dark:bg-purple-500/20 dark:text-purple-400">
                 {clientName}
               </span>
             )}
@@ -83,7 +83,7 @@ export default function TaskCard({ task, clientName, onEdit, onDelete }: TaskCar
             {dueDateFormatted && (
               <span
                 className={`flex items-center gap-0.5 text-[9px] ${
-                  isOverdue ? 'text-red-400' : 'text-gray-500'
+                  isOverdue ? 'text-red-600 dark:text-red-400' : 'text-gray-500'
                 }`}
               >
                 <Calendar size={9} />
@@ -96,15 +96,15 @@ export default function TaskCard({ task, clientName, onEdit, onDelete }: TaskCar
         <div className="flex shrink-0 gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
           <button
             onClick={() => onEdit(task)}
-            className="rounded p-0.5 text-gray-500 hover:bg-gray-700 hover:text-blue-400"
+            className="rounded p-0.5 text-gray-400 hover:bg-gray-100 hover:text-blue-600 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-blue-400"
           >
-            <Edit3 size={11} />
+            <Edit3 size={12} />
           </button>
           <button
             onClick={() => onDelete(task.id)}
-            className="rounded p-0.5 text-gray-500 hover:bg-gray-700 hover:text-red-400"
+            className="rounded p-0.5 text-gray-400 hover:bg-red-50 hover:text-red-600 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-red-400"
           >
-            <Trash2 size={11} />
+            <Trash2 size={12} />
           </button>
         </div>
       </div>

@@ -14,7 +14,8 @@ export interface DownloadResult {
   relativeUrl: string;
   creativeType: string;
   contentType: string;
-  data: Buffer;
+  data?: Buffer;
+  sourceUrl?: string; // URL original da Meta caso o download falhe
 }
 
 const downloadLocks = new Map<string, Promise<DownloadResult | null>>();
@@ -48,47 +49,61 @@ async function downloadSingleMedia(
     return null;
   }
 
-  const resp = await axios.get(sourceUrl, {
-    responseType: 'arraybuffer',
-    timeout: 30000,
-    maxContentLength: 50 * 1024 * 1024,
-  });
+  try {
+    const resp = await axios.get(sourceUrl, {
+      responseType: 'arraybuffer',
+      timeout: 30000,
+      maxContentLength: 50 * 1024 * 1024,
+    });
 
-  const ct = resp.headers['content-type'] || '';
-  const ext = extensionFromContentType(ct);
-  const isVideo = media.type === 'video' || ct.includes('mp4');
-  const creativeType = isVideo ? 'video' : 'image';
+    const ct = resp.headers['content-type'] || '';
+    const ext = extensionFromContentType(ct);
+    const isVideo = media.type === 'video' || ct.includes('mp4');
+    const creativeType = isVideo ? 'video' : 'image';
 
-  const filename = `${clientId}_${media.adId}.${ext}`;
-  const filePath = path.join(dir, filename);
-  await fs.writeFile(filePath, resp.data);
+    const filename = `${clientId}_${media.adId}.${ext}`;
+    const filePath = path.join(dir, filename);
+    await fs.writeFile(filePath, resp.data);
 
-  if (isVideo && media.thumbnailUrl) {
-    try {
-      const thumbRes = await axios.get(media.thumbnailUrl, {
-        responseType: 'arraybuffer',
-        timeout: 10000,
-      });
-      await fs.writeFile(
-        path.join(dir, `${clientId}_${media.adId}_thumb.jpg`),
-        thumbRes.data,
-      );
-    } catch (err: any) {
-      console.warn(
-        `[CREATIVE] Thumbnail failed for ${media.adId}: ${err.message}`,
-      );
+    if (isVideo && media.thumbnailUrl) {
+      try {
+        const thumbRes = await axios.get(media.thumbnailUrl, {
+          responseType: 'arraybuffer',
+          timeout: 10000,
+        });
+        await fs.writeFile(
+          path.join(dir, `${clientId}_${media.adId}_thumb.jpg`),
+          thumbRes.data,
+        );
+      } catch (err: any) {
+        console.warn(
+          `[CREATIVE] Thumbnail failed for ${media.adId}: ${err.message}`,
+        );
+      }
     }
-  }
 
-  return {
-    adId: media.adId,
-    clientId,
-    filename,
-    relativeUrl: `/creatives/${filename}`,
-    creativeType,
-    contentType: ct,
-    data: resp.data,
-  };
+    return {
+      adId: media.adId,
+      clientId,
+      filename,
+      relativeUrl: `/creatives/${filename}`,
+      creativeType,
+      contentType: ct,
+      data: resp.data,
+    };
+  } catch (err: any) {
+    console.warn(`[CREATIVE] Download falhou para ${media.adId}: ${err.message}`);
+    // Retornamos o resultado básico com a sourceUrl para que o app possa redirecionar se necessário
+    return {
+      adId: media.adId,
+      clientId,
+      filename: '',
+      relativeUrl: '',
+      creativeType: media.type,
+      contentType: '',
+      sourceUrl,
+    };
+  }
 }
 
 async function persistResult(result: DownloadResult): Promise<void> {

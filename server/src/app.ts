@@ -75,16 +75,35 @@ app.get('/creatives/:filename', async (req, res, next) => {
 
   if (fsSync.existsSync(filePath)) {
     const stat = fsSync.statSync(filePath);
-    if (stat.size > 15000) return next();
+    // Reduzimos o limite para 2KB para evitar deletar thumbnails válidas pequenas
+    if (stat.size > 2000) return next();
     try { fsSync.unlinkSync(filePath); } catch {}
   }
 
-  const adId = filename.replace(/\.\w+$/, '').split('_').pop();
+  const adId = filename.replace(/_thumb\.\w+$/, '').replace(/\.\w+$/, '').split('_').pop();
   if (!adId) return res.status(404).send('Not found');
 
   try {
     const result = await downloadCreativeOnDemand(adId);
     if (!result) return res.status(404).send('Not found');
+
+    // Caso o download local tenha falhado, redirecionamos para a URL original da Meta (fresh)
+    if (!result.data && result.sourceUrl) {
+      return res.redirect(result.sourceUrl);
+    }
+
+    if (!result.data) return res.status(404).send('Not found');
+
+    // Se o arquivo solicitado for o thumbnail e acabamos de baixar o vídeo
+    if (filename.includes('_thumb') && result.creativeType === 'video') {
+      const thumbPath = path.join(creativesDir, `${result.clientId}_${adId}_thumb.jpg`);
+      if (fsSync.existsSync(thumbPath)) {
+        const thumbData = await fsSync.promises.readFile(thumbPath);
+        res.setHeader('Content-Type', 'image/jpeg');
+        res.setHeader('Cache-Control', 'public, max-age=86400');
+        return res.end(thumbData);
+      }
+    }
 
     const ct = result.contentType || 'image/jpeg';
     res.setHeader('Content-Type', ct);

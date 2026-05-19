@@ -179,12 +179,12 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
   };
 
   return (
-    <div className="group relative rounded-2xl border border-gray-800 bg-gray-900/50 p-6 transition-all hover:border-blue-500/30 hover:bg-gray-900 shadow-sm hover:shadow-blue-900/10">
+    <div className="group relative rounded-2xl border border-gray-200 bg-white p-6 transition-all hover:border-blue-500/30 hover:bg-gray-50 shadow-sm hover:shadow-blue-900/5 dark:border-gray-800 dark:bg-gray-900/50 dark:hover:bg-gray-900 dark:hover:shadow-blue-900/10">
       <div className="mb-4 flex items-start justify-between">
         <div>
-          <h4 className="text-lg font-bold text-white group-hover:text-blue-400 transition-colors">{client.clientName}</h4>
+          <h4 className="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors dark:text-white dark:group-hover:text-blue-400">{client.clientName}</h4>
           <div className="flex items-center gap-2 mt-1">
-            <span className="text-[11px] font-mono text-gray-500 bg-gray-950 px-2 py-0.5 rounded border border-gray-800">
+            <span className="text-[11px] font-mono text-gray-500 bg-gray-100 px-2 py-0.5 rounded border border-gray-200 dark:bg-gray-950 dark:border-gray-800">
               {client.actId}
             </span>
             {renderHealthBadge()}
@@ -193,7 +193,7 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
            <button
             onClick={() => { setShowEdit(!showEdit); setShowTokenEdit(false); setShowDeleteConfirm(false); }}
-            className="p-2 rounded-lg text-gray-400 hover:bg-gray-800 hover:text-white transition-colors"
+            className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-900 transition-colors dark:hover:bg-gray-800 dark:hover:text-white"
             title="Editar informações"
           >
             <Pencil size={16} />
@@ -210,7 +210,7 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
         <button
           onClick={handleQuickSync}
           disabled={quickSyncing}
-          className="flex items-center justify-center gap-2 rounded-xl bg-green-600/10 px-3 py-2.5 text-xs font-semibold text-green-400 transition-all hover:bg-green-600 hover:text-white disabled:opacity-50"
+          className="flex items-center justify-center gap-2 rounded-xl bg-green-600/10 px-3 py-2.5 text-xs font-semibold text-green-600 transition-all hover:bg-green-600 hover:text-white disabled:opacity-50 dark:text-green-400 dark:hover:bg-green-600"
         >
           {quickSyncing ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
           Sincronizar
@@ -219,7 +219,7 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
         <button
           onClick={() => onDownload(client.actId)}
           disabled={downloading === client.actId}
-          className="flex items-center justify-center gap-2 rounded-xl bg-blue-600/10 px-3 py-2.5 text-xs font-semibold text-blue-400 transition-all hover:bg-blue-600 hover:text-white disabled:opacity-50"
+          className="flex items-center justify-center gap-2 rounded-xl bg-blue-600/10 px-3 py-2.5 text-xs font-semibold text-blue-600 transition-all hover:bg-blue-600 hover:text-white disabled:opacity-50 dark:text-blue-400 dark:hover:bg-blue-600"
         >
           {downloading === client.actId ? (
             <Loader2 size={14} className="animate-spin" />
@@ -231,7 +231,7 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
 
         <button
           onClick={() => { setShowTokenEdit(!showTokenEdit); setShowDeleteConfirm(false); setShowEdit(false); }}
-          className="flex items-center justify-center gap-2 rounded-xl bg-gray-800 px-3 py-2.5 text-xs font-semibold text-gray-300 transition-all hover:bg-gray-700 hover:text-white"
+          className="flex items-center justify-center gap-2 rounded-xl bg-gray-100 px-3 py-2.5 text-xs font-semibold text-gray-600 transition-all hover:bg-gray-200 hover:text-gray-900 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white"
         >
           <Key size={14} />
           Token
@@ -239,7 +239,7 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
 
         <button
           onClick={() => { setShowDeleteConfirm(!showDeleteConfirm); setShowTokenEdit(false); setShowEdit(false); }}
-          className="flex items-center justify-center gap-2 rounded-xl bg-red-600/10 px-3 py-2.5 text-xs font-semibold text-red-400 transition-all hover:bg-red-600 hover:text-white"
+          className="flex items-center justify-center gap-2 rounded-xl bg-red-600/10 px-3 py-2.5 text-xs font-semibold text-red-600 transition-all hover:bg-red-600 hover:text-white dark:text-red-400 dark:hover:bg-red-600"
         >
           <Trash2 size={14} />
           Excluir
@@ -251,25 +251,24 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
         {showEdit && (
           <div className="rounded-xl border border-blue-500/30 bg-blue-500/5 p-4 space-y-3 animate-in fade-in slide-in-from-top-2">
             <div className="flex items-center justify-between border-b border-blue-500/10 pb-2 mb-2">
-              <span className="text-xs font-bold text-blue-400 uppercase tracking-wider">Editar Cliente</span>
-              <button onClick={() => setShowEdit(false)} className="text-gray-500 hover:text-white"><X size={14} /></button>
+              <span className="text-xs font-bold text-blue-600 uppercase tracking-wider dark:text-blue-400">Editar Cliente</span>
+              <button onClick={() => setShowEdit(false)} className="text-gray-400 hover:text-gray-900 dark:text-gray-500 dark:hover:text-white"><X size={14} /></button>
             </div>
-            {/* ... inputs omitidos para brevidade mas mantidos no código final ... */}
             <div className="space-y-3">
               <div>
-                <label className="mb-1 block text-[10px] font-bold text-gray-500 uppercase">Nome Comercial</label>
+                <label className="mb-1 block text-[10px] font-bold text-gray-400 uppercase">Nome Comercial</label>
                 <input
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  className="w-full rounded-lg border border-gray-800 bg-gray-950 px-3 py-2 text-sm text-white focus:border-blue-500 outline-none transition-all"
+                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 outline-none transition-all dark:border-gray-800 dark:bg-gray-950 dark:text-white"
                 />
               </div>
               <div>
-                <label className="mb-1 block text-[10px] font-bold text-gray-500 uppercase">ID da Conta (act_)</label>
+                <label className="mb-1 block text-[10px] font-bold text-gray-400 uppercase">ID da Conta (act_)</label>
                 <input
                   value={editActId}
                   onChange={(e) => setEditActId(e.target.value)}
-                  className="w-full rounded-lg border border-gray-800 bg-gray-950 px-3 py-2 text-sm text-white focus:border-blue-500 outline-none transition-all"
+                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 outline-none transition-all dark:border-gray-800 dark:bg-gray-950 dark:text-white"
                 />
               </div>
               <div className="flex gap-2 pt-2">
@@ -284,23 +283,23 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
           <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 space-y-3 animate-in fade-in slide-in-from-top-2">
             <div className="flex items-center justify-between border-b border-amber-500/10 pb-2 mb-2">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">Token de Acesso</span>
+                <span className="text-xs font-bold text-amber-600 uppercase tracking-wider dark:text-amber-400">Token de Acesso</span>
                 <HelpTooltip title="Como obter o Token">
                   <p>Acesse o Graph API Explorer, selecione o app e adicione ads_read.</p>
                 </HelpTooltip>
               </div>
-              <button onClick={() => setShowTokenEdit(false)} className="text-gray-500 hover:text-white"><X size={14} /></button>
+              <button onClick={() => setShowTokenEdit(false)} className="text-gray-400 hover:text-gray-900 dark:text-gray-500 dark:hover:text-white"><X size={14} /></button>
             </div>
             <input
               type="password"
               value={newToken}
               onChange={(e) => setNewToken(e.target.value)}
-              className="w-full rounded-lg border border-gray-800 bg-gray-950 px-3 py-2 text-sm text-white focus:border-amber-500 outline-none transition-all"
+              className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-amber-500 outline-none transition-all dark:border-gray-800 dark:bg-gray-950 dark:text-white"
               placeholder="Cole o novo token aqui"
             />
             <div className="flex gap-2">
               <button onClick={handleUpdateToken} disabled={!newToken.trim()} className="flex-1 rounded-lg bg-amber-600 py-2 text-xs font-bold text-white hover:bg-amber-500 disabled:opacity-50">Salvar Token</button>
-              <button onClick={handleClearToken} className="rounded-lg bg-gray-800 px-3 py-2 text-xs font-bold text-gray-300 hover:bg-gray-700">Usar Global</button>
+              <button onClick={handleClearToken} className="rounded-lg bg-gray-100 px-3 py-2 text-xs font-bold text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700">Usar Global</button>
             </div>
           </div>
         )}
@@ -308,16 +307,16 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
         {/* Confirmação de Exclusão */}
         {showDeleteConfirm && (
           <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-4 animate-in fade-in zoom-in-95">
-             <div className="flex items-center gap-2 text-red-400 mb-2">
+             <div className="flex items-center gap-2 text-red-600 mb-2 dark:text-red-400">
                <AlertCircle size={16} />
                <span className="text-xs font-bold uppercase tracking-wider">Atenção</span>
              </div>
-             <p className="text-xs text-gray-400 leading-relaxed mb-4">
+             <p className="text-xs text-gray-500 leading-relaxed mb-4 dark:text-gray-400">
                Você está prestes a remover <strong>{client.clientName}</strong>. Todos os dados históricos serão apagados permanentemente.
              </p>
              <div className="flex gap-2">
                <button onClick={handleDelete} className="flex-1 rounded-lg bg-red-600 py-2 text-xs font-bold text-white hover:bg-red-500">Confirmar Exclusão</button>
-               <button onClick={() => setShowDeleteConfirm(false)} className="flex-1 rounded-lg bg-gray-800 py-2 text-xs font-bold text-gray-300 hover:bg-gray-700">Manter Cliente</button>
+               <button onClick={() => setShowDeleteConfirm(false)} className="flex-1 rounded-lg bg-gray-100 py-2 text-xs font-bold text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700">Manter Cliente</button>
              </div>
           </div>
         )}

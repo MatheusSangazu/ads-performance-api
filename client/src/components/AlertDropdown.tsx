@@ -77,24 +77,24 @@ export default function AlertDropdown() {
           setOpen(!open);
           if (!open) fetchData();
         }}
-        className="relative flex items-center rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-800 hover:text-white"
+        className="relative flex items-center rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-800 dark:hover:text-white"
       >
         <Bell size={18} />
         {unread > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white shadow-sm">
             {unread > 99 ? '99+' : unread}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full z-50 mt-2 w-[calc(100vw-2rem)] rounded-xl border border-gray-700 bg-gray-900 shadow-2xl sm:w-96">
-          <div className="flex items-center justify-between border-b border-gray-800 px-4 py-3">
-            <h3 className="text-sm font-semibold text-white">Notificacoes</h3>
+        <div className="absolute right-0 top-full z-50 mt-2 w-[calc(100vw-2rem)] rounded-xl border border-gray-200 bg-white shadow-2xl sm:w-96 dark:border-gray-700 dark:bg-gray-900">
+          <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3 dark:border-gray-800">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Notificações</h3>
             {unread > 0 && (
               <button
                 onClick={handleMarkAllRead}
-                className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300"
+                className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
               >
                 <CheckCheck size={14} />
                 Marcar todas como lidas
@@ -102,14 +102,15 @@ export default function AlertDropdown() {
             )}
           </div>
 
-          <div className="max-h-96 overflow-y-auto">
+          <div className="max-h-96 overflow-y-auto scrollbar-hide">
             {loading ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 size={18} className="animate-spin text-gray-500" />
+                <Loader2 size={18} className="animate-spin text-gray-400 dark:text-gray-500" />
               </div>
             ) : alerts.length === 0 ? (
-              <div className="py-8 text-center text-sm text-gray-500">
-                Nenhuma notificacao
+              <div className="py-12 text-center">
+                <Bell size={32} className="mx-auto mb-2 text-gray-200 dark:text-gray-800" />
+                <p className="text-sm text-gray-500 dark:text-gray-400">Nenhuma notificação por aqui</p>
               </div>
             ) : (
               alerts.map((alert) => {
@@ -119,8 +120,8 @@ export default function AlertDropdown() {
                 return (
                   <div
                     key={alert.id}
-                    className={`flex gap-3 border-b border-gray-800/50 px-4 py-3 transition-colors hover:bg-gray-800/50 ${
-                      !alert.read ? config.bg : ''
+                    className={`flex gap-3 border-b border-gray-50 px-4 py-3 transition-colors hover:bg-gray-50 dark:border-gray-800/50 dark:hover:bg-gray-800/50 ${
+                      !alert.read ? `${config.bg} bg-opacity-40` : ''
                     }`}
                   >
                     <div className="mt-0.5">
@@ -128,26 +129,26 @@ export default function AlertDropdown() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-start justify-between gap-2">
-                        <p className={`text-sm ${!alert.read ? 'font-semibold text-white' : 'text-gray-300'}`}>
+                        <p className={`text-sm ${!alert.read ? 'font-bold text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'}`}>
                           {alert.title}
                         </p>
-                        <span className="shrink-0 text-xs text-gray-500">{formatDate(alert.createdAt)}</span>
+                        <span className="shrink-0 text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase">{formatDate(alert.createdAt)}</span>
                       </div>
-                      <p className="mt-0.5 text-xs text-gray-400">{alert.message}</p>
-                      <div className="mt-1.5 flex gap-2">
+                      <p className="mt-0.5 text-xs text-gray-500 leading-relaxed dark:text-gray-400">{alert.message}</p>
+                      <div className="mt-2 flex gap-3">
                         {!alert.read && (
                           <button
                             onClick={() => handleMarkRead(alert.id)}
-                            className="text-xs text-blue-400 hover:text-blue-300"
+                            className="text-[10px] font-bold uppercase tracking-wider text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
                           >
-                            Marcar como lida
+                            Lida
                           </button>
                         )}
                         <button
                           onClick={() => handleDismiss(alert.id)}
-                          className="text-xs text-gray-500 hover:text-red-400"
+                          className="text-[10px] font-bold uppercase tracking-wider text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400"
                         >
-                          Descartar
+                          Excluir
                         </button>
                       </div>
                     </div>

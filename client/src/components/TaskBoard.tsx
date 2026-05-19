@@ -177,8 +177,8 @@ export default function TaskBoard() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-white">Tarefas</h2>
-          <p className="text-sm text-gray-500">Gerencie suas tarefas no quadro Kanban</p>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Tarefas</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Gerencie suas tarefas no quadro Kanban</p>
         </div>
         <button
           onClick={() => setShowForm(true)}
@@ -190,38 +190,45 @@ export default function TaskBoard() {
       </div>
 
       {feedback && (
-        <div className={`mb-4 flex items-center gap-2 rounded-lg border px-4 py-3 text-sm ${
-          feedback.type === 'success' ? 'border-green-800 bg-green-900/30 text-green-300' :
-          feedback.type === 'warning' ? 'border-yellow-800 bg-yellow-900/30 text-yellow-300' :
-          'border-red-800 bg-red-900/30 text-red-300'
+        <div className={`mb-4 flex items-center gap-2 rounded-lg border px-4 py-3 text-sm animate-in fade-in slide-in-from-top-1 ${
+          feedback.type === 'success' ? 'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-900/30 dark:text-green-300' :
+          feedback.type === 'warning' ? 'border-yellow-200 bg-yellow-50 text-yellow-700 dark:border-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' :
+          'border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-900/30 dark:text-red-300'
         }`}>
           {feedback.type === 'success' && <CheckCircle size={16} />}
           {feedback.type === 'warning' && <Clock size={16} />}
           {feedback.type === 'error' && <AlertTriangle size={16} />}
           <span className="flex-1">{feedback.message}</span>
-          <button onClick={() => setFeedback(null)} className="text-gray-500 hover:text-white">
+          <button onClick={() => setFeedback(null)} className="ml-auto text-current opacity-50 hover:opacity-100">
             <X size={14} />
           </button>
         </div>
       )}
 
-      {overdueTasks.length > 0 && (
-        <div className="mb-4 flex items-center gap-2 rounded-lg border border-red-800 bg-red-900/20 px-4 py-3 text-sm text-red-300">
-          <AlertTriangle size={16} className="shrink-0" />
-          <span>
-            <strong>{overdueTasks.length}</strong> tarefa{overdueTasks.length > 1 ? 's' : ''} atrasada{overdueTasks.length > 1 ? 's' : ''}:
-            {' '}{overdueTasks.map((t) => t.title).join(', ')}
-          </span>
-        </div>
-      )}
-
-      {upcomingTasks.length > 0 && (
-        <div className="mb-4 flex items-center gap-2 rounded-lg border border-yellow-800 bg-yellow-900/20 px-4 py-3 text-sm text-yellow-300">
-          <Clock size={16} className="shrink-0" />
-          <span>
-            <strong>{upcomingTasks.length}</strong> tarefa{upcomingTasks.length > 1 ? 's' : ''} próxima{upcomingTasks.length > 1 ? 's' : ''} do prazo:
-            {' '}{upcomingTasks.map((t) => t.title).join(', ')}
-          </span>
+      {(overdueTasks.length > 0 || upcomingTasks.length > 0) && (
+        <div className="mb-6 grid gap-4 md:grid-cols-2">
+          {overdueTasks.length > 0 && (
+            <div className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-900/30 dark:bg-red-950/20">
+              <div className="rounded-lg bg-red-100 p-2 text-red-600 dark:bg-red-900/30 dark:text-red-400">
+                <AlertTriangle size={20} />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-red-700 dark:text-red-400">{overdueTasks.length} tarefas atrasadas</p>
+                <p className="text-xs text-red-600/70 dark:text-red-500/50">Priorize estas atividades hoje</p>
+              </div>
+            </div>
+          )}
+          {upcomingTasks.length > 0 && (
+            <div className="flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-900/30 dark:bg-blue-950/20">
+              <div className="rounded-lg bg-blue-100 p-2 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                <Clock size={20} />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-blue-700 dark:text-blue-400">{upcomingTasks.length} tarefas para amanhã</p>
+                <p className="text-xs text-blue-600/70 dark:text-blue-500/50">Fique de olho nos prazos próximos</p>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

@@ -99,10 +99,10 @@ export default function Managers() {
   return (
     <div>
       <div className="mb-6 flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-600/20">
-          <Shield size={20} className="text-purple-400" />
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-600/10 dark:bg-purple-600/20">
+          <Shield size={20} className="text-purple-600 dark:text-purple-400" />
         </div>
-        <h2 className="text-2xl font-bold">Gestores</h2>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Gestores</h2>
       </div>
 
       {message && <Message type={message.type}>{message.text}</Message>}
@@ -111,27 +111,27 @@ export default function Managers() {
         {managers.map((m) => (
           <div
             key={m.id}
-            className={`rounded-xl border bg-gray-900 p-5 ${
-              m.active ? 'border-gray-800' : 'border-red-900/40 opacity-60'
+            className={`rounded-xl border bg-white p-5 transition-all dark:bg-gray-900 ${
+              m.active ? 'border-gray-200 dark:border-gray-800 shadow-sm' : 'border-red-200 opacity-60 dark:border-red-900/40'
             }`}
           >
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="text-lg font-semibold">{m.name}</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{m.name}</h3>
                   {m.role === 'admin' && (
-                    <span className="rounded-full bg-purple-600/20 px-2 py-0.5 text-xs font-semibold text-purple-400">
+                    <span className="rounded-full bg-purple-600/10 px-2 py-0.5 text-xs font-semibold text-purple-600 dark:bg-purple-600/20 dark:text-purple-400">
                       Admin
                     </span>
                   )}
                   {!m.active && (
-                    <span className="rounded-full bg-red-600/20 px-2 py-0.5 text-xs font-semibold text-red-400">
+                    <span className="rounded-full bg-red-600/10 px-2 py-0.5 text-xs font-semibold text-red-600 dark:bg-red-600/20 dark:text-red-400">
                       Inativo
                     </span>
                   )}
                 </div>
-                <p className="text-sm text-gray-400">{m.email}</p>
-                <div className="mt-1 flex gap-3 text-xs text-gray-500">
+                <p className="text-sm text-gray-500 dark:text-gray-400">{m.email}</p>
+                <div className="mt-1 flex gap-3 text-xs text-gray-400 dark:text-gray-500">
                   <span>Plano: {m.plan}</span>
                   <span>Max clientes: {m.maxClients ?? 'Ilimitado'}</span>
                   <span>Vinculados: {m._count?.managerClients ?? 0}</span>
@@ -144,7 +144,7 @@ export default function Managers() {
                   <>
                     <button
                       onClick={() => handleDeactivate(m.id)}
-                      className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs text-red-400 transition-colors hover:bg-red-900/30"
+                      className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs text-red-600 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30"
                       title="Desativar"
                     >
                       <UserX size={14} />
@@ -156,7 +156,7 @@ export default function Managers() {
                         setEditPlan(m.plan);
                         setEditMax(m.maxClients?.toString() ?? '');
                       }}
-                      className="rounded-lg px-3 py-1.5 text-xs text-gray-400 transition-colors hover:bg-gray-800"
+                      className="rounded-lg px-3 py-1.5 text-xs text-gray-500 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
                     >
                       Editar
                     </button>
@@ -165,7 +165,7 @@ export default function Managers() {
                         setLinkManagerId(m.id);
                         setSelectedClient('');
                       }}
-                      className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs text-blue-400 transition-colors hover:bg-blue-900/30"
+                      className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs text-blue-600 transition-colors hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30"
                     >
                       <Link2 size={14} />
                       Vincular
@@ -176,23 +176,23 @@ export default function Managers() {
             </div>
 
             {editId === m.id && (
-              <div className="mt-4 flex flex-wrap items-end gap-3 border-t border-gray-800 pt-4">
+              <div className="mt-4 flex flex-wrap items-end gap-3 border-t border-gray-100 pt-4 dark:border-gray-800">
                 <div>
-                  <label className="mb-1 block text-xs text-gray-400">Plano</label>
+                  <label className="mb-1 block text-xs text-gray-500 dark:text-gray-400">Plano</label>
                   <input
                     value={editPlan}
                     onChange={(e) => setEditPlan(e.target.value)}
-                    className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-1.5 text-sm text-white focus:border-blue-500 focus:outline-none"
+                    className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white"
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs text-gray-400">Max Clientes</label>
+                  <label className="mb-1 block text-xs text-gray-500 dark:text-gray-400">Max Clientes</label>
                   <input
                     type="number"
                     value={editMax}
                     onChange={(e) => setEditMax(e.target.value)}
                     placeholder="Ilimitado"
-                    className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-1.5 text-sm text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none"
+                    className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500"
                   />
                 </div>
                 <button
@@ -205,7 +205,7 @@ export default function Managers() {
                 </button>
                 <button
                   onClick={() => setEditId(null)}
-                  className="rounded-lg px-4 py-1.5 text-sm text-gray-400 hover:bg-gray-800"
+                  className="rounded-lg px-4 py-1.5 text-sm text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
                 >
                   Cancelar
                 </button>
@@ -213,13 +213,13 @@ export default function Managers() {
             )}
 
             {linkManagerId === m.id && (
-              <div className="mt-4 flex items-end gap-3 border-t border-gray-800 pt-4">
+              <div className="mt-4 flex items-end gap-3 border-t border-gray-100 pt-4 dark:border-gray-800">
                 <div className="flex-1">
-                  <label className="mb-1 block text-xs text-gray-400">Selecionar cliente</label>
+                  <label className="mb-1 block text-xs text-gray-500 dark:text-gray-400">Selecionar cliente</label>
                   <select
                     value={selectedClient}
                     onChange={(e) => setSelectedClient(e.target.value)}
-                    className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-1.5 text-sm text-white focus:border-blue-500 focus:outline-none"
+                    className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white"
                   >
                     <option value="">Selecione...</option>
                     {clients.map((c) => (
@@ -239,7 +239,7 @@ export default function Managers() {
                 </button>
                 <button
                   onClick={() => setLinkManagerId(null)}
-                  className="rounded-lg px-4 py-1.5 text-sm text-gray-400 hover:bg-gray-800"
+                  className="rounded-lg px-4 py-1.5 text-sm text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
                 >
                   Cancelar
                 </button>

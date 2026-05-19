@@ -46,4 +46,8 @@ router.post('/breakdown/all', authMiddleware, validate(syncSchema), (req, res, n
   syncController.syncAllBreakdowns(req, res).catch(next);
 });
 
+router.post('/creative/:adId/refresh', authMiddleware, (req, res, next) => {
+  syncController.refreshCreative(req, res).catch(next);
+});
+
 export default router;

@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Users, DollarSign, Target, TrendingUp, MousePointerClick, Eye, BarChart3, Loader2, Calendar as CalendarIcon, Filter, CheckCircle2, AlertCircle, ExternalLink, MapPin, Monitor, UserCircle, X, Play } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie, Legend } from 'recharts';
-import { clientApi, type DashboardMetrics, type Client } from '../lib/api';
+import { clientApi, syncApi, type DashboardMetrics, type Client } from '../lib/api';
 import { useTheme } from '../contexts/ThemeContext';
 import DatePicker from '../components/DatePicker';
 
@@ -63,6 +63,20 @@ export default function Dashboard() {
   const [topAdsMetric, setTopAdsMetric] = useState<string>('roas');
   const [breakdownMetric, setBreakdownMetric] = useState<string>('spend');
   const [mediaViewer, setMediaViewer] = useState<{ url: string; type: string; name: string } | null>(null);
+  const [refreshedMedia, setRefreshedMedia] = useState<Record<string, string>>({});
+
+  const handleMediaError = async (adId: string) => {
+    if (refreshedMedia[adId]) return; // Já tentou atualizar uma vez
+
+    try {
+      const { data } = await syncApi.refreshCreative(adId);
+      if (data.success && data.url) {
+        setRefreshedMedia(prev => ({ ...prev, [adId]: data.url }));
+      }
+    } catch (err) {
+      console.warn(`[CREATIVE] Falha ao atualizar mídia ${adId}`);
+    }
+  };
 
   const fetchMetrics = useCallback(async (isInitial = false) => {
     if (isInitial) setLoading(true);
@@ -374,21 +388,23 @@ export default function Dashboard() {
               })
               .slice(0, 8)
               .map((ad, idx) => {
+                const displayUrl = refreshedMedia[ad.adId] || ad.creativeUrl;
                 const metricVal = ad[topAdsMetric as keyof typeof ad];
                 return (
                   <div key={ad.adId} className="rounded-lg border border-gray-200 bg-gray-50 overflow-hidden dark:border-gray-800 dark:bg-gray-950">
-                    {ad.creativeUrl ? (
+                    {displayUrl ? (
                       <div
                         className="relative w-full cursor-pointer bg-gray-200 dark:bg-gray-800 group"
-                        onClick={() => setMediaViewer({ url: mediaUrl(ad.creativeUrl) || '', type: ad.creativeType || 'image', name: ad.adName })}
+                        onClick={() => setMediaViewer({ url: mediaUrl(displayUrl) || '', type: ad.creativeType || 'image', name: ad.adName })}
                       >
                         {ad.creativeType === 'video' ? (
                           <>
                             <video
-                              src={mediaUrl(ad.creativeUrl)}
+                              src={mediaUrl(displayUrl)}
                               className="h-48 w-full object-cover"
                               muted
                               preload="metadata"
+                              onError={() => handleMediaError(ad.adId)}
                             />
                             <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/50 transition-colors">
                               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
@@ -398,10 +414,11 @@ export default function Dashboard() {
                           </>
                         ) : (
                           <img
-                            src={mediaUrl(ad.creativeUrl)}
+                            src={mediaUrl(displayUrl)}
                             alt={ad.adName}
                             className="h-48 w-full object-cover transition-opacity group-hover:opacity-80"
                             loading="lazy"
+                            onError={() => handleMediaError(ad.adId)}
                           />
                         )}
                       </div>

@@ -67,17 +67,17 @@ export default function DatePicker({ value, onChange, placeholder = 'Selecionar 
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex w-full items-center gap-2 rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white transition-colors hover:border-gray-500 focus:border-blue-500 focus:outline-none"
+        className="flex w-full items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 transition-all hover:border-blue-500/50 focus:border-blue-500 focus:outline-none dark:border-gray-800 dark:bg-gray-950 dark:text-white"
       >
-        <Calendar size={14} className="text-gray-500" />
-        <span className={value ? 'text-white' : 'text-gray-500'}>
+        <Calendar size={14} className="text-gray-400 dark:text-gray-500" />
+        <span className={value ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-gray-500'}>
           {value ? formatDisplay(value) : placeholder}
         </span>
         {value && (
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); onChange(''); }}
-            className="ml-auto text-gray-500 hover:text-gray-300"
+            className="ml-auto text-gray-400 hover:text-red-500 dark:hover:text-gray-300"
           >
             <X size={14} />
           </button>
@@ -87,44 +87,48 @@ export default function DatePicker({ value, onChange, placeholder = 'Selecionar 
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute left-0 top-full z-50 mt-1 w-64 rounded-xl border border-gray-700 bg-gray-900 p-3 shadow-xl">
-            <div className="mb-3 flex items-center justify-between">
-              <button type="button" onClick={prevMonth} className="rounded p-1 text-gray-400 hover:bg-gray-800 hover:text-white">
+          <div className="absolute left-0 top-full z-50 mt-2 w-64 rounded-2xl border border-gray-200 bg-white p-4 shadow-2xl dark:border-gray-700 dark:bg-gray-900 animate-in fade-in slide-in-from-top-1">
+            <div className="mb-4 flex items-center justify-between">
+              <button type="button" onClick={prevMonth} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-800 dark:hover:text-white">
                 <ChevronLeft size={16} />
               </button>
-              <span className="text-sm font-medium text-white">
+              <span className="text-xs font-bold uppercase tracking-wider text-gray-900 dark:text-white">
                 {MONTHS[viewMonth]} {viewYear}
               </span>
-              <button type="button" onClick={nextMonth} className="rounded p-1 text-gray-400 hover:bg-gray-800 hover:text-white">
+              <button type="button" onClick={nextMonth} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-800 dark:hover:text-white">
                 <ChevronRight size={16} />
               </button>
             </div>
 
-            <div className="grid grid-cols-7 gap-0.5 text-center">
-              {WEEKDAYS.map((d) => (
-                <div key={d} className="py-1 text-[10px] font-medium text-gray-500">{d}</div>
+            <div className="mb-2 grid grid-cols-7 gap-1">
+              {WEEKDAYS.map((w) => (
+                <span key={w} className="text-center text-[10px] font-bold uppercase text-gray-400 dark:text-gray-600">
+                  {w}
+                </span>
               ))}
-              {days.map((day, i) => (
-                <div key={i}>
-                  {day ? (
-                    <button
-                      type="button"
-                      onClick={() => handleSelect(day)}
-                      className={`flex h-7 w-full items-center justify-center rounded-md text-xs transition-colors ${
-                        isSelected(day)
-                          ? 'bg-blue-600 font-semibold text-white'
-                          : isToday(day)
-                            ? 'bg-gray-800 font-medium text-blue-400'
-                            : 'text-gray-300 hover:bg-gray-800'
-                      }`}
-                    >
-                      {day}
-                    </button>
-                  ) : (
-                    <div className="h-7" />
-                  )}
-                </div>
-              ))}
+            </div>
+
+            <div className="grid grid-cols-7 gap-1">
+              {days.map((d, i) =>
+                d ? (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => handleSelect(d)}
+                    className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-medium transition-all ${
+                      isSelected(d)
+                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20'
+                        : isToday(d)
+                        ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
+                        : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'
+                    }`}
+                  >
+                    {d}
+                  </button>
+                ) : (
+                  <div key={i} />
+                ),
+              )}
             </div>
           </div>
         </>

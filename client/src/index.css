@@ -1,10 +1,39 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
+  :root {
+    color-scheme: light;
+    --bg-color: #f9fafb; /* gray-50 */
+    --text-color: #111827; /* gray-900 */
+  }
+  
+  :root.dark {
+    color-scheme: dark;
+    --bg-color: #030712; /* gray-950 */
+    --text-color: #f3f4f6; /* gray-100 */
+  }
+
   body {
-    @apply bg-gray-50 text-gray-900 transition-colors duration-200 dark:bg-gray-950 dark:text-gray-100;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition: background-color 0.2s, color 0.2s;
   }
 }
+
+/* Safety net to force light mode colors when .dark class is absent */
+html:not(.dark) body {
+  background-color: #f9fafb !important;
+  color: #111827 !important;
+}
+
+html.dark body {
+  background-color: #030712 !important;
+  color: #f3f4f6 !important;
+}
+
+
 
 @layer utilities {
   .scrollbar-hide {
