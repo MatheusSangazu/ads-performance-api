@@ -94,12 +94,12 @@ class HealthCheckService {
     for (const actId of clientIds) {
       const client = await prisma.client.findUnique({
         where: { actId },
-        select: { clientName: true, accountStatus: true },
+        select: { clientName: true, accountStatus: true, accessToken: true },
       });
 
       if (!client) continue;
 
-      const health = await this.checkAccountHealth(actId);
+      const health = await this.checkAccountHealth(actId, client.accessToken);
       if (health) {
         await prisma.client.update({
           where: { actId },

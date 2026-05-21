@@ -748,3 +748,263 @@ JOIN managers m ON mc.manager_id = m.id;
 3. Cadastro automático de clientes ao conectar a conta — sem preenchimento manual
 4. Sincronização bidirecional: alterações na plataforma refletem no Meta e vice-versa
 5. Permissões granulares via Meta Marketing API (leitura de métricas, sem acesso a edição de campanhas)
+
+### Sprint 9 — Projeção de Meta + Status da Conta
+
+> **Objetivo:** Adicionar projeção inteligente de metas baseada em média diária e exibir o status real da conta de ads no dashboard.
+
+#### 9.1 Projeção de Meta
+
+- Baseado na média diária (janela configurável: 7d, 14d, 30d), projetar se a meta mensal será atingida
+- Exibir dois números:
+  - **Ritmo atual:** "Projeção de X leads/mês neste ritmo"
+  - **Necessário:** "Precisa de Y leads/dia para atingir a meta"
+- Gráfico de **burndown** — linha da meta vs. linha real acumulada ao longo do mês
+- Base já existe: `dailyMetrics` no dashboard + sistema de metas (`GoalCard`)
+- Disclaimer sutil: "Baseado na média dos últimos N dias"
+- Janela de média configurável pelo gestor (7d, 14d, 30d)
+
+#### 9.2 Status da Conta
+
+- Exibir `accountStatus` no card do cliente e no dashboard:
+  - 1 = Ativa (verde)
+  - 2 = Desativada (vermelho)
+  - 3 = Pendência de pagamento (amarelo)
+  - 7 = Em análise (amarelo)
+  - 9 = Grace Period (laranja)
+- Já existe `renderHealthBadge` no `ClientCard.tsx`
+- Necessário: cron periódico para atualizar o status (via Meta API)
+- Mostrar **data/hora da última verificação** para evitar falsos alertas
+- Notificação via WhatsApp quando status mudar para algo crítico (desativada, pendência)
+
+#### API — Novas rotas
+
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| `GET` | `/clients/:actId/status` | Status atual da conta + última verificação |
+| `POST` | `/clients/:actId/status/refresh` | Forçar verificação do status agora |
+
+#### Frontend — Componentes
+
+| Componente | Descrição |
+|------------|-----------|
+| `GoalProjection.tsx` | Card com projeção de meta, ritmo atual vs necessário, gráfico burndown |
+| `AccountStatusBadge.tsx` | Badge com status da conta (cor + ícone + label) |
+| `BurndownChart.tsx` | Gráfico de linha: meta acumulada vs real acumulada por dia do mês |
+
+#### Considerações
+
+- Status muda com frequência e não é 100% confiável em tempo real
+- Sem data/hora da verificação pode gerar pânico desnecessário
+- Consumo adicional de chamadas da Meta API para polling de status
+
+---
+
+### Sprint 10 — Alerta de Saldo Baixo (Boleto)
+
+> **Objetivo:** Monitorar o saldo da conta de ads e alertar o gestor/cliente quando estiver baixo, especialmente para contas com pagamento via boleto (recarga manual).
+
+#### 10.1 Funcionalidades
+
+- Monitorar saldo da conta de ads via Meta API (`spend_cap` e `balance`)
+- Campo no cadastro do cliente: **"Essa conta é boleto?"** (flag `is_boleto`)
+- Limiar de alerta **configurável por cliente**: "Alertar quando saldo < R$ X"
+- Alerta via WhatsApp com saldo atual + link para recarregar
+- Badge visual no dashboard quando saldo está baixo
+
+#### 10.2 Modelo de dados — Alterações no Client
+
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| is_boleto | Boolean (default: `false`) | Conta paga por boleto (recarga manual) |
+| balance_threshold | Decimal? | Limiar para alerta de saldo baixo (em reais) |
+| current_balance | Decimal? | Último saldo conhecido (atualizado via cron) |
+| balance_updated_at | DateTime? | Data da última verificação de saldo |
+
+#### 10.3 API — Novas rotas
+
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| `GET` | `/clients/:actId/balance` | Saldo atual da conta |
+| `POST` | `/clients/:actId/balance/refresh` | Forçar verificação do saldo |
+| `PATCH` | `/clients/:actId/balance-settings` | Configurar is_boleto e threshold |
+
+#### 10.4 Cron de Monitoramento
+
+- Verificar saldo de todas as contas boleto 2x ao dia (8h e 14h)
+- Se saldo < threshold → gerar alerta + notificação WhatsApp
+- Não repetir alerta para mesma conta no mesmo dia (dedup)
+
+#### Considerações
+
+- Meta não expõe método de pagamento (boleto vs cartão) pela API — precisa ser manual
+- Saldo via API pode ter delay ou não refletir créditos pendentes de compensação
+- Precisa do scope `ads_management` (mais permissivo que `ads_read`)
+- Definir "saldo baixo" é relativo — R$ 100 é pouco pra conta de R$ 50k/mês mas muito pra R$ 500/mês
+
+---
+
+### Sprint 11 — Rastreamento de Vendas WhatsApp (CTWA + Evolution API)
+
+> **Objetivo:** Rastrear vendas originadas de anúncios com Click-to-WhatsApp (CTWA), permitindo fechar o funil (impressão → clique → conversa → venda → revenue) e enviar conversões para o Pixel/Conversions API do cliente.
+
+#### 11.1 Visão Geral do Funil
+
+```
+Anúncio CTWA → Clique no WhatsApp → Abre conversa → Atendimento → Venda
+      ↓              ↓                    ↓                          ↓
+   Meta Ads     Evolution API        Matching UTM/fbclid      Conversions API
+   (impression)  (webhook)           → anúncio origem          (Purchase event)
+```
+
+#### 11.2 Fases de Implementação
+
+##### Fase 1 — MVP de Validação (1-2 semanas)
+
+- Conectar **1 cliente piloto** na Evolution API
+- Monitorar: "quantas conversas abriram pelo anúncio CTWA"
+- Comparar com `messaging` dos relatórios do Meta
+- **Não criar bot, não registrar venda, não enviar para Pixel**
+- Objetivo: validar que o rastreamento de origem funciona
+
+##### Fase 2 — Matching CTWA + Webhooks
+
+- Webhook de recebimento de mensagem na Evolution API
+- Matching CTWA: capturar `fbclid` ou UTM da primeira mensagem
+- Associar conversa → anúncio de origem → campanha
+- Evolution API com multi-instância (1 instância por número WhatsApp)
+- Infra: VPS 8GB (R$ 80-120/mês) suporta ~80-100 instâncias com Cloud API do Meta
+
+##### Fase 3 — Bot de Registro de Venda
+
+- Fluxo simples via WhatsApp:
+  1. Atendente responde "qual o valor da venda?" → Bot pergunta valor
+  2. Atendente responde "R$ 350" → Bot registra venda de R$ 350
+  3. Confirmação automática
+- Registro armazenado no banco com vinculo à conversa → anúncio → campanha
+- Alternativa: botão simples no dashboard para registrar venda manualmente
+
+##### Fase 4 — Conversions API + Dashboard de Attribution
+
+- Enviar evento `Purchase` para o Pixel/Conversions API do cliente
+- Formato do evento: `event_name: "Purchase"`, `value`, `currency: "BRL"`, `fbclid`
+- Dashboard de attribution: funil completo (impressão → clique → conversa → venda → revenue)
+- Métricas: taxa de conversão WhatsApp, ticket médio, ROAS real, custo por venda efetiva
+
+#### 11.3 Modelo de dados — Novas tabelas
+
+##### `whatsapp_instances` (extensão da tabela existente)
+
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| client_id | String? (FK → clients_config.act_id) | Cliente vinculado a esta instância |
+| fb_pixel_id | String? | Pixel ID do cliente para Conversions API |
+| fb_access_token | String? | Access token do Conversions API do cliente |
+| tracking_enabled | Boolean (default: `false`) | Rastreamento CTWA ativo |
+
+##### `ctwa_conversations`
+
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| id | String (UUID) | PK |
+| instance_id | String (FK → whatsapp_instances.id) | Instância WhatsApp |
+| contact_phone | String | Número do contato |
+| fbclid | String? | Facebook Click ID (do anúncio) |
+| utm_source | String? | UTM source |
+| utm_campaign | String? | UTM campaign |
+| utm_content | String? | UTM content (ad id) |
+| ad_id | String? | ID do anúncio de origem (resolvido via fbclid) |
+| campaign_name | String? | Nome da campanha (resolvido via fbclid) |
+| first_message_at | DateTime | Primeira mensagem recebida |
+| last_message_at | DateTime | Última mensagem |
+| message_count | Int | Total de mensagens trocadas |
+| status | Enum (`open`, `closed`, `converted`) | Status da conversa |
+| created_at | DateTime | Data de criação |
+
+##### `ctwa_sales`
+
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| id | String (UUID) | PK |
+| conversation_id | String (FK → ctwa_conversations.id) | Conversa originadora |
+| client_id | String (FK → clients_config.act_id) | Cliente |
+| amount | Decimal | Valor da venda |
+| description | String? | Descrição/produtos |
+| registered_by | Enum (`whatsapp_bot`, `dashboard_manual`) | Como foi registrada |
+| conversion_sent | Boolean (default: `false`) | Evento enviado ao Pixel? |
+| conversion_sent_at | DateTime? | Data do envio ao Pixel |
+| created_at | DateTime | Data de criação |
+
+#### 11.4 API — Novas rotas
+
+##### CTWA Conversations
+
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| `GET` | `/ctwa/conversations` | Listar conversas (filtros: client, status, date) |
+| `GET` | `/ctwa/conversations/:id` | Detalhes da conversa + mensagens |
+| `PATCH` | `/ctwa/conversations/:id/status` | Atualizar status da conversa |
+
+##### CTWA Sales
+
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| `GET` | `/ctwa/sales` | Listar vendas (filtros: client, date) |
+| `POST` | `/ctwa/sales` | Registrar venda manual |
+| `GET` | `/ctwa/sales/attribution` | Dashboard de attribution (funil completo) |
+| `POST` | `/ctwa/sales/:id/send-conversion` | Enviar evento Purchase ao Pixel |
+
+##### CTWA Settings
+
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| `GET` | `/ctwa/settings/:actId` | Configurações de tracking do cliente |
+| `PUT` | `/ctwa/settings/:actId` | Configurar Pixel ID, token, tracking |
+
+##### Webhook Evolution API
+
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| `POST` | `/webhooks/evolution/messages-upsert` | Receber mensagens da Evolution API |
+| `POST` | `/webhooks/evolution/connection-update` | Status de conexão da instância |
+
+#### 11.5 Frontend — Componentes
+
+| Componente | Descrição |
+|------------|-----------|
+| `CTWASettings.tsx` | Configuração de tracking por cliente (Pixel ID, token) |
+| `SalesDashboard.tsx` | Dashboard de attribution: funil completo, ROAS real, receita |
+| `SalesList.tsx` | Lista de vendas registradas com filtros |
+| `SaleRegisterModal.tsx` | Modal para registro manual de venda |
+| `ConversationList.tsx` | Lista de conversas WhatsApp originadas de anúncios |
+| `FunnelChart.tsx` | Gráfico de funil: impressão → clique → conversa → venda |
+
+#### 11.6 Custos
+
+| Item | Custo |
+|------|-------|
+| Desenvolvimento (todas as fases) | 105-140h |
+| VPS 8GB para Evolution API | R$ 80-120/mês |
+| Custo por instância WhatsApp | ~R$ 1-2/mês de servidor |
+| Cloud API do Meta (conversa iniciada pelo usuário) | Grátis na janela de 24h |
+| Cloud API do Meta (conversa iniciada por você) | ~R$ 0,06-0,15/conversa |
+| Onboarding por cliente (config BM, app, webhook) | 1-2h/cliente |
+| Manutenção mensal | 2-6h/mês |
+
+#### 11.7 Riscos
+
+| Risco | Mitigação |
+|-------|-----------|
+| Matching impreciso (fbclid não chega limpo) | Usar UTM como fallback; aceitar matching aproximado |
+| Burocracia Meta (BM verificado, aprovação app) | Documentar passo-a-passo; oferecer suporte no onboarding |
+| Instância desconecta/token expira | Monitoramento automático + alerta + auto-reconnect |
+| Cliente não registra vendas | Fluxo o mais simples possível (responder valor no WhatsApp) |
+| LGPD (processar dados de conversas) | Termo de uso claro; dados anonimizados para analytics |
+| Meta limita conta por eventos mal formatados | Validar formato do evento antes de enviar; batch com delay |
+
+#### Considerações
+
+- **Diferencial competitivo alto** — praticamente nenhuma agência pequena/média tem attribution completo WhatsApp
+- Fechar o funil permite otimizar campanhas pelo ROAS real, não só por métricas de topo
+- Recomendar começar pela Fase 1 (MVP) para validar viabilidade antes de investir no sistema completo
+- **Status: Aguardando decisão sobre implementação**

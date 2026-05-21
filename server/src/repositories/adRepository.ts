@@ -26,6 +26,9 @@ export interface UpsertInsightData {
   totalConversionValue: number;
   roas: number;
   previewLink: string;
+  pageLikes: number;
+  adStatus: string;
+  campaignStatus: string;
 }
 
 class AdRepository {
@@ -61,6 +64,9 @@ class AdRepository {
         totalConversionValue: decimal(data.totalConversionValue),
         roas: decimal(data.roas),
         previewLink: data.previewLink,
+        pageLikes: data.pageLikes,
+        adStatus: data.adStatus,
+        campaignStatus: data.campaignStatus,
       },
       create: {
         date: data.date,
@@ -87,6 +93,9 @@ class AdRepository {
         totalConversionValue: decimal(data.totalConversionValue),
         roas: decimal(data.roas),
         previewLink: data.previewLink,
+        pageLikes: data.pageLikes,
+        adStatus: data.adStatus,
+        campaignStatus: data.campaignStatus,
       },
     });
   }
@@ -99,6 +108,7 @@ class AdRepository {
       'link_clicks', 'ctr', 'messaging_conversations', 'leads', 'leads_form', 'page_views',
       'add_to_cart', 'initiate_checkout', 'purchases', 'purchase_value',
       'custom_conversion_count', 'custom_conversion_value', 'total_conversion_value', 'roas', 'preview_link',
+      'ad_status', 'campaign_status', 'page_likes',
     ];
     const setClauses = METRIC_COLS.map((c) => `${c} = VALUES(${c})`).join(', ');
 
@@ -108,7 +118,7 @@ class AdRepository {
       'messaging_conversations', 'leads', 'leads_form', 'page_views',
       'add_to_cart', 'initiate_checkout', 'purchases', 'purchase_value',
       'custom_conversion_count', 'custom_conversion_value', 'total_conversion_value',
-      'roas', 'preview_link', 'ad_status', 'campaign_status',
+      'roas', 'preview_link', 'ad_status', 'campaign_status', 'page_likes',
     ];
     const placeholders = `(${cols.map(() => '?').join(',')})`;
     const colCount = cols.length;
@@ -125,7 +135,8 @@ class AdRepository {
           d.messagingConversations, d.leads, d.leadsForm, d.pageViews,
           d.addToCart, d.initiateCheckout, d.purchases, d.purchaseValue,
           d.customConversionCount, d.customConversionValue, d.totalConversionValue, d.roas, d.previewLink,
-          '', '',
+          d.adStatus, d.campaignStatus,
+          d.pageLikes,
         ]),
       );
     }

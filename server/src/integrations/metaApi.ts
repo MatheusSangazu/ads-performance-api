@@ -76,6 +76,18 @@ export async function fetchAllInsights(
   return { data: allInsights };
 }
 
+interface AdStatusData {
+  previewLink: string;
+  adStatus: string;
+  campaignId: string;
+}
+
+interface MetaAdStatusResponse {
+  preview_shareable_link?: string;
+  effective_status?: string;
+  campaign?: { effective_status?: string };
+}
+
 export async function fetchPreviewLink(
   adId: string,
   accessToken: string,
@@ -92,6 +104,50 @@ export async function fetchPreviewLink(
     return res.data.preview_shareable_link || '';
   } catch {
     return '';
+  }
+}
+
+export async function fetchAdStatus(
+  adId: string,
+  accessToken: string,
+): Promise<AdStatusData> {
+  try {
+    const res = await retry(() =>
+      axios.get<MetaAdStatusResponse>(`${META_API_BASE}/${adId}`, {
+        params: {
+          access_token: accessToken,
+          fields: 'preview_shareable_link,effective_status,campaign_id',
+        },
+      }),
+    );
+
+    return {
+      previewLink: res.data.preview_shareable_link || '',
+      adStatus: res.data.effective_status || 'UNKNOWN',
+      campaignId: (res.data as any).campaign_id || '',
+    };
+  } catch (err) {
+    console.error(`   [STATUS] Erro ao buscar status do ad ${adId}:`, err instanceof Error ? err.message : String(err));
+    return { previewLink: '', adStatus: 'UNKNOWN', campaignId: '' };
+  }
+}
+
+export async function fetchCampaignStatus(
+  campaignId: string,
+  accessToken: string,
+): Promise<string> {
+  try {
+    const res = await retry(() =>
+      axios.get(`${META_API_BASE}/${campaignId}`, {
+        params: {
+          access_token: accessToken,
+          fields: 'effective_status',
+        },
+      }),
+    );
+    return res.data?.effective_status || 'UNKNOWN';
+  } catch {
+    return 'UNKNOWN';
   }
 }
 

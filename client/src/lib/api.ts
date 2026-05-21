@@ -118,6 +118,7 @@ export interface DashboardMetrics {
   totalPurchaseValue: number;
   totalConversionValue: number;
   totalMessaging: number;
+  totalPageLikes: number;
   avgCpl: number;
   avgCpc: number;
   avgCpm: number;

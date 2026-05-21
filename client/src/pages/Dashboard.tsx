@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Users, DollarSign, Target, TrendingUp, MousePointerClick, Eye, BarChart3, Loader2, Calendar as CalendarIcon, Filter, CheckCircle2, ExternalLink, MapPin, Monitor, UserCircle, X, Play, MessageCircle, Info, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { Users, DollarSign, Target, TrendingUp, MousePointerClick, Eye, BarChart3, Loader2, Calendar as CalendarIcon, Filter, CheckCircle2, ExternalLink, MapPin, Monitor, UserCircle, X, Play, MessageCircle, Info, ArrowUpRight, ArrowDownRight, Heart } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie } from 'recharts';
 import { clientApi, syncApi, type DashboardMetrics, type Client } from '../lib/api';
 import { useTheme } from '../contexts/ThemeContext';
@@ -138,6 +138,7 @@ export default function Dashboard() {
     { icon: TrendingUp, label: 'ROAS Médio', value: data.avgRoas, fmt: (v: number) => v.toFixed(2) + 'x', color: 'text-purple-600 dark:text-purple-400', bgColor: 'bg-purple-600 dark:bg-purple-400' },
     { icon: MessageCircle, label: 'Mensagens', value: data.totalMessaging, fmt: fmtNumber, color: 'text-blue-600 dark:text-blue-400', bgColor: 'bg-blue-600 dark:bg-blue-400' },
     { icon: DollarSign, label: 'CPMsg Médio', value: data.avgCpmsg, fmt: fmtCurrency, color: 'text-indigo-600 dark:text-indigo-400', bgColor: 'bg-indigo-600 dark:bg-indigo-400' },
+    { icon: Heart, label: 'Curtidas na Página', value: data.totalPageLikes, fmt: fmtNumber, color: 'text-rose-600 dark:text-rose-400', bgColor: 'bg-rose-600 dark:bg-rose-400' },
     { icon: DollarSign, label: 'Valor de Conversão', value: data.totalConversionValue, fmt: fmtCurrency, color: 'text-emerald-600 dark:text-emerald-400', bgColor: 'bg-emerald-600 dark:bg-emerald-400' },
     { icon: MousePointerClick, label: 'Cliques', value: data.totalClicks, fmt: fmtNumber, color: 'text-cyan-600 dark:text-cyan-400', bgColor: 'bg-cyan-600 dark:bg-cyan-400' },
   ];
@@ -221,7 +222,7 @@ export default function Dashboard() {
           <TrendingUp size={20} className="text-blue-500" />
           <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white uppercase tracking-wider">Métricas de Resultado</h3>
         </div>
-        <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-5">
           {cards.map((card) => (
             <div key={card.label} className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-3 sm:p-5 transition-all hover:shadow-xl hover:border-blue-500/20 dark:border-gray-800 dark:bg-gray-900">
               <div className="flex items-center justify-between mb-2 sm:mb-3">

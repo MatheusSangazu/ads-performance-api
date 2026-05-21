@@ -42,6 +42,7 @@ class DashboardRepository {
         purchaseValue: true,
         totalConversionValue: true,
         messagingConversations: true,
+        pageLikes: true,
         clientId: true,
         date: true,
       },
@@ -56,6 +57,7 @@ class DashboardRepository {
     const totalPurchaseValue = performance.reduce((sum, p) => sum + Number(p.purchaseValue || 0), 0);
     const totalConversionValue = performance.reduce((sum, p) => sum + Number(p.totalConversionValue || 0), 0);
     const totalMessaging = performance.reduce((sum, p) => sum + (p.messagingConversations || 0), 0);
+    const totalPageLikes = performance.reduce((sum, p) => sum + (p.pageLikes || 0), 0);
 
     const avgCpl = totalLeads > 0 ? totalSpend / totalLeads : 0;
     const avgCpc = totalClicks > 0 ? totalSpend / totalClicks : 0;
@@ -266,6 +268,7 @@ class DashboardRepository {
       totalPurchaseValue,
       totalConversionValue,
       totalMessaging,
+      totalPageLikes,
       avgCpl,
       avgCpc,
       avgCpm,

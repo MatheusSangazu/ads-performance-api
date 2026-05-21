@@ -303,11 +303,14 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
               <button onClick={() => setShowTokenEdit(false)} className="text-gray-400 hover:text-gray-900 dark:text-gray-500 dark:hover:text-white"><X size={14} /></button>
             </div>
             <input
-              type="password"
+              type="text"
               value={newToken}
               onChange={(e) => setNewToken(e.target.value)}
-              className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-amber-500 outline-none transition-all dark:border-gray-800 dark:bg-gray-950 dark:text-white"
+              className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-amber-500 outline-none transition-all font-mono tracking-wider dark:border-gray-800 dark:bg-gray-950 dark:text-white selection:bg-amber-500/20"
               placeholder="Cole o novo token aqui"
+              autoComplete="off"
+              data-1p-ignore
+              data-lpignore="true"
             />
             <div className="flex gap-2">
               <button onClick={handleUpdateToken} disabled={!newToken.trim()} className="flex-1 rounded-lg bg-amber-600 py-2 text-xs font-bold text-white hover:bg-amber-500 disabled:opacity-50">Salvar Token</button>

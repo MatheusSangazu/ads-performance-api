@@ -79,7 +79,12 @@ class SchedulerService {
     for (const manager of managers) {
       const clientIds = await managerRepository.getClientIds(manager.id);
       for (const actId of clientIds) {
-        await healthCheckService.updateClientHealth(actId).catch(() => {});
+        const client = await prisma.client.findUnique({
+          where: { actId },
+          select: { accessToken: true },
+        });
+        if (!client?.accessToken) continue;
+        await healthCheckService.updateClientHealth(actId, client.accessToken).catch(() => {});
       }
     }
   }

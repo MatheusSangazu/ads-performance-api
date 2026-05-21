@@ -37,3 +37,4 @@ desktop.ini
 *.sublime-workspace
 /server/src/generated/prisma
 ERRORS_REPORT.md
+tsconfig.tsbuildinfo

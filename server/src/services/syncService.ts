@@ -1,7 +1,7 @@
 import clientRepository from '../repositories/clientRepository.js';
 import adRepository from '../repositories/adRepository.js';
 import type { UpsertInsightData } from '../repositories/adRepository.js';
-import { fetchAllInsights, fetchPreviewLink, validateAccount } from '../integrations/metaApi.js';
+import { fetchAllInsights, fetchAdStatus, fetchCampaignStatus, validateAccount } from '../integrations/metaApi.js';
 import { splitDates } from '../utils/dateUtils.js';
 import { resolveToken } from '../utils/tokenUtils.js';
 import type { MetaInsight, MetaAction, SyncResult } from '../types/index.js';
@@ -11,7 +11,8 @@ import healthCheckService from './healthCheckService.js';
 import { downloadCreativesBatch } from './creativeDownloadService.js';
 
 class SyncService {
-  private previewCache: Map<string, string> = new Map();
+  private previewCache: Map<string, { previewLink: string; adStatus: string; campaignId: string }> = new Map();
+  private campaignStatusCache: Map<string, string> = new Map();
 
   private extractActionValue(actions: MetaAction[] | undefined, type: string): number {
     return parseInt(actions?.find((a) => a.action_type === type)?.value || '0');
@@ -22,6 +23,8 @@ class SyncService {
     actId: string,
     customEventId: string | null,
     previewLink: string,
+    adStatus: string,
+    campaignStatus: string,
   ): UpsertInsightData {
     const getQty = (type: string) => this.extractActionValue(item.actions, type);
     const getVal = (type: string) =>
@@ -59,11 +62,13 @@ class SyncService {
       totalConversionValue: totalConvValue,
       roas,
       previewLink,
+      pageLikes: getQty('like') + getQty('page_like'),
+      adStatus,
+      campaignStatus,
     };
   }
 
-  private async fetchPreviewLinks(adIds: string[], accessToken: string): Promise<Map<string, string>> {
-    const linkMap = new Map<string, string>();
+  private async fetchPreviewLinks(adIds: string[], accessToken: string): Promise<void> {
     const uniqueIds = [...new Set(adIds.filter((id) => !this.previewCache.has(id)))];
     const batchSize = 50;
 
@@ -71,20 +76,15 @@ class SyncService {
       const batch = uniqueIds.slice(i, i + batchSize);
       const promises = batch.map(async (adId) => {
         try {
-          const link = await fetchPreviewLink(adId, accessToken);
-          linkMap.set(adId, link);
+          const data = await fetchAdStatus(adId, accessToken);
+          this.previewCache.set(adId, data);
         } catch {
-          linkMap.set(adId, '');
+          this.previewCache.set(adId, { previewLink: '', adStatus: 'UNKNOWN', campaignId: '' });
         }
       });
       await Promise.all(promises);
-      syncProgress.send({ type: 'log', message: `   [LINK] Preview links: ${Math.min(i + batchSize, uniqueIds.length)}/${uniqueIds.length}`, step: 'main' });
+      syncProgress.send({ type: 'log', message: `   [LINK] Preview + Status: ${Math.min(i + batchSize, uniqueIds.length)}/${uniqueIds.length}`, step: 'main' });
     }
-
-    for (const [adId, link] of linkMap) {
-      this.previewCache.set(adId, link);
-    }
-    return linkMap;
   }
 
   public async syncAccount(actId: string, dateSince: string, dateUntil: string): Promise<SyncResult> {
@@ -105,6 +105,7 @@ class SyncService {
     const dateChunks = splitDates(dateSince, dateUntil);
     syncProgress.send({ type: 'start', message: `[SYNC] Sync: ${client.clientName} | ${dateChunks.length} chunk(s)`, step: 'main', progress: 0 });
     this.previewCache.clear();
+    this.campaignStatusCache.clear();
 
     let totalRecords = 0;
     let totalErrors = 0;
@@ -134,14 +135,31 @@ class SyncService {
         syncProgress.send({ type: 'log', message: `   [DATA] ${insights.length} registros encontrados`, step: 'main' });
 
         const adIds = insights.map((item) => item.ad_id);
-        syncProgress.send({ type: 'log', message: `   [LINK] Buscando preview links...`, step: 'main' });
+        syncProgress.send({ type: 'log', message: `   [LINK] Buscando preview links + status...`, step: 'main' });
         await this.fetchPreviewLinks(adIds, accessToken);
+
+        const uniqueCampaignIds = [...new Set(
+          insights
+            .map((item) => this.previewCache.get(item.ad_id)?.campaignId)
+            .filter((id): id is string => !!id && !this.campaignStatusCache.has(id))
+        )];
+        if (uniqueCampaignIds.length > 0) {
+          syncProgress.send({ type: 'log', message: `   [STATUS] Buscando status de ${uniqueCampaignIds.length} campanhas...`, step: 'main' });
+          await Promise.all(
+            uniqueCampaignIds.map(async (campId) => {
+              const status = await fetchCampaignStatus(campId, accessToken);
+              this.campaignStatusCache.set(campId, status);
+            })
+          );
+        }
 
         syncProgress.send({ type: 'progress', message: `   [SAVE] Salvando ${insights.length} registros em lote...`, step: 'main', progress: Math.round(((i + 0.5) / dateChunks.length) * 100) });
 
-        const allData = insights.map((item) =>
-          this.buildInsightData(item, actId, client.customEventId, this.previewCache.get(item.ad_id) || ''),
-        );
+        const allData = insights.map((item) => {
+          const cached = this.previewCache.get(item.ad_id) || { previewLink: '', adStatus: 'UNKNOWN', campaignId: '' };
+          const campaignStatus = this.campaignStatusCache.get(cached.campaignId || item.campaign_id) || 'UNKNOWN';
+          return this.buildInsightData(item, actId, client.customEventId, cached.previewLink, cached.adStatus, campaignStatus);
+        });
 
         try {
           await adRepository.batchUpsert(allData);
