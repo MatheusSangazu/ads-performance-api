@@ -78,7 +78,59 @@ export interface Client {
   accountStatus: number | null;
   disableReason: number | null;
   healthLastCheck: string | null;
+  isBoleto: boolean;
+  isEcommerce: boolean;
+  clientType: 'lead_gen' | 'ecommerce' | 'infoproduct' | 'messaging' | 'local';
+  balanceThreshold: number | null;
+  currentBalance: number | null;
+  balanceUpdatedAt: string | null;
   createdAt: string;
+}
+
+export interface BalanceData {
+  actId: string;
+  isBoleto: boolean;
+  balanceThreshold: number | null;
+  currentBalance: number | null;
+  balanceUpdatedAt: string | null;
+}
+
+export interface CustomConversion {
+  id: number;
+  clientId: string;
+  customEventId: string;
+  label: string;
+  createdAt: string;
+}
+
+export interface GoalProjectionItem {
+  metric: string;
+  target: number;
+  current: number;
+  projected: number;
+  avgDaily: number;
+  neededDaily: number;
+  daysRemaining: number;
+  onTrack: boolean;
+}
+
+export interface GoalProjection {
+  month: string;
+  daysInMonth: number;
+  currentDay: number;
+  daysRemaining: number;
+  window: number;
+  goals: GoalProjectionItem[];
+  burndown: { date: string; actual: number; target: number }[];
+}
+
+export interface AccountStatus {
+  actId: string;
+  clientName?: string;
+  accountStatus: number | null;
+  statusLabel: string;
+  disableReason: number | null;
+  lastCheck: string | null;
 }
 
 export interface CreateClientPayload {
@@ -172,9 +224,15 @@ export interface DashboardMetrics {
     leads: number;
     impressions: number;
     linkClicks: number;
+    reach: number;
     purchases: number;
     purchaseValue: number;
     totalConversionValue: number;
+    messaging: number;
+    roas: number;
+    ctr: number;
+    cpl: number;
+    cpmsg: number;
   }[];
   placementData: {
     platform: string;
@@ -182,9 +240,15 @@ export interface DashboardMetrics {
     leads: number;
     impressions: number;
     linkClicks: number;
+    reach: number;
     purchases: number;
     purchaseValue: number;
     totalConversionValue: number;
+    messaging: number;
+    roas: number;
+    ctr: number;
+    cpl: number;
+    cpmsg: number;
   }[];
   regionData: {
     region: string;
@@ -192,9 +256,15 @@ export interface DashboardMetrics {
     leads: number;
     impressions: number;
     linkClicks: number;
+    reach: number;
     purchases: number;
     purchaseValue: number;
     totalConversionValue: number;
+    messaging: number;
+    roas: number;
+    ctr: number;
+    cpl: number;
+    cpmsg: number;
   }[];
   period: { since: string; until: string };
 }
@@ -272,6 +342,21 @@ export const clientApi = {
   setGoal: (actId: string, metric: string, targetValue: number, month: string) =>
     api.post(`/clients/${actId}/goals`, { metric, targetValue, month }),
   deleteGoal: (actId: string, id: string) => api.delete(`/clients/${actId}/goals/${id}`),
+  getBalance: (actId: string) => api.get<BalanceData>(`/clients/${actId}/balance`),
+  refreshBalance: (actId: string) => api.post(`/clients/${actId}/balance/refresh`),
+  updateBalanceSettings: (actId: string, data: { is_boleto?: boolean; balance_threshold?: number }) =>
+    api.patch(`/clients/${actId}/balance-settings`, data),
+  getCustomConversions: (actId: string) => api.get<CustomConversion[]>(`/clients/${actId}/custom-conversions`),
+  addCustomConversion: (actId: string, data: { custom_event_id: string; label: string }) =>
+    api.post(`/clients/${actId}/custom-conversions`, data),
+  deleteCustomConversion: (actId: string, id: number) =>
+    api.delete(`/clients/${actId}/custom-conversions/${id}`),
+  getGoalProjection: (actId: string, window?: number) =>
+    api.get<GoalProjection>(`/clients/${actId}/goal-projection`, { params: { window } }),
+  getAccountStatus: (actId: string) => api.get<AccountStatus>(`/clients/${actId}/status`),
+  refreshAccountStatus: (actId: string) => api.post<AccountStatus>(`/clients/${actId}/status/refresh`),
+  sendSummary: (actId: string) => api.post<{ success: boolean; message: string }>(`/clients/${actId}/summary`),
+  updateClientType: (actId: string, clientType: string) => api.patch(`/clients/${actId}/type`, { clientType }),
 };
 
 export const syncApi = {

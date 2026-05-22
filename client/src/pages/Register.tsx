@@ -122,10 +122,12 @@ export default function Register() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              minLength={6}
+              minLength={8}
+              pattern="(?=.*[A-Z])(?=.*[0-9])(?=.*[^a-zA-Z0-9]).{8,}"
               className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500/50 outline-none transition-all focus:ring-4 focus:ring-blue-500/10 dark:border-gray-800 dark:bg-gray-950 dark:text-white dark:placeholder-gray-600"
-              placeholder="••••••••"
+              placeholder="Mín. 8 caracteres"
             />
+            <p className="text-[10px] text-gray-400 dark:text-gray-500 ml-1">Mínimo 8 caracteres, com pelo menos: 1 maiúscula, 1 número e 1 caractere especial.</p>
           </div>
 
           <button

@@ -100,7 +100,7 @@ class ManagerRepository {
   public async findManagersForClient(clientId: string) {
     const links = await prisma.managerClient.findMany({
       where: { clientId },
-      select: { manager: { select: { id: true, name: true } } },
+      select: { manager: { select: { id: true, name: true, phone: true, whatsappNotify: true } } },
     });
     return links.map((l) => l.manager);
   }

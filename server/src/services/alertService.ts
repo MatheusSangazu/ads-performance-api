@@ -99,7 +99,7 @@ class AlertService {
           ? this.getMetricValue(goal.metric, metrics, performance)
           : 0;
 
-        const isInverse = goal.metric === 'cpl';
+        const isInverse = goal.metric === 'cpl' || goal.metric === 'cpmsg';
         const percentGoal = isInverse
           ? target > 0 ? (target / Math.max(current, 0.01)) * 100 : 0
           : target > 0 ? (current / target) * 100 : 0;
@@ -207,6 +207,8 @@ class AlertService {
       case 'impressions': return overview.totalImpressions || 0;
       case 'purchases': return overview.totalPurchases || 0;
       case 'purchase_value': return overview.totalPurchaseValue || 0;
+      case 'messaging': return overview.totalMessaging || 0;
+      case 'cpmsg': return (overview.totalMessaging || 0) > 0 ? clientMetrics.spend / overview.totalMessaging : 0;
       default: return 0;
     }
   }

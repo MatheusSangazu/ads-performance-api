@@ -9,6 +9,7 @@ const schema = z.object({
   act_id: z.string().min(1, 'Act ID é obrigatório'),
   access_token: z.string().min(1, 'Access Token é obrigatório'),
   custom_event_id: z.string().optional(),
+  client_type: z.enum(['lead_gen', 'ecommerce', 'infoproduct', 'messaging', 'local']).optional(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -34,6 +35,8 @@ export default function ClientForm({ onSubmit, onCancel }: ClientFormProps) {
     reset();
   };
 
+  const inputClass = "w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 px-4 py-2.5 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 focus:border-blue-500/50 outline-none transition-all focus:ring-4 focus:ring-blue-500/10";
+
   return {
     trigger: (showForm: boolean, setShowForm: (v: boolean) => void) => (
       <button
@@ -48,13 +51,13 @@ export default function ClientForm({ onSubmit, onCancel }: ClientFormProps) {
       visible ? (
         <form
           onSubmit={handleSubmit(handleFormSubmit)}
-          className="mb-12 rounded-2xl border border-blue-500/20 bg-blue-500/5 p-6 backdrop-blur-sm shadow-xl shadow-blue-900/5 animate-in fade-in slide-in-from-top-4 duration-300"
+          className="mb-12 rounded-2xl border border-blue-200 dark:border-blue-500/20 bg-blue-50 dark:bg-blue-500/5 p-6 backdrop-blur-sm shadow-xl shadow-blue-200/30 dark:shadow-blue-900/5 animate-in fade-in slide-in-from-top-4 duration-300"
         >
           <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 rounded-lg bg-blue-600/20 text-blue-400">
+            <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-600/20 text-blue-600 dark:text-blue-400">
               <Plus size={20} />
             </div>
-            <h3 className="text-xl font-bold text-white">Cadastrar Novo Cliente</h3>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white">Cadastrar Novo Cliente</h3>
           </div>
 
           <div className="grid gap-6 md:grid-cols-2">
@@ -62,20 +65,20 @@ export default function ClientForm({ onSubmit, onCancel }: ClientFormProps) {
               <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider ml-1">Nome Comercial</label>
               <input
                 {...register('name')}
-                className="w-full rounded-xl border border-gray-800 bg-gray-950 px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:border-blue-500/50 outline-none transition-all focus:ring-4 focus:ring-blue-500/10"
+                className={inputClass}
                 placeholder="Ex: Minha Loja Virtual"
               />
-              {errors.name && <p className="mt-1 ml-1 text-[10px] font-bold text-red-400 uppercase">{errors.name.message}</p>}
+              {errors.name && <p className="mt-1 ml-1 text-[10px] font-bold text-red-500 dark:text-red-400 uppercase">{errors.name.message}</p>}
             </div>
 
             <div className="space-y-1.5">
               <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider ml-1">ID da Conta de Anúncios</label>
               <input
                 {...register('act_id')}
-                className="w-full rounded-xl border border-gray-800 bg-gray-950 px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:border-blue-500/50 outline-none transition-all focus:ring-4 focus:ring-blue-500/10"
+                className={inputClass}
                 placeholder="act_123456789"
               />
-              {errors.act_id && <p className="mt-1 ml-1 text-[10px] font-bold text-red-400 uppercase">{errors.act_id.message}</p>}
+              {errors.act_id && <p className="mt-1 ml-1 text-[10px] font-bold text-red-500 dark:text-red-400 uppercase">{errors.act_id.message}</p>}
             </div>
 
             <div className="space-y-1.5">
@@ -88,11 +91,11 @@ export default function ClientForm({ onSubmit, onCancel }: ClientFormProps) {
               <input
                 {...register('access_token')}
                 type="password"
-                className="w-full rounded-xl border border-gray-800 bg-gray-950 px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:border-blue-500/50 outline-none transition-all focus:ring-4 focus:ring-blue-500/10"
+                className={inputClass}
                 placeholder="••••••••••••••••"
               />
               {errors.access_token && (
-                <p className="mt-1 ml-1 text-[10px] font-bold text-red-400 uppercase">{errors.access_token.message}</p>
+                <p className="mt-1 ml-1 text-[10px] font-bold text-red-500 dark:text-red-400 uppercase">{errors.access_token.message}</p>
               )}
             </div>
 
@@ -100,9 +103,23 @@ export default function ClientForm({ onSubmit, onCancel }: ClientFormProps) {
               <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider ml-1">Custom Event ID (Opcional)</label>
               <input
                 {...register('custom_event_id')}
-                className="w-full rounded-xl border border-gray-800 bg-gray-950 px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:border-blue-500/50 outline-none transition-all focus:ring-4 focus:ring-blue-500/10"
+                className={inputClass}
                 placeholder="Ex: purchase_pixel_123"
               />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider ml-1">Tipo de Negócio</label>
+              <select
+                {...register('client_type')}
+                className={inputClass}
+              >
+                <option value="lead_gen">📋 Geração de Leads</option>
+                <option value="ecommerce">🛒 E-commerce</option>
+                <option value="infoproduct">🎓 Infoproduto</option>
+                <option value="messaging">💬 Mensagens</option>
+                <option value="local">📍 Negócio Local</option>
+              </select>
             </div>
           </div>
 
@@ -116,7 +133,7 @@ export default function ClientForm({ onSubmit, onCancel }: ClientFormProps) {
             <button
               type="button"
               onClick={onCancel}
-              className="flex-1 sm:flex-none rounded-xl bg-gray-800 px-8 py-3 text-sm font-bold text-gray-300 transition-all hover:bg-gray-700 hover:text-white"
+              className="flex-1 sm:flex-none rounded-xl bg-gray-100 dark:bg-gray-800 px-8 py-3 text-sm font-bold text-gray-600 dark:text-gray-300 transition-all hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white"
             >
               Cancelar
             </button>

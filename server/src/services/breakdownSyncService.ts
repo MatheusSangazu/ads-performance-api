@@ -2,6 +2,7 @@ import clientRepository from '../repositories/clientRepository.js';
 import audienceRepository from '../repositories/audienceRepository.js';
 import placementRepository from '../repositories/placementRepository.js';
 import regionRepository from '../repositories/regionRepository.js';
+import customConversionRepository from '../repositories/customConversionRepository.js';
 import { fetchAllInsights } from '../integrations/metaApi.js';
 import { splitDates } from '../utils/dateUtils.js';
 import { resolveToken } from '../utils/tokenUtils.js';
@@ -23,14 +24,18 @@ class BreakdownSyncService {
     return parseFloat(actions?.find((a) => a.action_type === type)?.value || '0');
   }
 
-  private buildMetrics(item: MetaInsight, customEventId: string | null) {
+  private buildMetrics(item: MetaInsight, customEventIds: string[]) {
     const getQty = (type: string) => this.extractActionValue(item.actions, type);
     const getVal = (type: string) => this.extractActionValueFloat(item.action_values, type);
 
     const spend = parseFloat(item.spend || '0');
     const purchaseVal = getVal('purchase');
-    const customConvCount = customEventId ? getQty(customEventId) : 0;
-    const customConvValue = customEventId ? getVal(customEventId) : 0;
+    let customConvCount = 0;
+    let customConvValue = 0;
+    for (const eid of customEventIds) {
+      customConvCount += getQty(eid);
+      customConvValue += getVal(eid);
+    }
     const totalConvValue = purchaseVal + customConvValue;
     const roas = spend > 0 ? totalConvValue / spend : 0;
 
@@ -65,6 +70,12 @@ class BreakdownSyncService {
     if (!client) throw new Error(`Cliente ${actId} não encontrado.`);
 
     const { accessToken } = await resolveToken(actId);
+
+    const customConversions = await customConversionRepository.findByClient(actId);
+    const customEventIds = [
+      ...(client.customEventId ? [client.customEventId] : []),
+      ...customConversions.map((c) => c.customEventId),
+    ];
 
     const config = BREAKDOWN_CONFIG[type];
     const dateChunks = splitDates(dateSince, dateUntil);
@@ -101,7 +112,7 @@ class BreakdownSyncService {
         syncProgress.send({ type: 'progress', message: `   [SAVE] Salvando ${insights.length} registros de ${config.label} em lote...`, step: type, progress: Math.round(((i + 0.5) / dateChunks.length) * 100) });
 
         const allBaseData = insights.map((item) => {
-          const metrics = this.buildMetrics(item, client.customEventId);
+          const metrics = this.buildMetrics(item, customEventIds);
           return {
             date: new Date(item.date_start),
             clientId: actId,

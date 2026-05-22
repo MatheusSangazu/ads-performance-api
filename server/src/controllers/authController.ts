@@ -26,8 +26,8 @@ class AuthController {
         res.status(400).json({ error: 'Nome, email e senha são obrigatórios.' });
         return;
       }
-      if (password.length < 6) {
-        res.status(400).json({ error: 'Senha deve ter no mínimo 6 caracteres.' });
+      if (password.length < 8) {
+        res.status(400).json({ error: 'Senha deve ter no mínimo 8 caracteres.' });
         return;
       }
       const result = await authService.register(token, name, email, password);

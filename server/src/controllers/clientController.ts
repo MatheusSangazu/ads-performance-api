@@ -7,7 +7,7 @@ import type { AuthRequest } from '../middleware/auth.js';
 
 class ClientController {
   public async create(req: AuthRequest, res: Response): Promise<void> {
-    const { name, act_id, access_token, custom_event_id, is_ecommerce } = req.body;
+    const { name, act_id, access_token, custom_event_id, client_type } = req.body;
     const cleanActId = act_id.trim();
     const normalizedActId = cleanActId.startsWith('act_') ? cleanActId : `act_${cleanActId}`;
     const result = await clientService.saveClient(
@@ -15,7 +15,7 @@ class ClientController {
       cleanActId,
       access_token,
       custom_event_id,
-      is_ecommerce ?? false,
+      client_type ?? 'lead_gen',
     );
 
     if (req.manager) {
@@ -58,6 +58,13 @@ class ClientController {
     const { actId } = req.params;
     const { access_token } = req.body;
     const result = await clientService.updateToken(actId, access_token);
+    res.json(result);
+  }
+
+  public async updateType(req: AuthRequest, res: Response): Promise<void> {
+    const { actId } = req.params;
+    const { clientType } = req.body;
+    const result = await clientService.updateType(actId, clientType);
     res.json(result);
   }
 

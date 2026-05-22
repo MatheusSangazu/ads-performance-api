@@ -49,6 +49,19 @@ enum AlertType {
   account_issue
 }
 
+enum InviteType {
+  manager
+  team
+}
+
+enum ClientType {
+  lead_gen
+  ecommerce
+  infoproduct
+  messaging
+  local
+}
+
 enum AlertSeverity {
   info
   warning
@@ -112,6 +125,7 @@ model Invite {
   token     String   @unique @db.Char(64)
   email     String?  @db.VarChar(150)
   plan      String   @default("pro") @db.VarChar(30)
+  type      InviteType @default(manager)
   used      Boolean  @default(false)
   usedById  String?  @map("used_by") @db.Char(36)
   usedAt    DateTime? @map("used_at") @db.Timestamp(0)
@@ -156,11 +170,15 @@ model Client {
   actId           String       @unique @map("act_id") @db.VarChar(50)
   accessToken     String       @map("access_token") @db.Text
   customEventId   String?      @map("custom_event_id") @db.VarChar(100)
-  isEcommerce     Boolean?     @default(false) @map("is_ecommerce")
+  clientType      ClientType   @default(lead_gen) @map("client_type")
   status          ClientStatus @default(active)
   accountStatus   Int?         @map("account_status")
   disableReason   Int?         @map("disable_reason")
   healthLastCheck DateTime?    @map("health_last_check") @db.Timestamp(0)
+  isBoleto        Boolean      @default(false) @map("is_boleto")
+  balanceThreshold Decimal?     @map("balance_threshold") @db.Decimal(12,2)
+  currentBalance  Decimal?     @map("current_balance") @db.Decimal(12,2)
+  balanceUpdatedAt DateTime?    @map("balance_updated_at") @db.Timestamp(0)
   createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamp(0)
 
   adsPerformance         AdPerformance[]
@@ -172,6 +190,8 @@ model Client {
   goals                  ClientGoal[]
   alerts                 Alert[]
   tasks                  Task[]
+  customConversions      ClientCustomConversion[]
+  adCustomConversions    AdCustomConversion[]
 
   @@map("clients_config")
 }
@@ -402,4 +422,34 @@ model ClientGoal {
 
   @@unique([managerId, clientId, metric, month])
   @@map("client_goals")
+}
+
+model ClientCustomConversion {
+  id            Int      @id @default(autoincrement())
+  clientId      String   @map("client_id") @db.VarChar(50)
+  customEventId String   @map("custom_event_id") @db.VarChar(150)
+  label         String   @db.VarChar(100)
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+
+  client Client @relation(fields: [clientId], references: [actId], onDelete: Cascade)
+
+  @@unique([clientId, customEventId], map: "unique_client_custom_conv")
+  @@map("client_custom_conversions")
+}
+
+model AdCustomConversion {
+  id             BigInt   @id @default(autoincrement())
+  date           DateTime @db.Date
+  clientId       String   @map("client_id") @db.VarChar(50)
+  adId           String   @map("ad_id") @db.VarChar(50)
+  customEventId  String   @map("custom_event_id") @db.VarChar(150)
+  count          Int      @default(0)
+  value          Decimal  @default(0.0000) @db.Decimal(15, 4)
+
+  client Client @relation(fields: [clientId], references: [actId], onDelete: Cascade)
+
+  @@unique([date, adId, customEventId], map: "unique_ad_custom_conv")
+  @@index([clientId], map: "idx_custom_conv_client")
+  @@index([date], map: "idx_custom_conv_date")
+  @@map("ad_custom_conversions")
 }

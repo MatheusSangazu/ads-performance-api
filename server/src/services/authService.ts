@@ -93,8 +93,8 @@ class AuthService {
       email,
       passwordHash,
       plan: invite.plan,
-      role: 'manager' as ManagerRole,
-      agencyId: invite.createdBy,
+      role: invite.type === 'team' ? 'agency' as ManagerRole : 'manager' as ManagerRole,
+      agencyId: invite.type === 'team' ? invite.createdBy : undefined,
     });
 
     await inviteRepository.markUsed(invite.id, manager.id);

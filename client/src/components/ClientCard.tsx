@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Download, Key, Loader2, RefreshCw, Trash2, X, ShieldCheck, ShieldAlert, AlertCircle, Pencil } from 'lucide-react';
-import { clientApi, syncApi, type Client } from '../lib/api';
+import { Download, Key, Loader2, RefreshCw, Trash2, X, ShieldCheck, ShieldAlert, AlertCircle, Pencil, Wallet, Plus, Zap, MessageSquare } from 'lucide-react';
+import { clientApi, syncApi, type Client, type CustomConversion } from '../lib/api';
 import BudgetCard from './BudgetCard';
 import GoalCard from './GoalCard';
 import HelpTooltip from './HelpTooltip';
@@ -31,6 +31,17 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
   const [quickSyncing, setQuickSyncing] = useState(false);
   const [currentSpend, setCurrentSpend] = useState(0);
   const [currentMetrics, setCurrentMetrics] = useState<Record<string, number>>({});
+  const [showBalance, setShowBalance] = useState(false);
+  const [isBoleto, setIsBoleto] = useState(client.isBoleto || false);
+  const [threshold, setThreshold] = useState(client.balanceThreshold ? String(client.balanceThreshold) : '');
+  const [balanceLoading, setBalanceLoading] = useState(false);
+  const [showConversions, setShowConversions] = useState(false);
+  const [customConversions, setCustomConversions] = useState<CustomConversion[]>([]);
+  const [newConvEventId, setNewConvEventId] = useState('');
+  const [newConvLabel, setNewConvLabel] = useState('');
+  const [convLoading, setConvLoading] = useState(false);
+  const [summarySending, setSummarySending] = useState(false);
+  const [clientType, setClientType] = useState<'lead_gen' | 'ecommerce' | 'infoproduct' | 'messaging' | 'local'>(client.clientType ?? 'lead_gen');
 
   useEffect(() => {
     const fetchMetrics = async () => {
@@ -110,6 +121,36 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
     setShowDeleteConfirm(false);
   };
 
+  const handleSendSummary = async () => {
+    setSummarySending(true);
+    try {
+      const { data } = await clientApi.sendSummary(client.actId);
+      onSuccess(data.message || 'Resumo enviado via WhatsApp!');
+    } catch (err: any) {
+      const msg = err?.response?.data?.error || 'Erro ao enviar resumo. Verifique se o WhatsApp está conectado.';
+      onError(msg);
+    } finally {
+      setSummarySending(false);
+    }
+  };
+
+  const handleToggleType = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newType = e.target.value as 'lead_gen' | 'ecommerce' | 'infoproduct' | 'messaging' | 'local';
+    const prevType = clientType;
+    setClientType(newType);
+    try {
+      await clientApi.updateClientType(client.actId, newType);
+      const labels: Record<string, string> = {
+        lead_gen: 'Geração de Leads', ecommerce: 'E-commerce',
+        infoproduct: 'Infoproduto', messaging: 'Mensagens', local: 'Negócio Local',
+      };
+      onSuccess(`Tipo alterado para ${labels[newType] || newType}`);
+    } catch {
+      setClientType(prevType);
+      onError('Erro ao alterar tipo do cliente.');
+    }
+  };
+
   const handleQuickSync = async () => {
     setQuickSyncing(true);
     try {
@@ -133,6 +174,63 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
       onError(`Erro ao sincronizar ${client.clientName}.`);
     } finally {
       setQuickSyncing(false);
+    }
+  };
+
+  const handleSaveBalance = async () => {
+    setBalanceLoading(true);
+    try {
+      await clientApi.updateBalanceSettings(client.actId, {
+        is_boleto: isBoleto,
+        ...(threshold ? { balance_threshold: Number(threshold) } : {}),
+      });
+      setShowBalance(false);
+      onSuccess('Configurações de saldo atualizadas!');
+    } catch {
+      onError('Erro ao salvar configurações de saldo.');
+    } finally {
+      setBalanceLoading(false);
+    }
+  };
+
+  const loadConversions = async () => {
+    try {
+      const res = await clientApi.getCustomConversions(client.actId);
+      setCustomConversions(res.data);
+    } catch {
+      setCustomConversions([]);
+    }
+  };
+
+  const handleAddConversion = async () => {
+    if (!newConvEventId.trim() || !newConvLabel.trim()) return;
+    setConvLoading(true);
+    try {
+      await clientApi.addCustomConversion(client.actId, {
+        custom_event_id: newConvEventId.trim(),
+        label: newConvLabel.trim(),
+      });
+      setNewConvEventId('');
+      setNewConvLabel('');
+      await loadConversions();
+      onSuccess('Conversão personalizada adicionada!');
+    } catch {
+      onError('Erro ao adicionar conversão.');
+    } finally {
+      setConvLoading(false);
+    }
+  };
+
+  const handleDeleteConversion = async (id: number) => {
+    setConvLoading(true);
+    try {
+      await clientApi.deleteCustomConversion(client.actId, id);
+      await loadConversions();
+      onSuccess('Conversão removida.');
+    } catch {
+      onError('Erro ao remover conversão.');
+    } finally {
+      setConvLoading(false);
     }
   };
 
@@ -178,16 +276,56 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
     );
   };
 
+  const renderBalanceBadge = () => {
+    if (!client.isBoleto) return null;
+
+    const balance = client.currentBalance;
+    const thresh = client.balanceThreshold;
+
+    if (balance !== null && thresh !== null && balance < thresh) {
+      return (
+        <span className="flex items-center gap-1 text-[10px] font-medium text-red-400" title={`Saldo baixo: R$ ${Number(balance).toFixed(2)}`}>
+          <Wallet size={12} />
+          Saldo baixo
+        </span>
+      );
+    }
+
+    if (balance !== null) {
+      return (
+        <span className="flex items-center gap-1 text-[10px] font-medium text-blue-400" title={`Saldo: R$ ${Number(balance).toFixed(2)}`}>
+          <Wallet size={12} />
+          R$ {Number(balance).toFixed(2)}
+        </span>
+      );
+    }
+
+    return null;
+  };
+
   return (
     <div className="group relative rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 transition-all hover:border-blue-500/30 hover:bg-gray-50 shadow-sm hover:shadow-blue-900/5 dark:border-gray-800 dark:bg-gray-900/50 dark:hover:bg-gray-900 dark:hover:shadow-blue-900/10">
       <div className="mb-4 flex items-start justify-between">
         <div>
           <h4 className="text-base sm:text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors dark:text-white dark:group-hover:text-blue-400">{client.clientName}</h4>
-          <div className="flex items-center gap-2 mt-1">
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
             <span className="text-[11px] font-mono text-gray-500 bg-gray-100 px-2 py-0.5 rounded border border-gray-200 dark:bg-gray-950 dark:border-gray-800">
               {client.actId}
             </span>
+            <select
+              value={clientType}
+              onChange={handleToggleType}
+              className="text-[10px] font-medium rounded border bg-white dark:bg-gray-950 px-2 py-0.5 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-800 outline-none cursor-pointer"
+              title="Tipo de negócio — clique para alterar"
+            >
+              <option value="lead_gen">📋 Leads</option>
+              <option value="ecommerce">🛒 E-commerce</option>
+              <option value="infoproduct">🎓 Infoproduto</option>
+              <option value="messaging">💬 Mensagens</option>
+              <option value="local">📍 Local</option>
+            </select>
             {renderHealthBadge()}
+            {renderBalanceBadge()}
           </div>
         </div>
         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -206,7 +344,7 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
         <GoalCard actId={client.actId} currentMetrics={currentMetrics} />
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-4 gap-2">
         <button
           onClick={handleQuickSync}
           disabled={quickSyncing}
@@ -230,11 +368,36 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
         </button>
 
         <button
-          onClick={() => { setShowTokenEdit(!showTokenEdit); setShowDeleteConfirm(false); setShowEdit(false); }}
+          onClick={() => { setShowTokenEdit(!showTokenEdit); setShowDeleteConfirm(false); setShowEdit(false); setShowBalance(false); }}
           className="flex items-center justify-center gap-1.5 sm:gap-2 rounded-xl bg-gray-100 px-2 sm:px-3 py-2 sm:py-2.5 text-[10px] sm:text-xs font-semibold text-gray-600 transition-all hover:bg-gray-200 hover:text-gray-900 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white"
         >
           <Key size={14} />
           Token
+        </button>
+
+        <button
+          onClick={() => { setShowBalance(!showBalance); setShowTokenEdit(false); setShowDeleteConfirm(false); setShowEdit(false); setShowConversions(false); }}
+          className="flex items-center justify-center gap-1.5 sm:gap-2 rounded-xl bg-purple-600/10 px-2 sm:px-3 py-2 sm:py-2.5 text-[10px] sm:text-xs font-semibold text-purple-600 transition-all hover:bg-purple-600 hover:text-white dark:text-purple-400 dark:hover:bg-purple-600"
+        >
+          <Wallet size={14} />
+          Saldo
+        </button>
+
+        <button
+          onClick={() => { setShowConversions(!showConversions); setShowTokenEdit(false); setShowDeleteConfirm(false); setShowEdit(false); setShowBalance(false); if (!showConversions) loadConversions(); }}
+          className="flex items-center justify-center gap-1.5 sm:gap-2 rounded-xl bg-emerald-600/10 px-2 sm:px-3 py-2 sm:py-2.5 text-[10px] sm:text-xs font-semibold text-emerald-600 transition-all hover:bg-emerald-600 hover:text-white dark:text-emerald-400 dark:hover:bg-emerald-600"
+        >
+          <Zap size={14} />
+          Conv.
+        </button>
+
+        <button
+          onClick={handleSendSummary}
+          disabled={summarySending}
+          className="flex items-center justify-center gap-1.5 sm:gap-2 rounded-xl bg-sky-600/10 px-2 sm:px-3 py-2 sm:py-2.5 text-[10px] sm:text-xs font-semibold text-sky-600 transition-all hover:bg-sky-600 hover:text-white disabled:opacity-50 dark:text-sky-400 dark:hover:bg-sky-600"
+        >
+          {summarySending ? <Loader2 size={14} className="animate-spin" /> : <MessageSquare size={14} />}
+          Resumo
         </button>
 
         <button
@@ -315,6 +478,125 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
             <div className="flex gap-2">
               <button onClick={handleUpdateToken} disabled={!newToken.trim()} className="flex-1 rounded-lg bg-amber-600 py-2 text-xs font-bold text-white hover:bg-amber-500 disabled:opacity-50">Salvar Token</button>
               <button onClick={handleClearToken} className="rounded-lg bg-gray-100 px-3 py-2 text-xs font-bold text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700">Usar Global</button>
+            </div>
+          </div>
+        )}
+
+        {/* Balance Settings */}
+        {showBalance && (
+          <div className="rounded-xl border border-purple-500/30 bg-purple-500/5 p-4 space-y-3 animate-in fade-in slide-in-from-top-2">
+            <div className="flex items-center justify-between border-b border-purple-500/10 pb-2 mb-2">
+              <span className="text-xs font-bold text-purple-600 uppercase tracking-wider dark:text-purple-400">Configurações de Saldo (Boleto)</span>
+              <button onClick={() => setShowBalance(false)} className="text-gray-400 hover:text-gray-900 dark:text-gray-500 dark:hover:text-white"><X size={14} /></button>
+            </div>
+            <div className="space-y-3">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isBoleto}
+                  onChange={(e) => setIsBoleto(e.target.checked)}
+                  className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                />
+                <div>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">Conta Boleto</span>
+                  <p className="text-[10px] text-gray-500 dark:text-gray-400">Ativa o monitoramento de saldo com alertas WhatsApp</p>
+                </div>
+              </label>
+              {isBoleto && (
+                <div>
+                  <label className="mb-1 block text-[10px] font-bold text-gray-400 uppercase">Limite de Alerta (R$)</label>
+                  <input
+                    type="number"
+                    value={threshold}
+                    onChange={(e) => setThreshold(e.target.value)}
+                    placeholder="Ex: 100.00"
+                    step="0.01"
+                    min="0"
+                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-purple-500 outline-none transition-all dark:border-gray-800 dark:bg-gray-950 dark:text-white dark:placeholder-gray-600"
+                  />
+                  <p className="mt-1 text-[10px] text-gray-400">Alerta enviado quando saldo ficar abaixo deste valor</p>
+                </div>
+              )}
+              {client.currentBalance !== null && (
+                <div className="rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-2">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase">Saldo Atual</span>
+                  <p className="text-lg font-bold text-gray-900 dark:text-white">R$ {Number(client.currentBalance).toFixed(2)}</p>
+                  {client.balanceUpdatedAt && (
+                    <p className="text-[10px] text-gray-400">Atualizado: {new Date(client.balanceUpdatedAt).toLocaleString('pt-BR')}</p>
+                  )}
+                </div>
+              )}
+              <div className="flex gap-2 pt-2">
+                <button onClick={handleSaveBalance} disabled={balanceLoading} className="flex-1 rounded-lg bg-purple-600 py-2 text-xs font-bold text-white hover:bg-purple-500 disabled:opacity-50 flex items-center justify-center gap-2">
+                  {balanceLoading && <Loader2 size={14} className="animate-spin" />}
+                  Salvar Configurações
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Custom Conversions */}
+        {showConversions && (
+          <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4 space-y-3 animate-in fade-in slide-in-from-top-2">
+            <div className="flex items-center justify-between border-b border-emerald-500/10 pb-2 mb-2">
+              <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider dark:text-emerald-400">Conversões Personalizadas</span>
+              <button onClick={() => setShowConversions(false)} className="text-gray-400 hover:text-gray-900 dark:text-gray-500 dark:hover:text-white"><X size={14} /></button>
+            </div>
+
+            {client.customEventId && (
+              <div className="rounded-lg bg-amber-500/10 px-3 py-2">
+                <span className="text-[10px] font-bold text-amber-500 uppercase">Conversão Principal (legado)</span>
+                <p className="text-sm font-mono text-gray-900 dark:text-white">{client.customEventId}</p>
+                <p className="text-[10px] text-gray-400">Configurada no campo custom_event_id do cliente</p>
+              </div>
+            )}
+
+            {customConversions.length > 0 && (
+              <div className="space-y-2">
+                {customConversions.map((conv) => (
+                  <div key={conv.id} className="flex items-center justify-between rounded-lg bg-white dark:bg-gray-800 px-3 py-2 border border-gray-100 dark:border-gray-700">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{conv.label}</p>
+                      <p className="text-[10px] font-mono text-gray-400 truncate">{conv.customEventId}</p>
+                    </div>
+                    <button
+                      onClick={() => handleDeleteConversion(conv.id)}
+                      disabled={convLoading}
+                      className="ml-2 p-1 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                      title="Remover"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="border-t border-emerald-500/10 pt-3 space-y-2">
+              <p className="text-[10px] font-bold text-gray-400 uppercase">Adicionar Nova Conversão</p>
+              <input
+                type="text"
+                value={newConvLabel}
+                onChange={(e) => setNewConvLabel(e.target.value)}
+                placeholder="Nome (ex: Compra Premium)"
+                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-emerald-500 outline-none transition-all dark:border-gray-800 dark:bg-gray-950 dark:text-white dark:placeholder-gray-600"
+              />
+              <input
+                type="text"
+                value={newConvEventId}
+                onChange={(e) => setNewConvEventId(e.target.value)}
+                placeholder="Event ID (ex: offsite_conversion.123456)"
+                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-mono text-gray-900 focus:border-emerald-500 outline-none transition-all dark:border-gray-800 dark:bg-gray-950 dark:text-white dark:placeholder-gray-600"
+              />
+              <button
+                onClick={handleAddConversion}
+                disabled={convLoading || !newConvEventId.trim() || !newConvLabel.trim()}
+                className="w-full rounded-lg bg-emerald-600 py-2 text-xs font-bold text-white hover:bg-emerald-500 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {convLoading ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+                Adicionar Conversão
+              </button>
             </div>
           </div>
         )}

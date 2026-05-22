@@ -1,6 +1,7 @@
 import clientRepository from '../repositories/clientRepository.js';
 import adRepository from '../repositories/adRepository.js';
 import type { UpsertInsightData } from '../repositories/adRepository.js';
+import customConversionRepository from '../repositories/customConversionRepository.js';
 import { fetchAllInsights, fetchAdStatus, fetchCampaignStatus, validateAccount } from '../integrations/metaApi.js';
 import { splitDates } from '../utils/dateUtils.js';
 import { resolveToken } from '../utils/tokenUtils.js';
@@ -21,7 +22,7 @@ class SyncService {
   private buildInsightData(
     item: MetaInsight,
     actId: string,
-    customEventId: string | null,
+    customEventIds: string[],
     previewLink: string,
     adStatus: string,
     campaignStatus: string,
@@ -32,8 +33,14 @@ class SyncService {
 
     const spend = parseFloat(item.spend || '0');
     const purchaseVal = getVal('purchase');
-    const customConvCount = customEventId ? getQty(customEventId) : 0;
-    const customConvValue = customEventId ? getVal(customEventId) : 0;
+
+    let customConvCount = 0;
+    let customConvValue = 0;
+    for (const eid of customEventIds) {
+      customConvCount += getQty(eid);
+      customConvValue += getVal(eid);
+    }
+
     const totalConvValue = purchaseVal + customConvValue;
     const roas = spend > 0 ? totalConvValue / spend : 0;
 
@@ -107,6 +114,13 @@ class SyncService {
     this.previewCache.clear();
     this.campaignStatusCache.clear();
 
+    const customConversions = await customConversionRepository.findByClient(actId);
+    const customEventIds = [
+      ...(client.customEventId ? [client.customEventId] : []),
+      ...customConversions.map((c) => c.customEventId),
+    ];
+    const uniqueCustomEventIds = [...new Set(customEventIds)];
+
     let totalRecords = 0;
     let totalErrors = 0;
     const details: string[] = [];
@@ -158,7 +172,7 @@ class SyncService {
         const allData = insights.map((item) => {
           const cached = this.previewCache.get(item.ad_id) || { previewLink: '', adStatus: 'UNKNOWN', campaignId: '' };
           const campaignStatus = this.campaignStatusCache.get(cached.campaignId || item.campaign_id) || 'UNKNOWN';
-          return this.buildInsightData(item, actId, client.customEventId, cached.previewLink, cached.adStatus, campaignStatus);
+          return this.buildInsightData(item, actId, uniqueCustomEventIds, cached.previewLink, cached.adStatus, campaignStatus);
         });
 
         try {
@@ -171,6 +185,44 @@ class SyncService {
           totalErrors++;
           syncProgress.send({ type: 'error', message: `   [ERROR] Erro ao salvar lote: ${msg}`, step: 'main' });
           details.push(`${chunk.start} → ${chunk.end}: FALHA - ${msg}`);
+        }
+
+        if (customConversions.length > 0) {
+          try {
+            const convRecords: {
+              date: Date;
+              clientId: string;
+              adId: string;
+              customEventId: string;
+              count: number;
+              value: number;
+            }[] = [];
+
+            for (const item of insights) {
+              for (const conv of customConversions) {
+                const qty = parseInt(item.actions?.find((a) => a.action_type === conv.customEventId)?.value || '0');
+                const val = parseFloat(item.action_values?.find((a) => a.action_type === conv.customEventId)?.value || '0');
+                if (qty > 0 || val > 0) {
+                  convRecords.push({
+                    date: new Date(item.date_start),
+                    clientId: actId,
+                    adId: item.ad_id,
+                    customEventId: conv.customEventId,
+                    count: qty,
+                    value: val,
+                  });
+                }
+              }
+            }
+
+            if (convRecords.length > 0) {
+              await customConversionRepository.batchUpsertAdConversions(convRecords);
+              syncProgress.send({ type: 'log', message: `   [CONV] ${convRecords.length} registros de conversão customizada`, step: 'main' });
+            }
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            syncProgress.send({ type: 'error', message: `   [CONV] Erro ao salvar conversões: ${msg}`, step: 'main' });
+          }
         }
       } catch (err: any) {
         const metaError = err?.response?.data?.error?.message;

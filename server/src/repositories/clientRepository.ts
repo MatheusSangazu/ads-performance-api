@@ -10,7 +10,7 @@ class ClientRepository {
     actId: string;
     token: string;
     customEventId?: string;
-    isEcommerce: boolean;
+    clientType: string;
   }) {
     return prisma.client.upsert({
       where: { actId: data.actId },
@@ -18,14 +18,14 @@ class ClientRepository {
         clientName: data.name,
         accessToken: data.token,
         customEventId: data.customEventId || null,
-        isEcommerce: data.isEcommerce,
+        clientType: data.clientType as any,
       },
       create: {
         clientName: data.name,
         actId: data.actId,
         accessToken: data.token,
         customEventId: data.customEventId || null,
-        isEcommerce: data.isEcommerce,
+        clientType: data.clientType as any,
       },
     });
   }
@@ -36,6 +36,11 @@ class ClientRepository {
         clientName: true,
         actId: true,
         customEventId: true,
+        clientType: true,
+        isBoleto: true,
+        balanceThreshold: true,
+        currentBalance: true,
+        balanceUpdatedAt: true,
       },
     });
   }
@@ -44,6 +49,13 @@ class ClientRepository {
     return prisma.client.update({
       where: { actId },
       data: { accessToken: token },
+    });
+  }
+
+  public async updateType(actId: string, clientType: string) {
+    return prisma.client.update({
+      where: { actId },
+      data: { clientType: clientType as any },
     });
   }
 

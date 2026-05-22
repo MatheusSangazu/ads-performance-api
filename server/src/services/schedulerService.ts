@@ -6,6 +6,8 @@ import settingsRepository from '../repositories/settingsRepository.js';
 import summaryService from './summaryService.js';
 import healthCheckService from './healthCheckService.js';
 import managerRepository from '../repositories/managerRepository.js';
+import balanceService from './balanceService.js';
+import evoService from './evoService.js';
 import prisma from '../config/db.js';
 
 const TZ = 'America/Sao_Paulo';
@@ -15,6 +17,7 @@ class SchedulerService {
   private healthTask: cron.ScheduledTask | null = null;
   private healthSummaryTask: cron.ScheduledTask | null = null;
   private weeklyTask: cron.ScheduledTask | null = null;
+  private balanceTask: cron.ScheduledTask | null = null;
 
   public start() {
     if (this.task) return;
@@ -36,7 +39,11 @@ class SchedulerService {
       await summaryService.sendWeeklySummaryToAllManagers();
     }, { timezone: TZ });
 
-    console.log('[SCHEDULER] Scheduler iniciado (America/Sao_Paulo): sync 02:00, health 08/12/18:00, resumo saúde 08:30, semanal seg 09:00');
+    this.balanceTask = cron.schedule('0 8,14 * * *', async () => {
+      await this.runBalanceCheck();
+    }, { timezone: TZ });
+
+    console.log('[SCHEDULER] Scheduler iniciado (America/Sao_Paulo): sync 02:00, health 08/12/18:00, resumo saúde 08:30, semanal seg 09:00, saldo boleto 08/14:00');
   }
 
   public stop() {
@@ -56,6 +63,10 @@ class SchedulerService {
       this.weeklyTask.stop();
       this.weeklyTask = null;
     }
+    if (this.balanceTask) {
+      this.balanceTask.stop();
+      this.balanceTask = null;
+    }
     console.log('[SCHEDULER] Scheduler parado.');
   }
 
@@ -64,7 +75,7 @@ class SchedulerService {
   }
 
   private async runScheduledHealthChecks(hour: string) {
-    console.log(`[SCHEDULER] Iniciando health checks agendados para as ${hour}:00...`);
+    console.log(`[SCHEDULER] Iniciando health checks + resumo para as ${hour}:00...`);
     
     const managers = await prisma.manager.findMany({
       where: {
@@ -78,6 +89,8 @@ class SchedulerService {
 
     for (const manager of managers) {
       const clientIds = await managerRepository.getClientIds(manager.id);
+      if (clientIds.length === 0) continue;
+
       for (const actId of clientIds) {
         const client = await prisma.client.findUnique({
           where: { actId },
@@ -86,14 +99,25 @@ class SchedulerService {
         if (!client?.accessToken) continue;
         await healthCheckService.updateClientHealth(actId, client.accessToken).catch(() => {});
       }
+
+      if (manager.phone) {
+        await healthCheckService.sendHealthSummary(manager.id, manager.phone, clientIds).catch((err) => {
+          console.error(`[SCHEDULER] Erro ao enviar resumo para ${manager.name}:`, err);
+        });
+      }
     }
   }
 
   private async runHealthSummary() {
-    console.log('[SCHEDULER] Enviando resumo de saúde via WhatsApp...');
+    console.log('[SCHEDULER] Enviando resumo de saúde para gestores sem healthCheckTimes...');
 
     const managers = await prisma.manager.findMany({
-      where: { active: true, whatsappNotify: true, phone: { not: null } },
+      where: {
+        active: true,
+        whatsappNotify: true,
+        phone: { not: null },
+        healthCheckTimes: { not: { contains: '08' } },
+      },
     });
 
     for (const manager of managers) {
@@ -164,6 +188,34 @@ class SchedulerService {
 
     console.log('[SCHEDULER] Iniciando auto-sync diário...');
     await this.syncAllClients();
+  }
+
+  private async runBalanceCheck() {
+    console.log('[SCHEDULER] Verificando saldo de contas boleto...');
+    const alerts = await balanceService.checkAllBoletoAccounts();
+
+    if (alerts.length === 0) return;
+
+    for (const alert of alerts) {
+      const managers = await managerRepository.findManagersForClient(alert.actId);
+      for (const manager of managers) {
+        if (!manager.phone || !manager.whatsappNotify) continue;
+
+        const text = [
+          '🔴 *Saldo Baixo - Conta Boleto*',
+          '',
+          `📱 Cliente: *${alert.clientName}*`,
+          `💰 Saldo atual: R$ ${alert.balance.toFixed(2)}`,
+          `⚠️ Limite configurado: R$ ${alert.threshold.toFixed(2)}`,
+          '',
+          '_Enviado por Growth Ads_',
+        ].join('\n');
+
+        await evoService.sendText(manager.phone, text).catch(() => {});
+      }
+    }
+
+    console.log(`[SCHEDULER] ${alerts.length} alerta(s) de saldo baixo enviado(s).`);
   }
 }
 

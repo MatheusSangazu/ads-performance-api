@@ -5,6 +5,7 @@ import { clientApi, syncApi, type DashboardMetrics, type Client } from '../lib/a
 import { useTheme } from '../contexts/ThemeContext';
 import DatePicker from '../components/DatePicker';
 import ClientSelector from '../components/ClientSelector';
+import GoalProjection from '../components/GoalProjection';
 
 const API_BASE = (import.meta.env.VITE_API_URL || '/api').replace(/\/api$/, '');
 
@@ -29,6 +30,7 @@ const METRIC_LABELS: Record<string, string> = {
   ctr: 'CTR',
   clicks: 'Cliques',
   impressions: 'Impressões',
+  reach: 'Alcance',
   purchases: 'Vendas',
   purchaseValue: 'Valor de Venda',
   purchase_value: 'Valor de Venda',
@@ -40,13 +42,18 @@ const METRIC_LABELS: Record<string, string> = {
 };
 
 const CURRENCY_METRICS = new Set(['spend', 'purchaseValue', 'totalConversionValue', 'purchase_value', 'cpl', 'avgCpl', 'avgCpmsg', 'cpmsg']);
+const PERCENTAGE_METRICS = new Set(['ctr']);
+const RATIO_METRICS = new Set(['roas']);
 
 function isCurrencyMetric(metric: string) {
   return CURRENCY_METRICS.has(metric);
 }
 
 function fmtBreakdownValue(metric: string, value: number) {
-  return isCurrencyMetric(metric) ? fmtCurrency(value) : fmtNumber(value);
+  if (isCurrencyMetric(metric)) return fmtCurrency(value);
+  if (PERCENTAGE_METRICS.has(metric)) return value.toFixed(2) + '%';
+  if (RATIO_METRICS.has(metric)) return value.toFixed(2) + 'x';
+  return fmtNumber(value);
 }
 
 export default function Dashboard() {
@@ -297,6 +304,12 @@ export default function Dashboard() {
               );
             })}
           </div>
+        </section>
+      )}
+
+      {selectedClient && (
+        <section>
+          <GoalProjection actId={selectedClient} />
         </section>
       )}
 
@@ -553,11 +566,16 @@ export default function Dashboard() {
             >
               <option value="spend">Investimento</option>
               <option value="leads">Leads</option>
+              <option value="cpl">CPL</option>
               <option value="messaging">Mensagens</option>
+              <option value="cpmsg">Custo por Msg</option>
               <option value="purchases">Vendas</option>
               <option value="purchaseValue">Valor de Venda</option>
               <option value="totalConversionValue">Valor de Conversão</option>
+              <option value="roas">ROAS</option>
+              <option value="ctr">CTR</option>
               <option value="linkClicks">Cliques no Link</option>
+              <option value="reach">Alcance</option>
               <option value="impressions">Impressões</option>
             </select>
           </div>

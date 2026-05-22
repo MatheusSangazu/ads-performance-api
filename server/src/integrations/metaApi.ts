@@ -496,3 +496,33 @@ export async function fetchAdMedia(
 
   return results;
 }
+
+export interface AccountBalance {
+  spendCap: number | null;
+  balance: number | null;
+  currency: string;
+}
+
+export async function fetchAccountBalance(
+  actId: string,
+  accessToken: string,
+): Promise<AccountBalance | null> {
+  try {
+    const res = await retry(() =>
+      axios.get(`${META_API_BASE}/${actId}`, {
+        params: {
+          access_token: accessToken,
+          fields: 'spend_cap,balance,currency',
+        },
+      }),
+    );
+    return {
+      spendCap: res.data.spend_cap != null ? Number(res.data.spend_cap) : null,
+      balance: res.data.balance != null ? Number(res.data.balance) : null,
+      currency: res.data.currency || 'BRL',
+    };
+  } catch (err: any) {
+    console.error(`[BALANCE] Erro ao buscar saldo de ${actId}:`, err?.response?.data?.error?.message || err.message);
+    return null;
+  }
+}

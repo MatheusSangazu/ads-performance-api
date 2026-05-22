@@ -35,17 +35,17 @@ router.post('/sync-all', authMiddleware, adminOnly, (req, res, next) => {
   settingsController.triggerSyncAll(req, res).catch(next);
 });
 
-router.get('/whatsapp/status', authMiddleware, adminOnly, async (_req, res) => {
+router.get('/whatsapp/status', authMiddleware, async (_req, res) => {
   const status = await evoService.getConnectionState();
   res.json(status);
 });
 
-router.get('/whatsapp/qrcode', authMiddleware, adminOnly, async (_req, res) => {
+router.get('/whatsapp/qrcode', authMiddleware, async (_req, res) => {
   const qr = await evoService.getQRCode();
   res.json(qr);
 });
 
-router.post('/whatsapp/logout', authMiddleware, adminOnly, async (_req, res) => {
+router.post('/whatsapp/logout', authMiddleware, async (_req, res) => {
   const ok = await evoService.logout();
   res.json({ success: ok });
 });
