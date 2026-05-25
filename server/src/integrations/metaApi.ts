@@ -512,13 +512,28 @@ export async function fetchAccountBalance(
       axios.get(`${META_API_BASE}/${actId}`, {
         params: {
           access_token: accessToken,
-          fields: 'spend_cap,balance,currency',
+          fields: 'spend_cap,balance,currency,amount_spent',
         },
       }),
     );
+
+    const rawBalance = res.data.balance != null ? Number(res.data.balance) : null;
+    const amountSpent = res.data.amount_spent != null ? Number(res.data.amount_spent) : 0;
+    const spendCap = res.data.spend_cap != null ? Number(res.data.spend_cap) : null;
+
+    let effectiveBalance: number | null = rawBalance;
+
+    if (spendCap !== null && amountSpent > 0) {
+      effectiveBalance = spendCap - amountSpent;
+    } else if (rawBalance !== null && amountSpent > 0) {
+      effectiveBalance = rawBalance - amountSpent;
+    }
+
+    console.log(`[BALANCE] ${actId}: spend_cap=${spendCap}, balance=${rawBalance}, amount_spent=${amountSpent} → available=${effectiveBalance}`);
+
     return {
-      spendCap: res.data.spend_cap != null ? Number(res.data.spend_cap) : null,
-      balance: res.data.balance != null ? Number(res.data.balance) : null,
+      spendCap,
+      balance: effectiveBalance,
       currency: res.data.currency || 'BRL',
     };
   } catch (err: any) {
