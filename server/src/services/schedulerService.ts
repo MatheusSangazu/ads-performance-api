@@ -94,10 +94,18 @@ class SchedulerService {
       for (const actId of clientIds) {
         const client = await prisma.client.findUnique({
           where: { actId },
-          select: { accessToken: true },
+          select: { clientName: true, accessToken: true },
         });
-        if (!client?.accessToken) continue;
-        await healthCheckService.updateClientHealth(actId, client.accessToken).catch(() => {});
+        if (!client) {
+          console.warn(`[SCHEDULER] Cliente ${actId} não encontrado no banco`);
+          continue;
+        }
+        const result = await healthCheckService.updateClientHealth(actId, client.accessToken || undefined).catch((err) => {
+          console.error(`[SCHEDULER] Erro health check ${client.clientName} (${actId}):`, err);
+        });
+        if (!result) {
+          console.warn(`[SCHEDULER] Health check falhou para ${client.clientName} (${actId}) — token configurado? ${!!client.accessToken}`);
+        }
       }
 
       if (manager.phone) {

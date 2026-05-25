@@ -6,6 +6,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import DatePicker from '../components/DatePicker';
 import ClientSelector from '../components/ClientSelector';
 import GoalProjection from '../components/GoalProjection';
+import HelpTooltip from '../components/HelpTooltip';
 
 const API_BASE = (import.meta.env.VITE_API_URL || '/api').replace(/\/api$/, '');
 
@@ -139,15 +140,15 @@ export default function Dashboard() {
   }
 
   const cards = [
-    { icon: DollarSign, label: 'Investimento', value: data.totalSpend, fmt: fmtCurrency, color: 'text-yellow-600 dark:text-yellow-400', bgColor: 'bg-yellow-600 dark:bg-yellow-400' },
-    { icon: Target, label: 'Leads', value: data.totalLeads, fmt: fmtNumber, color: 'text-green-600 dark:text-green-400', bgColor: 'bg-green-600 dark:bg-green-400' },
-    { icon: DollarSign, label: 'CPL Médio', value: data.avgCpl, fmt: fmtCurrency, color: 'text-orange-600 dark:text-orange-400', bgColor: 'bg-orange-600 dark:bg-orange-400' },
-    { icon: TrendingUp, label: 'ROAS Médio', value: data.avgRoas, fmt: (v: number) => v.toFixed(2) + 'x', color: 'text-purple-600 dark:text-purple-400', bgColor: 'bg-purple-600 dark:bg-purple-400' },
-    { icon: MessageCircle, label: 'Mensagens', value: data.totalMessaging, fmt: fmtNumber, color: 'text-blue-600 dark:text-blue-400', bgColor: 'bg-blue-600 dark:bg-blue-400' },
-    { icon: DollarSign, label: 'CPMsg Médio', value: data.avgCpmsg, fmt: fmtCurrency, color: 'text-indigo-600 dark:text-indigo-400', bgColor: 'bg-indigo-600 dark:bg-indigo-400' },
-    { icon: Heart, label: 'Curtidas na Página', value: data.totalPageLikes, fmt: fmtNumber, color: 'text-rose-600 dark:text-rose-400', bgColor: 'bg-rose-600 dark:bg-rose-400' },
-    { icon: DollarSign, label: 'Valor de Conversão', value: data.totalConversionValue, fmt: fmtCurrency, color: 'text-emerald-600 dark:text-emerald-400', bgColor: 'bg-emerald-600 dark:bg-emerald-400' },
-    { icon: MousePointerClick, label: 'Cliques', value: data.totalClicks, fmt: fmtNumber, color: 'text-cyan-600 dark:text-cyan-400', bgColor: 'bg-cyan-600 dark:bg-cyan-400' },
+    { icon: DollarSign, label: 'Investimento', value: data.totalSpend, fmt: fmtCurrency, color: 'text-yellow-600 dark:text-yellow-400', bgColor: 'bg-yellow-600 dark:bg-yellow-400', tooltip: 'Valor total investido em anúncios no período selecionado. Inclui todo o gasto com campanhas ativas e pausadas.' },
+    { icon: Target, label: 'Leads', value: data.totalLeads, fmt: fmtNumber, color: 'text-green-600 dark:text-green-400', bgColor: 'bg-green-600 dark:bg-green-400', tooltip: 'Total de leads captados no período. Inclui preenchimentos de formulário e cadastros gerados pelos anúncios.' },
+    { icon: DollarSign, label: 'CPL Médio', value: data.avgCpl, fmt: fmtCurrency, color: 'text-orange-600 dark:text-orange-400', bgColor: 'bg-orange-600 dark:bg-orange-400', tooltip: 'Custo Por Lead. Valor médio gasto para captar cada lead. Quanto menor, melhor. Calculado como: Investimento ÷ Leads.' },
+    { icon: TrendingUp, label: 'ROAS Médio', value: data.avgRoas, fmt: (v: number) => v.toFixed(2) + 'x', color: 'text-purple-600 dark:text-purple-400', bgColor: 'bg-purple-600 dark:bg-purple-400', tooltip: 'Return On Ad Spend. Retorno financeiro para cada R$ 1 investido. Ex: ROAS 3x = para cada R$ 1, retornaram R$ 3. Calculado como: Valor de Conversão ÷ Investimento.' },
+    { icon: MessageCircle, label: 'Mensagens', value: data.totalMessaging, fmt: fmtNumber, color: 'text-blue-600 dark:text-blue-400', bgColor: 'bg-blue-600 dark:bg-blue-400', tooltip: 'Total de conversas iniciadas via WhatsApp/Messenger geradas pelos anúncios no período.' },
+    { icon: DollarSign, label: 'CPMsg Médio', value: data.avgCpmsg, fmt: fmtCurrency, color: 'text-indigo-600 dark:text-indigo-400', bgColor: 'bg-indigo-600 dark:bg-indigo-400', tooltip: 'Custo Por Mensagem. Valor médio gasto para iniciar cada conversa. Quanto menor, melhor. Calculado como: Investimento ÷ Mensagens.' },
+    { icon: Heart, label: 'Curtidas na Página', value: data.totalPageLikes, fmt: fmtNumber, color: 'text-rose-600 dark:text-rose-400', bgColor: 'bg-rose-600 dark:bg-rose-400', tooltip: 'Total de curtidas na página do Facebook geradas pelos anúncios no período selecionado.' },
+    { icon: DollarSign, label: 'Valor de Conversão', value: data.totalConversionValue, fmt: fmtCurrency, color: 'text-emerald-600 dark:text-emerald-400', bgColor: 'bg-emerald-600 dark:bg-emerald-400', tooltip: 'Soma de todas as receitas geradas pelos anúncios. Inclui vendas (purchase) + conversões personalizadas configuradas.' },
+    { icon: MousePointerClick, label: 'Cliques', value: data.totalClicks, fmt: fmtNumber, color: 'text-cyan-600 dark:text-cyan-400', bgColor: 'bg-cyan-600 dark:bg-cyan-400', tooltip: 'Total de cliques nos links dos anúncios no período. Representa quantas vezes as pessoas clicaram para acessar o destino do anúncio.' },
   ];
 
   const getGoalCurrentValue = (metric: string): number => {
@@ -236,9 +237,9 @@ export default function Dashboard() {
                 <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-gray-50 dark:bg-gray-950 border border-gray-100 dark:border-gray-800 group-hover:scale-110 transition-transform">
                   <card.icon size={16} className={`sm:!w-[20px] sm:!h-[20px] ${card.color}`} />
                 </div>
-                <div className="hidden sm:flex items-center gap-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                  KPI <span title={`Métrica de ${card.label}`} className="cursor-help"><Info size={12} /></span>
-                </div>
+                <HelpTooltip title={card.label}>
+                  <p>{card.tooltip}</p>
+                </HelpTooltip>
               </div>
               <div>
                 <p className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider mb-0.5 sm:mb-1">{card.label}</p>
@@ -409,13 +410,27 @@ export default function Dashboard() {
             <thead>
               <tr className="bg-gray-50/30 text-gray-400 uppercase text-[10px] font-black tracking-widest dark:bg-gray-950/30">
                 <th className="px-4 sm:px-8 py-4 sm:py-5 border-b border-gray-100 dark:border-gray-800">Cliente</th>
-                <th className="px-3 sm:px-6 py-4 sm:py-5 border-b border-gray-100 dark:border-gray-800 text-right">Investimento</th>
-                <th className="px-3 sm:px-6 py-4 sm:py-5 border-b border-gray-100 dark:border-gray-800 text-right">Leads</th>
-                <th className="hidden sm:table-cell px-3 sm:px-6 py-4 sm:py-5 border-b border-gray-100 dark:border-gray-800 text-right">Msgs</th>
-                <th className="hidden sm:table-cell px-3 sm:px-6 py-4 sm:py-5 border-b border-gray-100 dark:border-gray-800 text-right">CPMsg</th>
-                <th className="px-3 sm:px-6 py-4 sm:py-5 border-b border-gray-100 dark:border-gray-800 text-right">CPL</th>
-                <th className="hidden md:table-cell px-3 sm:px-6 py-4 sm:py-5 border-b border-gray-100 dark:border-gray-800 text-right">Conversão</th>
-                <th className="px-4 sm:px-8 py-4 sm:py-5 border-b border-gray-100 dark:border-gray-800 text-right">ROAS</th>
+                <th className="px-3 sm:px-6 py-4 sm:py-5 border-b border-gray-100 dark:border-gray-800 text-right">
+                  <span className="inline-flex items-center gap-1">Investimento <HelpTooltip title="Investimento">Valor total gasto em anúncios no período.</HelpTooltip></span>
+                </th>
+                <th className="px-3 sm:px-6 py-4 sm:py-5 border-b border-gray-100 dark:border-gray-800 text-right">
+                  <span className="inline-flex items-center gap-1">Leads <HelpTooltip title="Leads">Total de leads captados.</HelpTooltip></span>
+                </th>
+                <th className="hidden sm:table-cell px-3 sm:px-6 py-4 sm:py-5 border-b border-gray-100 dark:border-gray-800 text-right">
+                  <span className="inline-flex items-center gap-1">Msgs <HelpTooltip title="Mensagens">Conversas iniciadas via WhatsApp/Messenger.</HelpTooltip></span>
+                </th>
+                <th className="hidden sm:table-cell px-3 sm:px-6 py-4 sm:py-5 border-b border-gray-100 dark:border-gray-800 text-right">
+                  <span className="inline-flex items-center gap-1">CPMsg <HelpTooltip title="CPMsg">Custo Por Mensagem. Investimento ÷ Mensagens. Quanto menor, melhor.</HelpTooltip></span>
+                </th>
+                <th className="px-3 sm:px-6 py-4 sm:py-5 border-b border-gray-100 dark:border-gray-800 text-right">
+                  <span className="inline-flex items-center gap-1">CPL <HelpTooltip title="CPL">Custo Por Lead. Investimento ÷ Leads. Quanto menor, melhor.</HelpTooltip></span>
+                </th>
+                <th className="hidden md:table-cell px-3 sm:px-6 py-4 sm:py-5 border-b border-gray-100 dark:border-gray-800 text-right">
+                  <span className="inline-flex items-center gap-1">Conversão <HelpTooltip title="Valor de Conversão">Soma de vendas + conversões personalizadas.</HelpTooltip></span>
+                </th>
+                <th className="px-4 sm:px-8 py-4 sm:py-5 border-b border-gray-100 dark:border-gray-800 text-right">
+                  <span className="inline-flex items-center gap-1">ROAS <HelpTooltip title="ROAS">Return On Ad Spend. Valor de Conversão ÷ Investimento. Acima de 2x é bom.</HelpTooltip></span>
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">

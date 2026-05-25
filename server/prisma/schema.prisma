@@ -59,7 +59,7 @@ enum ClientType {
   ecommerce
   infoproduct
   messaging
-  local
+  delivery
 }
 
 enum AlertSeverity {

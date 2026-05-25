@@ -80,7 +80,7 @@ export interface Client {
   healthLastCheck: string | null;
   isBoleto: boolean;
   isEcommerce: boolean;
-  clientType: 'lead_gen' | 'ecommerce' | 'infoproduct' | 'messaging' | 'local';
+  clientType: 'lead_gen' | 'ecommerce' | 'infoproduct' | 'messaging' | 'delivery';
   balanceThreshold: number | null;
   currentBalance: number | null;
   balanceUpdatedAt: string | null;

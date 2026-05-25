@@ -9,7 +9,7 @@ const schema = z.object({
   act_id: z.string().min(1, 'Act ID é obrigatório'),
   access_token: z.string().min(1, 'Access Token é obrigatório'),
   custom_event_id: z.string().optional(),
-  client_type: z.enum(['lead_gen', 'ecommerce', 'infoproduct', 'messaging', 'local']).optional(),
+  client_type: z.enum(['lead_gen', 'ecommerce', 'infoproduct', 'messaging', 'delivery']).optional(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -118,7 +118,7 @@ export default function ClientForm({ onSubmit, onCancel }: ClientFormProps) {
                 <option value="ecommerce">🛒 E-commerce</option>
                 <option value="infoproduct">🎓 Infoproduto</option>
                 <option value="messaging">💬 Mensagens</option>
-                <option value="local">📍 Negócio Local</option>
+                <option value="delivery">🛵 Delivery</option>
               </select>
             </div>
           </div>

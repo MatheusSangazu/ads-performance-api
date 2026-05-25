@@ -121,8 +121,15 @@ class SyncService {
     ];
     const uniqueCustomEventIds = [...new Set(customEventIds)];
 
+    if (uniqueCustomEventIds.length > 0) {
+      syncProgress.send({ type: 'log', message: `   [CONV] ${uniqueCustomEventIds.length} conversão(ões) customizada(s) configurada(s): ${uniqueCustomEventIds.join(', ')}`, step: 'main' });
+    } else {
+      syncProgress.send({ type: 'log', message: `   [CONV] Nenhuma conversão customizada configurada para este cliente`, step: 'main' });
+    }
+
     let totalRecords = 0;
     let totalErrors = 0;
+    let totalConvRecords = 0;
     const details: string[] = [];
 
     for (let i = 0; i < dateChunks.length; i++) {
@@ -187,7 +194,7 @@ class SyncService {
           details.push(`${chunk.start} → ${chunk.end}: FALHA - ${msg}`);
         }
 
-        if (customConversions.length > 0) {
+        if (uniqueCustomEventIds.length > 0) {
           try {
             const convRecords: {
               date: Date;
@@ -199,15 +206,15 @@ class SyncService {
             }[] = [];
 
             for (const item of insights) {
-              for (const conv of customConversions) {
-                const qty = parseInt(item.actions?.find((a) => a.action_type === conv.customEventId)?.value || '0');
-                const val = parseFloat(item.action_values?.find((a) => a.action_type === conv.customEventId)?.value || '0');
+              for (const eid of uniqueCustomEventIds) {
+                const qty = parseInt(item.actions?.find((a) => a.action_type === eid)?.value || '0');
+                const val = parseFloat(item.action_values?.find((a) => a.action_type === eid)?.value || '0');
                 if (qty > 0 || val > 0) {
                   convRecords.push({
                     date: new Date(item.date_start),
                     clientId: actId,
                     adId: item.ad_id,
-                    customEventId: conv.customEventId,
+                    customEventId: eid,
                     count: qty,
                     value: val,
                   });
@@ -217,7 +224,10 @@ class SyncService {
 
             if (convRecords.length > 0) {
               await customConversionRepository.batchUpsertAdConversions(convRecords);
+              totalConvRecords += convRecords.length;
               syncProgress.send({ type: 'log', message: `   [CONV] ${convRecords.length} registros de conversão customizada`, step: 'main' });
+            } else {
+              syncProgress.send({ type: 'log', message: `   [CONV] Nenhum dado de conversão customizada encontrado neste chunk`, step: 'main' });
             }
           } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
@@ -238,7 +248,7 @@ class SyncService {
 
     syncProgress.send({
       type: 'done',
-      message: `[DONE] Sync concluído: ${totalRecords} registros, ${totalErrors} erros`,
+      message: `[DONE] Sync concluído: ${totalRecords} registros, ${totalConvRecords} conversões customizadas, ${totalErrors} erros`,
       step: 'main',
       progress: 100,
       records: totalRecords,

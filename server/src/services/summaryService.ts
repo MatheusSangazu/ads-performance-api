@@ -35,7 +35,7 @@ class SummaryService {
     ];
 
     performance.clientMetrics.slice(0, 5).forEach((m: any) => {
-      lines.push(`- ${m.clientName}: R$ ${m.spend.toFixed(2)} | ${m.leads} leads | CPL R$ ${m.leads > 0 ? (m.spend/m.leads).toFixed(2) : '0.00'}`);
+      lines.push(`- ${m.name}: R$ ${m.spend.toFixed(2)} | ${m.leads} leads | CPL R$ ${m.leads > 0 ? (m.spend/m.leads).toFixed(2) : '0.00'}`);
     });
 
     if (performance.clientMetrics.length > 5) {
@@ -79,18 +79,18 @@ class SummaryService {
     const isEcom = client.clientType === 'ecommerce';
     const isInfo = client.clientType === 'infoproduct';
     const isMsg = client.clientType === 'messaging';
-    const isLocal = client.clientType === 'local';
+    const isDelivery = client.clientType === 'delivery';
 
     const typeLabels: Record<string, string> = {
       lead_gen: '📋 Geração de Leads',
       ecommerce: '🛒 E-commerce',
       infoproduct: '🎓 Infoproduto',
       messaging: '💬 Mensagens',
-      local: '📍 Negócio Local',
+      delivery: '🛵 Delivery',
     };
 
     const clientTypeLabel = typeLabels[client.clientType] || '📋 Geração de Leads';
-    const showsPurchases = isEcom || isInfo;
+    const showsPurchases = isEcom || isInfo || isDelivery;
     const showsLeads = !isEcom && !isMsg;
 
     const spend = m.spend;
@@ -181,7 +181,7 @@ class SummaryService {
         }
       }
     } else {
-      const sectionTitle = isLocal ? '📍 *Negócio Local*' : '📋 *Geração de Leads*';
+      const sectionTitle = '📋 *Geração de Leads*';
       lines.push(
         '', '━━━━━━━━━━━━━━━━━━',
         sectionTitle,

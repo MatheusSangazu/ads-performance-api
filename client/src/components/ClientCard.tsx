@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
-import { Download, Key, Loader2, RefreshCw, Trash2, X, ShieldCheck, ShieldAlert, AlertCircle, Pencil, Wallet, Plus, Zap, MessageSquare } from 'lucide-react';
-import { clientApi, syncApi, type Client, type CustomConversion } from '../lib/api';
+import { useState, useEffect, useRef } from 'react';
+import { Download, Key, Loader2, RefreshCw, Trash2, X, ShieldCheck, ShieldAlert, AlertCircle, Pencil, Wallet, Plus, Zap, MessageSquare, CheckCircle } from 'lucide-react';
+import { clientApi, syncApi, createProgressStream, type Client, type CustomConversion } from '../lib/api';
 import BudgetCard from './BudgetCard';
 import GoalCard from './GoalCard';
 import HelpTooltip from './HelpTooltip';
@@ -29,6 +29,10 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
   const [editLoading, setEditLoading] = useState(false);
   const [newToken, setNewToken] = useState('');
   const [quickSyncing, setQuickSyncing] = useState(false);
+  const [syncProgressPct, setSyncProgressPct] = useState(0);
+  const [syncDone, setSyncDone] = useState(false);
+  const [syncRecordCount, setSyncRecordCount] = useState(0);
+  const closeStreamRef = useRef<(() => void) | null>(null);
   const [currentSpend, setCurrentSpend] = useState(0);
   const [currentMetrics, setCurrentMetrics] = useState<Record<string, number>>({});
   const [showBalance, setShowBalance] = useState(false);
@@ -41,7 +45,7 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
   const [newConvLabel, setNewConvLabel] = useState('');
   const [convLoading, setConvLoading] = useState(false);
   const [summarySending, setSummarySending] = useState(false);
-  const [clientType, setClientType] = useState<'lead_gen' | 'ecommerce' | 'infoproduct' | 'messaging' | 'local'>(client.clientType ?? 'lead_gen');
+  const [clientType, setClientType] = useState<'lead_gen' | 'ecommerce' | 'infoproduct' | 'messaging' | 'delivery'>(client.clientType ?? 'lead_gen');
 
   useEffect(() => {
     const fetchMetrics = async () => {
@@ -135,7 +139,7 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
   };
 
   const handleToggleType = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newType = e.target.value as 'lead_gen' | 'ecommerce' | 'infoproduct' | 'messaging' | 'local';
+    const newType = e.target.value as 'lead_gen' | 'ecommerce' | 'infoproduct' | 'messaging' | 'delivery';
     const prevType = clientType;
     setClientType(newType);
     try {
@@ -153,6 +157,20 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
 
   const handleQuickSync = async () => {
     setQuickSyncing(true);
+    setSyncProgressPct(0);
+    setSyncDone(false);
+    setSyncRecordCount(0);
+
+    if (closeStreamRef.current) closeStreamRef.current();
+    closeStreamRef.current = createProgressStream((event) => {
+      if (event.progress !== undefined) {
+        setSyncProgressPct(Math.min(event.progress, 99));
+      }
+      if (event.type === 'done') {
+        setSyncRecordCount((prev) => prev + (event.records || 0));
+      }
+    });
+
     try {
       const today = getToday();
       const res = await syncApi.manual({
@@ -169,11 +187,24 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
       const breakdownRecords = breakdownRes
         ? Object.values(breakdownRes.data).reduce((sum: number, r: any) => sum + (r.records || 0), 0)
         : 0;
+      setSyncProgressPct(100);
+      setSyncDone(true);
+      setSyncRecordCount(mainRecords + breakdownRecords);
       onSuccess(`${client.clientName}: ${mainRecords + breakdownRecords} registros sincronizados (hoje).`);
+      setTimeout(() => {
+        setSyncDone(false);
+        setSyncProgressPct(0);
+      }, 3000);
     } catch {
       onError(`Erro ao sincronizar ${client.clientName}.`);
+      setSyncProgressPct(0);
+      setSyncDone(false);
     } finally {
       setQuickSyncing(false);
+      if (closeStreamRef.current) {
+        closeStreamRef.current();
+        closeStreamRef.current = null;
+      }
     }
   };
 
@@ -322,7 +353,7 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
               <option value="ecommerce">🛒 E-commerce</option>
               <option value="infoproduct">🎓 Infoproduto</option>
               <option value="messaging">💬 Mensagens</option>
-              <option value="local">📍 Local</option>
+              <option value="delivery">🛵 Delivery</option>
             </select>
             {renderHealthBadge()}
             {renderBalanceBadge()}
@@ -618,6 +649,33 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
           </div>
         )}
       </div>
+
+      {(quickSyncing || syncDone) && (
+        <div className={`fixed bottom-4 right-4 z-50 flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-2xl transition-all duration-300 dark:border-gray-700 dark:bg-gray-900 ${
+          syncDone ? 'animate-in fade-in slide-in-from-bottom-2' : ''
+        }`}>
+          {syncDone ? (
+            <CheckCircle size={18} className="text-green-500 dark:text-green-400" />
+          ) : (
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
+          )}
+          <div className="flex flex-col gap-1">
+            <span className="text-xs font-bold text-gray-900 dark:text-white">
+              {syncDone
+                ? `${client.clientName}: ${syncRecordCount} registros`
+                : `${client.clientName}: ${syncProgressPct}%`}
+            </span>
+            <div className="h-1.5 w-32 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${
+                  syncDone ? 'bg-green-500' : 'bg-blue-500'
+                }`}
+                style={{ width: `${syncDone ? 100 : syncProgressPct}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

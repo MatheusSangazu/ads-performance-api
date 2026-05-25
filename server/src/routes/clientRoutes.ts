@@ -20,7 +20,7 @@ const createClientSchema = z.object({
   act_id: z.string().min(1, 'Act ID é obrigatório'),
   access_token: z.string().min(1, 'Access Token é obrigatório'),
   custom_event_id: z.string().optional(),
-  client_type: z.enum(['lead_gen', 'ecommerce', 'infoproduct', 'messaging', 'local']).optional(),
+  client_type: z.enum(['lead_gen', 'ecommerce', 'infoproduct', 'messaging', 'delivery']).optional(),
 });
 
 const updateTokenSchema = z.object({
@@ -34,7 +34,7 @@ const updateClientSchema = z.object({
 });
 
 const updateClientTypeSchema = z.object({
-  clientType: z.enum(['lead_gen', 'ecommerce', 'infoproduct', 'messaging', 'local']),
+  clientType: z.enum(['lead_gen', 'ecommerce', 'infoproduct', 'messaging', 'delivery']),
 });
 
 const setBudgetSchema = z.object({

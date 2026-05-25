@@ -26,7 +26,7 @@ class ClientService {
     await clientRepository.updateType(actId, clientType);
     const labels: Record<string, string> = {
       lead_gen: 'Geração de Leads', ecommerce: 'E-commerce',
-      infoproduct: 'Infoproduto', messaging: 'Mensagens', local: 'Negócio Local',
+      infoproduct: 'Infoproduto', messaging: 'Mensagens', delivery: 'Delivery',
     };
     return { success: true, message: `Tipo alterado para ${labels[clientType] || clientType}` };
   }

@@ -4,27 +4,31 @@ import alertService from './alertService.js';
 import evoService from './evoService.js';
 
 class HealthCheckService {
-  private readonly baseUrl = 'https://graph.facebook.com/v19.0';
+  private readonly baseUrl = 'https://graph.facebook.com/v25.0';
 
   public async checkAccountHealth(actId: string, customToken?: string): Promise<{
     accountStatus: number;
     disableReason: number;
   } | null> {
     try {
-      // Prioritize custom client token, fallback to global token
       const token = customToken || (await this.getGlobalToken());
-      if (!token) return null;
+      if (!token) {
+        console.warn(`[HealthCheck] Sem token para ${actId} (nem custom nem global)`);
+        return null;
+      }
 
       const response = await fetch(
         `${this.baseUrl}/${actId}?fields=account_status,disable_reason&access_token=${token}`
       );
 
       if (!response.ok) {
-        console.error(`[HealthCheck] Error fetching health for ${actId}:`, await response.text());
+        const body = await response.text();
+        console.error(`[HealthCheck] API error ${response.status} for ${actId}: ${body}`);
         return null;
       }
 
       const data = await response.json();
+      console.log(`[HealthCheck] ${actId} → status=${data.account_status}, disable_reason=${data.disable_reason || 0}`);
       return {
         accountStatus: data.account_status,
         disableReason: data.disable_reason || 0,
@@ -94,32 +98,48 @@ class HealthCheckService {
     for (const actId of clientIds) {
       const client = await prisma.client.findUnique({
         where: { actId },
-        select: { clientName: true, accountStatus: true, accessToken: true },
+        select: {
+          clientName: true,
+          accountStatus: true,
+          accessToken: true,
+          healthLastCheck: true,
+        },
       });
 
       if (!client) continue;
 
-      const health = await this.checkAccountHealth(actId, client.accessToken);
-      if (health) {
-        await prisma.client.update({
-          where: { actId },
-          data: {
-            accountStatus: health.accountStatus,
-            disableReason: health.disableReason,
-            healthLastCheck: new Date(),
-          },
-        });
+      const staleThreshold = new Date(Date.now() - 6 * 60 * 60 * 1000);
+      const needsLiveCheck = !client.accountStatus || !client.healthLastCheck || client.healthLastCheck < staleThreshold;
 
-        if (health.accountStatus !== 1) {
-          const statusLabel = this.getStatusLabel(health.accountStatus);
-          const reasonLabel = this.getDisableReasonLabel(health.disableReason);
-          await alertService.onAccountIssue(actId, statusLabel, reasonLabel).catch(() => {});
+      if (needsLiveCheck && client.accessToken) {
+        const health = await this.checkAccountHealth(actId, client.accessToken);
+        if (health) {
+          await prisma.client.update({
+            where: { actId },
+            data: {
+              accountStatus: health.accountStatus,
+              disableReason: health.disableReason,
+              healthLastCheck: new Date(),
+            },
+          });
+
+          if (health.accountStatus !== 1) {
+            const statusLabel = this.getStatusLabel(health.accountStatus);
+            const reasonLabel = this.getDisableReasonLabel(health.disableReason);
+            await alertService.onAccountIssue(actId, statusLabel, reasonLabel).catch(() => {});
+          }
+
+          const label = this.getStatusLabel(health.accountStatus);
+          results.push({ name: client.clientName, status: label, ok: health.accountStatus === 1 });
+          continue;
         }
+      }
 
-        const label = this.getStatusLabel(health.accountStatus);
-        results.push({ name: client.clientName, status: label, ok: health.accountStatus === 1 });
+      if (client.accountStatus !== null && client.accountStatus !== undefined) {
+        const label = this.getStatusLabel(client.accountStatus);
+        results.push({ name: client.clientName, status: label, ok: client.accountStatus === 1 });
       } else {
-        results.push({ name: client.clientName, status: 'Não verificado', ok: false });
+        results.push({ name: client.clientName, status: '⚠️ Sem token configurado', ok: false });
       }
     }
 
