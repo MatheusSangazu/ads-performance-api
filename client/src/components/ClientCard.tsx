@@ -67,13 +67,22 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
         if (data.clientMetrics && data.clientMetrics.length > 0) {
           const clientMetric = data.clientMetrics[0];
           setCurrentSpend(clientMetric.spend);
+          const spend = clientMetric.spend || 0;
+          const leads = clientMetric.leads || 0;
+          const clicks = data.totalClicks || 0;
+          const impressions = data.totalImpressions || 0;
+          const messaging = clientMetric.messaging || 0;
           setCurrentMetrics({
-            leads: clientMetric.leads,
-            roas: clientMetric.roas,
-            clicks: data.totalClicks,
-            impressions: data.totalImpressions,
-            purchases: data.totalPurchases,
-            purchase_value: data.totalPurchaseValue,
+            leads,
+            roas: clientMetric.roas || 0,
+            cpl: leads > 0 ? spend / leads : 0,
+            ctr: impressions > 0 ? (clicks / impressions) * 100 : 0,
+            messaging,
+            cpmsg: messaging > 0 ? spend / messaging : 0,
+            clicks,
+            impressions,
+            purchases: data.totalPurchases || 0,
+            purchase_value: data.totalPurchaseValue || 0,
           });
         }
       } catch {
