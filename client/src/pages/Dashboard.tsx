@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Users, DollarSign, Target, TrendingUp, MousePointerClick, Eye, BarChart3, Loader2, Calendar as CalendarIcon, Filter, CheckCircle2, ExternalLink, MapPin, Monitor, UserCircle, X, Play, MessageCircle, Info, ArrowUpRight, ArrowDownRight, Heart } from 'lucide-react';
+import { Users, DollarSign, Target, TrendingUp, MousePointerClick, Eye, BarChart3, Loader2, Calendar as CalendarIcon, Filter, CheckCircle2, ExternalLink, MapPin, Monitor, UserCircle, X, Play, MessageCircle, ArrowUpRight, ArrowDownRight, Heart } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie } from 'recharts';
 import { clientApi, syncApi, type DashboardMetrics, type Client } from '../lib/api';
 import { useTheme } from '../contexts/ThemeContext';
