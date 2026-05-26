@@ -79,7 +79,7 @@ export default function Register() {
       <div className="w-full max-w-sm">
         <div className="mb-8 flex items-center justify-center gap-3">
           <BarChart3 size={32} className="text-blue-600 dark:text-blue-500" />
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Growth Ads</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">GestorFácil</h1>
         </div>
 
         <form onSubmit={handleSubmit} className="rounded-2xl bg-white p-8 shadow-xl shadow-gray-200 border border-gray-100 dark:bg-gray-900 dark:shadow-none dark:border-gray-800">

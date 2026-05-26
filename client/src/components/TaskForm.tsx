@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { X } from 'lucide-react';
 import type { TaskItem } from '../lib/api';
 import DatePicker from './DatePicker';
+import NiceSelect from './NiceSelect';
 
 interface TaskFormProps {
   task?: TaskItem;
@@ -114,18 +115,14 @@ export default function TaskForm({ task, clients, onSubmit, onCancel }: TaskForm
             {clients && clients.length > 0 && (
               <div className="space-y-1.5">
                 <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider ml-1">Cliente Relacionado</label>
-                <select
+                <NiceSelect
                   value={clientId}
-                  onChange={(e) => setClientId(e.target.value)}
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500/50 outline-none transition-all focus:ring-4 focus:ring-blue-500/10 dark:border-gray-800 dark:bg-gray-950 dark:text-white"
-                >
-                  <option value="">Sem cliente</option>
-                  {clients.map((c) => (
-                    <option key={c.actId} value={c.actId}>
-                      {c.clientName}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setClientId}
+                  options={[
+                    { value: '', label: 'Sem cliente' },
+                    ...clients.map(c => ({ value: c.actId, label: c.clientName })),
+                  ]}
+                />
               </div>
             )}
           </div>

@@ -11,9 +11,17 @@ class HealthCheckService {
     disableReason: number;
   } | null> {
     try {
-      const token = customToken || (await this.getGlobalToken());
+      let token = customToken;
       if (!token) {
-        console.warn(`[HealthCheck] Sem token para ${actId} (nem custom nem global)`);
+        const client = await prisma.client.findUnique({
+          where: { actId },
+          select: { accessToken: true },
+        });
+        token = client?.accessToken?.trim() || undefined;
+      }
+
+      if (!token) {
+        console.warn(`[HealthCheck] Sem token para ${actId}`);
         return null;
       }
 
@@ -59,11 +67,6 @@ class HealthCheckService {
     }
 
     return health;
-  }
-
-  private async getGlobalToken(): Promise<string | null> {
-    const setting = await prisma.appSettings.findUnique({ where: { key: 'global_token' } });
-    return setting?.value || null;
   }
 
   public getStatusLabel(status: number): string {
@@ -165,7 +168,7 @@ class HealthCheckService {
       const problems = results.filter((r) => !r.ok);
       lines.push(`⚠️ ${problems.length} conta(s) com atenção necessária.`);
     }
-    lines.push('', '_Growth Ads_');
+    lines.push('', '_GestorFácil_');
 
     await evoService.sendText(phone, lines.join('\n'));
   }

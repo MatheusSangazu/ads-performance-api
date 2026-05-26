@@ -1,14 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Key, Loader2, RefreshCw, Save, MessageCircle, QrCode, LogOut } from 'lucide-react';
+import { Loader2, RefreshCw, Save, MessageCircle, QrCode, LogOut } from 'lucide-react';
 import { settingsApi, authApi } from '../lib/api';
 import Message from '../components/ui/Message';
 
 export default function Settings() {
-  const [token, setToken] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [hasToken, setHasToken] = useState(false);
   const [autoSyncEnabled, setAutoSyncEnabled] = useState(false);
   const [syncingAll, setSyncingAll] = useState(false);
   const [syncResult, setSyncResult] = useState<string[] | null>(null);
@@ -33,10 +29,6 @@ export default function Settings() {
         const requests: Promise<any>[] = [];
         if (admin) {
           requests.push(
-            settingsApi.getGlobalToken().then((r) => {
-              setHasToken(!!r.data.globalToken);
-              setToken(r.data.globalToken || '');
-            }),
             settingsApi.getAutoSync().then((r) => setAutoSyncEnabled(r.data.enabled)),
             settingsApi.getWhatsappStatus().then((r) => setWhatsappStatus(r.data)).catch(() => setWhatsappStatus({ state: 'error' }))
           );
@@ -50,26 +42,10 @@ export default function Settings() {
         await Promise.all(requests);
       } catch {
         setMessage({ type: 'error', text: 'Erro ao carregar configurações.' });
-      } finally {
-        setLoading(false);
       }
     };
     fetchData();
   }, []);
-
-  const handleSave = async () => {
-    setSaving(true);
-    setMessage(null);
-    try {
-      await settingsApi.setGlobalToken(token);
-      setHasToken(!!token);
-      setMessage({ type: 'success', text: 'Token global salvo com sucesso!' });
-    } catch {
-      setMessage({ type: 'error', text: 'Erro ao salvar token global.' });
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const handleToggleAutoSync = async () => {
     const newVal = !autoSyncEnabled;
@@ -105,11 +81,11 @@ export default function Settings() {
     setSavingWhatsapp(true);
     setMessage(null);
     try {
-      await authApi.updateProfile({ 
-        phone, 
+      await authApi.updateProfile({
+        phone,
         whatsappNotify,
         healthCheckTimes: healthCheckTimes.join(','),
-        weeklySummary
+        weeklySummary,
       });
       setMessage({ type: 'success', text: 'Configurações de WhatsApp salvas!' });
     } catch {
@@ -155,65 +131,6 @@ export default function Settings() {
 
       {isAdmin && (
       <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6 dark:border-gray-800 dark:bg-gray-900">
-        <div className="mb-4 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600/10 dark:bg-blue-600/20">
-            <Key size={20} className="text-blue-600 dark:text-blue-400" />
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Token Global</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Fallback para clientes sem token próprio.
-            </p>
-          </div>
-        </div>
-
-        {loading ? (
-          <div className="flex items-center gap-2 text-gray-400 dark:text-gray-500">
-            <Loader2 size={18} className="animate-spin" />
-            Carregando...
-          </div>
-        ) : (
-          <>
-            <div className="mb-4">
-              <label className="mb-1 block text-sm text-gray-500 dark:text-gray-400">Access Token do Meta</label>
-              <input
-                type="password"
-                value={token}
-                onChange={(e) => setToken(e.target.value)}
-                className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500"
-                placeholder="Cole aqui o token do Meta Ads"
-              />
-            </div>
-
-            <div className="flex items-center gap-4">
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
-              >
-                {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-                Salvar Token
-              </button>
-
-              {hasToken ? (
-                <span className="flex items-center gap-1 text-sm text-green-600 dark:text-green-400">
-                  <span className="h-2 w-2 rounded-full bg-green-500 dark:bg-green-400" />
-                  Token configurado
-                </span>
-              ) : (
-                <span className="flex items-center gap-1 text-sm text-gray-400 dark:text-gray-500">
-                  <span className="h-2 w-2 rounded-full bg-gray-300 dark:bg-gray-600" />
-                  Nenhum token
-                </span>
-              )}
-            </div>
-          </>
-        )}
-      </div>
-      )}
-
-      {isAdmin && (
-      <div className="mt-6 rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
         <div className="mb-4 flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-600/10 dark:bg-purple-600/20">
             <RefreshCw size={20} className="text-purple-600 dark:text-purple-400" />
@@ -488,14 +405,10 @@ export default function Settings() {
         <div className="space-y-3 text-sm text-gray-500 dark:text-gray-400">
           <div className="flex gap-3">
             <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600/10 text-xs font-bold text-blue-600 dark:bg-blue-600/20 dark:text-blue-400">1</span>
-            <p><strong className="text-gray-700 dark:text-gray-200">Token por cliente:</strong> Cada cliente pode ter seu próprio token, cadastrado na criação ou editado pelo botão no card.</p>
+            <p><strong className="text-gray-700 dark:text-gray-200">Token por cliente:</strong> Cada cliente precisa ter seu próprio token cadastrado. Você pode informar na criação do cliente ou editar pelo botão de token no card.</p>
           </div>
           <div className="flex gap-3">
-            <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600/10 text-xs font-bold text-blue-600 dark:bg-blue-600/20 dark:text-blue-400">2</span>
-            <p><strong className="text-gray-700 dark:text-gray-200">Token global:</strong> Se um cliente não tiver token próprio, o sistema usa o token global automaticamente.</p>
-          </div>
-          <div className="flex gap-3">
-            <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-purple-600/10 text-xs font-bold text-purple-600 dark:bg-purple-600/20 dark:text-purple-400">3</span>
+            <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-purple-600/10 text-xs font-bold text-purple-600 dark:bg-purple-600/20 dark:text-purple-400">2</span>
             <p><strong className="text-gray-700 dark:text-gray-200">Auto-sync:</strong> Às 02:00 de cada dia, o sistema puxa os dados do dia anterior de todos os clientes automaticamente.</p>
           </div>
         </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Download, Key, Loader2, RefreshCw, Trash2, X, ShieldCheck, ShieldAlert, AlertCircle, Pencil, Wallet, Plus, Zap, MessageSquare, CheckCircle } from 'lucide-react';
+import { Download, Key, Loader2, RefreshCw, Trash2, X, ShieldCheck, ShieldAlert, AlertCircle, Pencil, Wallet, Plus, Zap, MessageSquare, CheckCircle, ChevronDown } from 'lucide-react';
 import { clientApi, syncApi, createProgressStream, type Client, type CustomConversion } from '../lib/api';
 import BudgetCard from './BudgetCard';
 import GoalCard from './GoalCard';
@@ -18,6 +18,14 @@ interface ClientCardProps {
 function getToday(): string {
   return new Date().toISOString().split('T')[0];
 }
+
+const TYPE_OPTIONS = [
+  { value: 'lead_gen', label: 'Leads', icon: '📋' },
+  { value: 'ecommerce', label: 'E-commerce', icon: '🛒' },
+  { value: 'infoproduct', label: 'Infoproduto', icon: '🎓' },
+  { value: 'messaging', label: 'Mensagens', icon: '💬' },
+  { value: 'delivery', label: 'Delivery', icon: '🛵' },
+];
 
 export default function ClientCard({ client, downloading, onDownload, onTokenUpdated, onDelete, onError, onSuccess }: ClientCardProps) {
   const [showTokenEdit, setShowTokenEdit] = useState(false);
@@ -46,6 +54,8 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
   const [convLoading, setConvLoading] = useState(false);
   const [summarySending, setSummarySending] = useState(false);
   const [clientType, setClientType] = useState<'lead_gen' | 'ecommerce' | 'infoproduct' | 'messaging' | 'delivery'>(client.clientType ?? 'lead_gen');
+  const [typeOpen, setTypeOpen] = useState(false);
+  const typeRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchMetrics = async () => {
@@ -80,20 +90,9 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
       setShowTokenEdit(false);
       setNewToken('');
       onTokenUpdated();
+      onSuccess(`Token atualizado para ${client.clientName}.`);
     } catch {
       onError('Erro ao atualizar token.');
-    }
-  };
-
-  const handleClearToken = async () => {
-    try {
-      await clientApi.updateToken(client.actId, '');
-      setShowTokenEdit(false);
-      setNewToken('');
-      onTokenUpdated();
-      onSuccess(`Token individual removido. ${client.clientName} usará o token global.`);
-    } catch {
-      onError('Erro ao remover token.');
     }
   };
 
@@ -138,10 +137,10 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
     }
   };
 
-  const handleToggleType = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newType = e.target.value as 'lead_gen' | 'ecommerce' | 'infoproduct' | 'messaging' | 'delivery';
+  const handleToggleType = async (newType: 'lead_gen' | 'ecommerce' | 'infoproduct' | 'messaging' | 'delivery') => {
     const prevType = clientType;
     setClientType(newType);
+    setTypeOpen(false);
     try {
       await clientApi.updateClientType(client.actId, newType);
       const labels: Record<string, string> = {
@@ -343,18 +342,40 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
             <span className="text-[11px] font-mono text-gray-500 bg-gray-100 px-2 py-0.5 rounded border border-gray-200 dark:bg-gray-950 dark:border-gray-800">
               {client.actId}
             </span>
-            <select
-              value={clientType}
-              onChange={handleToggleType}
-              className="text-[10px] font-medium rounded border bg-white dark:bg-gray-950 px-2 py-0.5 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-800 outline-none cursor-pointer"
-              title="Tipo de negócio — clique para alterar"
-            >
-              <option value="lead_gen">📋 Leads</option>
-              <option value="ecommerce">🛒 E-commerce</option>
-              <option value="infoproduct">🎓 Infoproduto</option>
-              <option value="messaging">💬 Mensagens</option>
-              <option value="delivery">🛵 Delivery</option>
-            </select>
+            <div ref={typeRef} className="relative">
+              <button
+                type="button"
+                onClick={() => setTypeOpen(!typeOpen)}
+                className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-gray-50 px-2.5 py-1 text-[11px] font-semibold text-gray-600 transition-all hover:border-blue-500/50 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-400 dark:hover:border-blue-500/50"
+              >
+                {TYPE_OPTIONS.find(o => o.value === clientType)?.icon}
+                <span>{TYPE_OPTIONS.find(o => o.value === clientType)?.label}</span>
+                <ChevronDown size={12} className="text-gray-400" />
+              </button>
+              {typeOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setTypeOpen(false)} />
+                  <div className="absolute left-0 top-full z-50 mt-1.5 min-w-[180px] rounded-xl border border-gray-200 bg-white py-1 shadow-2xl dark:border-gray-700 dark:bg-gray-900">
+                    {TYPE_OPTIONS.map(opt => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => handleToggleType(opt.value as any)}
+                        className={`flex w-full items-center gap-2 px-3 py-1.5 text-xs font-medium transition-colors ${
+                          clientType === opt.value
+                            ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
+                            : 'text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800'
+                        }`}
+                      >
+                        <span>{opt.icon}</span>
+                        <span>{opt.label}</span>
+                        {clientType === opt.value && <CheckCircle size={12} className="ml-auto text-blue-500" />}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
             {renderHealthBadge()}
             {renderBalanceBadge()}
           </div>
@@ -508,7 +529,6 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
             />
             <div className="flex gap-2">
               <button onClick={handleUpdateToken} disabled={!newToken.trim()} className="flex-1 rounded-lg bg-amber-600 py-2 text-xs font-bold text-white hover:bg-amber-500 disabled:opacity-50">Salvar Token</button>
-              <button onClick={handleClearToken} className="rounded-lg bg-gray-100 px-3 py-2 text-xs font-bold text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700">Usar Global</button>
             </div>
           </div>
         )}

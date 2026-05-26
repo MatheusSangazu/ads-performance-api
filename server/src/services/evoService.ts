@@ -100,7 +100,7 @@ class EvoService {
     if (data.clientName) {
       lines.push('', `📱 Cliente: ${data.clientName}`);
     }
-    lines.push('', '_Enviado por Growth Ads_');
+    lines.push('', '_Enviado por GestorFácil_');
     return lines.join('\n');
   }
 

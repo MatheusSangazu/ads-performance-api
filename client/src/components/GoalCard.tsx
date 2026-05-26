@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Target, Loader2, Trash2, Plus, X, CheckCircle } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Target, Loader2, Trash2, Plus, X, CheckCircle, ChevronDown } from 'lucide-react';
 import { clientApi, type Goal } from '../lib/api';
 import { METRIC_LABELS } from './BudgetCard';
 
@@ -17,6 +17,8 @@ export default function GoalCard({ actId, currentMetrics }: GoalCardProps) {
   const [formMetric, setFormMetric] = useState('leads');
   const [formValue, setFormValue] = useState('');
   const [saving, setSaving] = useState(false);
+  const [metricOpen, setMetricOpen] = useState(false);
+  const metricRef = useRef<HTMLDivElement>(null);
 
   const fetchGoals = async () => {
     try {
@@ -107,19 +109,42 @@ export default function GoalCard({ actId, currentMetrics }: GoalCardProps) {
       {showForm && (
         <div className="mb-3 space-y-2 rounded-lg border border-blue-200 bg-blue-50 p-2 dark:border-blue-900/30 dark:bg-blue-950/20">
           <div className="flex gap-2">
-            <select
-              value={formMetric}
-              onChange={(e) => setFormMetric(e.target.value)}
-              className="flex-1 rounded-md border border-gray-200 bg-white px-2 py-1 text-xs text-gray-900 focus:border-blue-500 outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white"
-            >
-              {METRICS.map(([val, label]) => (
-                <option key={val} value={val}>{label}</option>
-              ))}
-            </select>
+            <div ref={metricRef} className="relative flex-1">
+              <button
+                type="button"
+                onClick={() => setMetricOpen(!metricOpen)}
+                className="flex w-full items-center justify-between gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-semibold text-gray-900 transition-all hover:border-blue-500/50 dark:border-gray-800 dark:bg-gray-950 dark:text-white dark:hover:border-blue-500/50"
+              >
+                <span>{METRICS.find(([v]) => v === formMetric)?.[1] ?? 'Selecione'}</span>
+                <ChevronDown size={14} className="text-gray-400" />
+              </button>
+              {metricOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setMetricOpen(false)} />
+                  <div className="absolute left-0 top-full z-50 mt-1.5 w-full min-w-[180px] rounded-xl border border-gray-200 bg-white py-1 shadow-2xl dark:border-gray-700 dark:bg-gray-900">
+                    {METRICS.map(([val, label]) => (
+                      <button
+                        key={val}
+                        type="button"
+                        onClick={() => { setFormMetric(val); setMetricOpen(false); }}
+                        className={`flex w-full items-center gap-2 px-3 py-1.5 text-xs font-medium transition-colors ${
+                          formMetric === val
+                            ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
+                            : 'text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800'
+                        }`}
+                      >
+                        <span>{label}</span>
+                        {formMetric === val && <CheckCircle size={12} className="ml-auto text-blue-500" />}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
             <input
               value={formValue}
               onChange={(e) => setFormValue(e.target.value)}
-              className="w-16 rounded-md border border-gray-200 bg-white px-2 py-1 text-xs text-gray-900 focus:border-blue-500 outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+              className="w-20 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 transition-all hover:border-blue-500/50 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-800 dark:bg-gray-950 dark:text-white"
               placeholder="Valor"
             />
           </div>

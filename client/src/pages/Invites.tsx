@@ -2,6 +2,13 @@ import { useEffect, useState } from 'react';
 import { MailPlus, Loader2, Copy, Trash2, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { inviteApi } from '../lib/api';
 import Message from '../components/ui/Message';
+import NiceSelect from '../components/NiceSelect';
+
+const PLAN_OPTIONS = [
+  { value: 'starter', label: 'Starter' },
+  { value: 'pro', label: 'Pro' },
+  { value: 'agency', label: 'Agency' },
+];
 
 interface Invite {
   id: string;
@@ -112,15 +119,12 @@ export default function Invites() {
           </div>
           <div>
             <label className="mb-1 block text-sm text-gray-500 dark:text-gray-400">Plano</label>
-            <select
+            <NiceSelect
               value={plan}
-              onChange={(e) => setPlan(e.target.value)}
-              className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-2 text-gray-900 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-            >
-              <option value="starter">Starter</option>
-            <option value="pro">Pro</option>
-            <option value="agency">Agency</option>
-            </select>
+              onChange={setPlan}
+              options={PLAN_OPTIONS}
+              className="w-[160px]"
+            />
           </div>
           <button
             type="submit"

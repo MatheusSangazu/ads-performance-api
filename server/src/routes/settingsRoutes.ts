@@ -7,20 +7,8 @@ import evoService from '../services/evoService.js';
 
 const router = Router();
 
-const setTokenSchema = z.object({
-  token: z.string().min(1, 'Token é obrigatório'),
-});
-
 const setAutoSyncSchema = z.object({
   enabled: z.boolean(),
-});
-
-router.get('/global-token', authMiddleware, adminOnly, (req, res, next) => {
-  settingsController.getGlobalToken(req, res).catch(next);
-});
-
-router.put('/global-token', authMiddleware, adminOnly, validate(setTokenSchema), (req, res, next) => {
-  settingsController.setGlobalToken(req, res).catch(next);
 });
 
 router.get('/auto-sync', authMiddleware, adminOnly, (req, res, next) => {

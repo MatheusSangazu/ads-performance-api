@@ -67,11 +67,11 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen">
-      <nav className="border-b border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
-        <div className="mx-auto flex max-w-7xl items-center px-4 py-3 md:px-6 md:py-4">
-          <h1 className="text-lg font-bold text-gray-900 md:text-xl dark:text-white">Growth Ads</h1>
+      <nav className="sticky top-0 z-30 border-b border-gray-200 bg-white/95 backdrop-blur-sm dark:border-gray-800 dark:bg-gray-900/95">
+        <div className="flex items-center justify-between px-5 py-2.5 sm:px-8">
+          <h1 className="shrink-0 text-base font-bold text-gray-900 dark:text-white sm:text-lg">GestorFácil</h1>
 
-          <div className="ml-auto flex items-center gap-2 md:hidden">
+          <div className="flex items-center gap-1.5 sm:hidden">
             <button
               onClick={toggleTheme}
               className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
@@ -88,7 +88,7 @@ export default function Layout() {
             </button>
           </div>
 
-          <div className="ml-8 hidden flex-1 items-center gap-1 md:flex">
+          <div className="mx-4 hidden flex-1 items-center gap-0.5 sm:flex lg:gap-1">
             {baseNavItems.map(({ to, label, icon }) => (
               <NavItem key={to} to={to} label={label} icon={icon} end={to === '/'} />
             ))}
@@ -97,40 +97,36 @@ export default function Layout() {
             ))}
           </div>
 
-          <div className="ml-auto hidden items-center gap-4 md:flex">
+          <div className="hidden shrink-0 items-center gap-2 sm:flex lg:gap-3">
             <button
               onClick={toggleTheme}
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
               aria-label="Alternar tema"
-              title={theme === 'light' ? 'Ativar modo escuro' : 'Ativar modo claro'}
             >
-              {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+              {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
             </button>
             {user && (
-              <div className="flex items-center gap-3">
+              <>
                 <AlertDropdown />
-                <div className="text-right">
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">{user.name}</p>
-                  <p className="text-xs text-gray-500">{user.email}</p>
-                </div>
                 {isAdmin && (
-                  <span className="rounded-full bg-purple-600/10 px-2.5 py-0.5 text-xs font-semibold text-purple-600 dark:bg-purple-600/20 dark:text-purple-400">
+                  <span className="rounded-full bg-purple-600/10 px-2 py-0.5 text-[10px] font-semibold text-purple-600 dark:bg-purple-600/20 dark:text-purple-400">
                     Admin
                   </span>
                 )}
                 {isAgency && !isAdmin && (
-                  <span className="rounded-full bg-amber-600/10 px-2.5 py-0.5 text-xs font-semibold text-amber-600 dark:bg-amber-600/20 dark:text-amber-400">
+                  <span className="rounded-full bg-amber-600/10 px-2 py-0.5 text-[10px] font-semibold text-amber-600 dark:bg-amber-600/20 dark:text-amber-400">
                     Agency
                   </span>
                 )}
                 <button
                   onClick={handleLogout}
-                  className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-gray-500 transition-colors hover:bg-gray-100 hover:text-red-600 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-red-400"
-                  title="Sair"
+                  className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-500 transition-all hover:border-red-200 hover:bg-red-50 hover:text-red-600 dark:border-gray-700 dark:text-gray-400 dark:hover:border-red-800 dark:hover:bg-red-950/20 dark:hover:text-red-400"
+                  title="Sair da conta"
                 >
-                  <LogOut size={16} />
+                  <LogOut size={14} />
+                  Sair
                 </button>
-              </div>
+              </>
             )}
           </div>
         </div>
@@ -149,11 +145,18 @@ export default function Layout() {
                   ))}
                 </>
               )}
+              <div className="my-2 border-t border-gray-200 dark:border-gray-800" />
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-red-500 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/20"
+              >
+                <LogOut size={18} />
+                Sair da conta
+              </button>
             </div>
 
             {user && (
               <div className="mt-3 flex items-center gap-3 border-t border-gray-200 pt-3 dark:border-gray-800">
-                <AlertDropdown />
                 <div className="flex-1">
                   <p className="text-sm font-medium text-gray-900 dark:text-white">{user.name}</p>
                   <p className="text-xs text-gray-500">{user.email}</p>
@@ -163,13 +166,6 @@ export default function Layout() {
                     Admin
                   </span>
                 )}
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-gray-500 transition-colors hover:bg-gray-100 hover:text-red-600 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-red-400"
-                  title="Sair"
-                >
-                  <LogOut size={16} />
-                </button>
               </div>
             )}
           </div>

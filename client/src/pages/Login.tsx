@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { Loader2, BarChart3, Sun, Moon } from 'lucide-react';
@@ -42,7 +42,7 @@ export default function Login() {
       <div className="w-full max-w-sm">
         <div className="mb-8 flex items-center justify-center gap-3">
           <BarChart3 size={32} className="text-blue-600 dark:text-blue-500" />
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Growth Ads</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">GestorFácil</h1>
         </div>
 
         <form onSubmit={handleSubmit} className="rounded-2xl bg-white p-8 shadow-xl shadow-gray-200 border border-gray-100 dark:bg-gray-900 dark:shadow-none dark:border-gray-800">
@@ -86,6 +86,16 @@ export default function Login() {
             {loading ? <Loader2 size={18} className="animate-spin" /> : 'Entrar no Sistema'}
           </button>
         </form>
+
+        <div className="mt-6 flex items-center justify-center gap-4 text-[11px] text-gray-400 dark:text-gray-600">
+          <Link to="/privacidade" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Privacidade</Link>
+          <span>·</span>
+          <Link to="/termos" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Termos</Link>
+          <span>·</span>
+          <Link to="/contato" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Contato</Link>
+        </div>
+
+        <p className="mt-3 text-center text-[10px] text-gray-300 dark:text-gray-700">© {new Date().getFullYear()} GestorFácil — Forjacorp</p>
       </div>
     </div>
   );

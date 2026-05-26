@@ -216,7 +216,7 @@ class SchedulerService {
           `💰 Saldo atual: R$ ${alert.balance.toFixed(2)}`,
           `⚠️ Limite configurado: R$ ${alert.threshold.toFixed(2)}`,
           '',
-          '_Enviado por Growth Ads_',
+          '_Enviado por GestorFácil_',
         ].join('\n');
 
         await evoService.sendText(manager.phone, text).catch(() => {});

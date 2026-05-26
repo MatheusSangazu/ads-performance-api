@@ -13,6 +13,10 @@ import Invites from './pages/Invites';
 import Tasks from './pages/Tasks';
 import Plans from './pages/Plans';
 import Agency from './pages/Agency';
+import Privacy from './pages/Privacy';
+import Terms from './pages/Terms';
+import Contact from './pages/Contact';
+import RemoveData from './pages/RemoveData';
 
 function AppRoutes() {
   const { user, loading } = useAuth();
@@ -23,6 +27,10 @@ function AppRoutes() {
     <Routes>
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
       <Route path="/register/:token" element={user ? <Navigate to="/" replace /> : <Register />} />
+      <Route path="/privacidade" element={<Privacy />} />
+      <Route path="/termos" element={<Terms />} />
+      <Route path="/contato" element={<Contact />} />
+      <Route path="/remover-dados" element={<RemoveData />} />
 
       <Route element={<ProtectedRoute />}>
         <Route element={<Layout />}>

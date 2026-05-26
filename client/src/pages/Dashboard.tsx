@@ -7,6 +7,30 @@ import DatePicker from '../components/DatePicker';
 import ClientSelector from '../components/ClientSelector';
 import GoalProjection from '../components/GoalProjection';
 import HelpTooltip from '../components/HelpTooltip';
+import NiceSelect from '../components/NiceSelect';
+
+const TOP_ADS_OPTIONS = [
+  { value: 'roas', label: 'ROAS' },
+  { value: 'leads', label: 'Leads' },
+  { value: 'messaging', label: 'Mensagens' },
+  { value: 'cpmsg', label: 'Custo por Msg' },
+  { value: 'spend', label: 'Investimento' },
+  { value: 'cpl', label: 'CPL' },
+  { value: 'ctr', label: 'CTR' },
+  { value: 'purchases', label: 'Vendas' },
+  { value: 'totalConversionValue', label: 'Valor de Conversão' },
+];
+
+const BREAKDOWN_OPTIONS = [
+  { value: 'spend', label: 'Investimento' },
+  { value: 'leads', label: 'Leads' },
+  { value: 'cpl', label: 'CPL' },
+  { value: 'messaging', label: 'Mensagens' },
+  { value: 'cpmsg', label: 'Custo por Msg' },
+  { value: 'purchases', label: 'Vendas' },
+  { value: 'purchaseValue', label: 'Valor de Venda' },
+  { value: 'totalConversionValue', label: 'Valor de Conversão' },
+];
 
 const API_BASE = (import.meta.env.VITE_API_URL || '/api').replace(/\/api$/, '');
 
@@ -475,21 +499,13 @@ export default function Dashboard() {
             </div>
             <div className="flex items-center gap-2 bg-white dark:bg-gray-900 p-1.5 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
               <span className="text-[10px] font-black text-gray-400 uppercase pl-2 pr-1">Filtrar por:</span>
-              <select
+              <NiceSelect
                 value={topAdsMetric}
-                onChange={(e) => setTopAdsMetric(e.target.value)}
-                className="bg-gray-50 dark:bg-gray-950 rounded-lg px-3 py-1.5 text-xs font-bold text-gray-900 dark:text-white focus:outline-none border border-gray-100 dark:border-gray-800"
-              >
-                <option value="roas">ROAS</option>
-                <option value="leads">Leads</option>
-                <option value="messaging">Mensagens</option>
-                <option value="cpmsg">Custo por Msg</option>
-                <option value="spend">Investimento</option>
-                <option value="cpl">CPL</option>
-                <option value="ctr">CTR</option>
-                <option value="purchases">Vendas</option>
-                <option value="totalConversionValue">Valor de Conversão</option>
-              </select>
+                onChange={setTopAdsMetric}
+                options={TOP_ADS_OPTIONS}
+                size="sm"
+                className="w-[160px]"
+              />
             </div>
           </div>
           
@@ -574,25 +590,12 @@ export default function Dashboard() {
               <MapPin size={20} className="text-orange-500" />
               <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white uppercase tracking-wider">Análise de Segmentação</h3>
             </div>
-            <select
+            <NiceSelect
               value={breakdownMetric}
-              onChange={(e) => setBreakdownMetric(e.target.value)}
-              className="w-full sm:w-auto bg-white dark:bg-gray-900 rounded-xl px-4 py-2 text-xs font-black text-gray-900 dark:text-white focus:outline-none border border-gray-200 dark:border-gray-800 shadow-sm"
-            >
-              <option value="spend">Investimento</option>
-              <option value="leads">Leads</option>
-              <option value="cpl">CPL</option>
-              <option value="messaging">Mensagens</option>
-              <option value="cpmsg">Custo por Msg</option>
-              <option value="purchases">Vendas</option>
-              <option value="purchaseValue">Valor de Venda</option>
-              <option value="totalConversionValue">Valor de Conversão</option>
-              <option value="roas">ROAS</option>
-              <option value="ctr">CTR</option>
-              <option value="linkClicks">Cliques no Link</option>
-              <option value="reach">Alcance</option>
-              <option value="impressions">Impressões</option>
-            </select>
+              onChange={setBreakdownMetric}
+              options={BREAKDOWN_OPTIONS}
+              className="w-full sm:w-auto sm:min-w-[180px]"
+            />
           </div>
 
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

@@ -1,4 +1,13 @@
+import { useState } from 'react';
 import { Search, Filter, Plus, LayoutGrid, List } from 'lucide-react';
+import NiceSelect from './NiceSelect';
+
+const STATUS_OPTIONS = [
+  { value: 'all', label: 'Todos os Status' },
+  { value: '1', label: 'Ativa' },
+  { value: '2', label: 'Desativada' },
+  { value: '3', label: 'Pendência' },
+];
 
 interface ClientHeaderProps {
   onSearch: (term: string) => void;
@@ -17,6 +26,8 @@ export default function ClientHeader({
   onNewClient,
   totalClients
 }: ClientHeaderProps) {
+  const [statusFilter, setStatusFilter] = useState('all');
+
   return (
     <div className="mb-6 sm:mb-8 space-y-4">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -47,24 +58,13 @@ export default function ClientHeader({
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="relative group">
-            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 dark:text-gray-500 dark:group-focus-within:text-blue-400" size={16} />
-            <select
-              onChange={(e) => onFilterChange(e.target.value)}
-              className="appearance-none rounded-xl border border-gray-200 bg-white py-2.5 pl-10 pr-10 text-sm text-gray-900 outline-none transition-all focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 dark:border-gray-800 dark:bg-gray-900/50 dark:text-white"
-              aria-label="Filtrar por status"
-            >
-              <option value="all">Todos os Status</option>
-              <option value="1">Ativa</option>
-              <option value="2">Desativada</option>
-              <option value="3">Pendência</option>
-            </select>
-            <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 border-l border-gray-200 pl-2 dark:border-gray-800">
-              <svg className="h-4 w-4 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </div>
-          </div>
+          <NiceSelect
+            value={statusFilter}
+            onChange={(v) => { setStatusFilter(v); onFilterChange(v); }}
+            options={STATUS_OPTIONS}
+            icon={<Filter size={14} className="text-gray-400" />}
+            className="w-[180px]"
+          />
 
           <div className="flex items-center rounded-xl border border-gray-200 bg-white p-1 dark:border-gray-800 dark:bg-gray-900/50">
             <button

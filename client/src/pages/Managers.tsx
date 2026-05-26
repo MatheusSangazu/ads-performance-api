@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Shield, Loader2, UserX, Link2 } from 'lucide-react';
 import { managerApi, clientApi } from '../lib/api';
 import Message from '../components/ui/Message';
+import NiceSelect from '../components/NiceSelect';
 
 interface Manager {
   id: string;
@@ -216,18 +217,14 @@ export default function Managers() {
               <div className="mt-4 flex items-end gap-3 border-t border-gray-100 pt-4 dark:border-gray-800">
                 <div className="flex-1">
                   <label className="mb-1 block text-xs text-gray-500 dark:text-gray-400">Selecionar cliente</label>
-                  <select
+                  <NiceSelect
                     value={selectedClient}
-                    onChange={(e) => setSelectedClient(e.target.value)}
-                    className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-                  >
-                    <option value="">Selecione...</option>
-                    {clients.map((c) => (
-                      <option key={c.actId} value={c.actId}>
-                        {c.clientName} ({c.actId})
-                      </option>
-                    ))}
-                  </select>
+                    onChange={setSelectedClient}
+                    options={[
+                      { value: '', label: 'Selecione...' },
+                      ...clients.map(c => ({ value: c.actId, label: `${c.clientName} (${c.actId})` })),
+                    ]}
+                  />
                 </div>
                 <button
                   onClick={handleLink}

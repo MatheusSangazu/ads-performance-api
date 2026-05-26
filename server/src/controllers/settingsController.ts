@@ -3,17 +3,6 @@ import settingsService from '../services/settingsService.js';
 import schedulerService from '../services/schedulerService.js';
 
 class SettingsController {
-  public async getGlobalToken(_req: Request, res: Response): Promise<void> {
-    const token = await settingsService.getGlobalToken();
-    res.json({ globalToken: token });
-  }
-
-  public async setGlobalToken(req: Request, res: Response): Promise<void> {
-    const { token } = req.body;
-    const result = await settingsService.setGlobalToken(token);
-    res.json(result);
-  }
-
   public async getAutoSync(_req: Request, res: Response): Promise<void> {
     const enabled = await settingsService.getAutoSync();
     res.json({

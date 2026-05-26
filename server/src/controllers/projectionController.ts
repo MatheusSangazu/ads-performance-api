@@ -115,28 +115,73 @@ class ProjectionController {
     const primaryGoal = goals[0];
     const metricField = METRIC_DB_MAP[primaryGoal.metric] || primaryGoal.metric;
     const monthlyTarget = Number(primaryGoal.targetValue);
-    const dailyTarget = monthlyTarget / daysInMonth;
+    const isRateMetric = ['ctr', 'roas', 'cpl', 'cpmsg'].includes(primaryGoal.metric);
 
-    let cumulativeActual = 0;
-    const sortedDays = Array.from(dailyMap.entries()).sort(([a], [b]) => a.localeCompare(b));
-    for (const [date, d] of sortedDays) {
-      const dayNum = parseInt(date.split('-')[2]);
-      const val = (d as any)[metricField] || 0;
-      cumulativeActual += val;
-      burndownData.push({
-        date,
-        actual: cumulativeActual,
-        target: Math.round(dailyTarget * dayNum * 100) / 100,
-      });
+    if (isRateMetric) {
+      let cumClicks = 0, cumImpressions = 0, cumSpend = 0, cumLeads = 0, cumPurchases = 0, cumPurchaseValue = 0, cumMessaging = 0;
+      const sortedDays = Array.from(dailyMap.entries()).sort(([a], [b]) => a.localeCompare(b));
+      for (const [date, d] of sortedDays) {
+        cumClicks += d.linkClicks;
+        cumImpressions += d.impressions;
+        cumSpend += d.spend;
+        cumLeads += d.leads;
+        cumPurchaseValue += d.purchaseValue;
+        cumMessaging += (d as any).messagingConversations || 0;
+
+        let actual = 0;
+        switch (primaryGoal.metric) {
+          case 'ctr':
+            actual = cumImpressions > 0 ? (cumClicks / cumImpressions) * 100 : 0;
+            break;
+          case 'roas':
+            actual = cumSpend > 0 ? cumPurchaseValue / cumSpend : 0;
+            break;
+          case 'cpl':
+            actual = cumLeads > 0 ? cumSpend / cumLeads : 0;
+            break;
+          case 'cpmsg':
+            actual = cumMessaging > 0 ? cumSpend / cumMessaging : 0;
+            break;
+        }
+
+        burndownData.push({
+          date,
+          actual: Math.round(actual * 100) / 100,
+          target: monthlyTarget,
+        });
+      }
+    } else {
+      const dailyTarget = monthlyTarget / daysInMonth;
+      let cumulativeActual = 0;
+      const sortedDays = Array.from(dailyMap.entries()).sort(([a], [b]) => a.localeCompare(b));
+      for (const [date, d] of sortedDays) {
+        const dayNum = parseInt(date.split('-')[2]);
+        const val = (d as any)[metricField] || 0;
+        cumulativeActual += val;
+        burndownData.push({
+          date,
+          actual: cumulativeActual,
+          target: Math.round(dailyTarget * dayNum * 100) / 100,
+        });
+      }
     }
 
     for (let day = currentDay + 1; day <= daysInMonth; day++) {
       const dateStr = `${monthStr}-${String(day).padStart(2, '0')}`;
-      burndownData.push({
-        date: dateStr,
-        actual: -1,
-        target: Math.round(dailyTarget * day * 100) / 100,
-      });
+      if (isRateMetric) {
+        burndownData.push({
+          date: dateStr,
+          actual: -1,
+          target: monthlyTarget,
+        });
+      } else {
+        const dailyTarget = monthlyTarget / daysInMonth;
+        burndownData.push({
+          date: dateStr,
+          actual: -1,
+          target: Math.round(dailyTarget * day * 100) / 100,
+        });
+      }
     }
 
     const projections = goals.map((goal) => {
@@ -209,6 +254,32 @@ class ProjectionController {
           neededDaily: 0,
           daysRemaining,
           onTrack: currentRoas >= target,
+        };
+      }
+
+      if (goal.metric === 'ctr') {
+        const totalClicks = sumField(monthPerformance, 'linkClicks');
+        const totalImpressions = sumField(monthPerformance, 'impressions');
+        const currentCtr = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0;
+
+        const windowClicks = sumField(performance, 'linkClicks');
+        const windowImpressions = sumField(performance, 'impressions');
+        const avgDailyClicks = avgDaily(performance, 'linkClicks');
+        const avgDailyImpressions = avgDaily(performance, 'impressions');
+
+        const projectedClicks = totalClicks + avgDailyClicks * daysRemaining;
+        const projectedImpressions = totalImpressions + avgDailyImpressions * daysRemaining;
+        const projectedCtr = projectedImpressions > 0 ? (projectedClicks / projectedImpressions) * 100 : 0;
+
+        return {
+          metric: goal.metric,
+          target,
+          current: Math.round(currentCtr * 100) / 100,
+          projected: Math.round(projectedCtr * 100) / 100,
+          avgDaily: Math.round(avgDailyClicks * 100) / 100,
+          neededDaily: 0,
+          daysRemaining,
+          onTrack: currentCtr >= target,
         };
       }
 

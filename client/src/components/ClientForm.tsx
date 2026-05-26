@@ -3,6 +3,15 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Plus } from 'lucide-react';
 import HelpTooltip from './HelpTooltip';
+import NiceSelect from './NiceSelect';
+
+const TYPE_OPTIONS = [
+  { value: 'lead_gen', label: 'Geração de Leads', icon: '📋' },
+  { value: 'ecommerce', label: 'E-commerce', icon: '🛒' },
+  { value: 'infoproduct', label: 'Infoproduto', icon: '🎓' },
+  { value: 'messaging', label: 'Mensagens', icon: '💬' },
+  { value: 'delivery', label: 'Delivery', icon: '🛵' },
+];
 
 const schema = z.object({
   name: z.string().min(1, 'Nome é obrigatório'),
@@ -24,10 +33,12 @@ export default function ClientForm({ onSubmit, onCancel }: ClientFormProps) {
     register,
     handleSubmit,
     reset,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { name: '', act_id: '', access_token: '', custom_event_id: '' },
+    defaultValues: { name: '', act_id: '', access_token: '', custom_event_id: '', client_type: 'lead_gen' },
   });
 
   const handleFormSubmit = async (data: FormData) => {
@@ -35,7 +46,7 @@ export default function ClientForm({ onSubmit, onCancel }: ClientFormProps) {
     reset();
   };
 
-  const inputClass = "w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 px-4 py-2.5 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 focus:border-blue-500/50 outline-none transition-all focus:ring-4 focus:ring-blue-500/10";
+  const inputClass = "w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 px-4 py-2.5 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 focus:border-blue-500/50 outline-none transition-all focus:ring-4 focus:ring-blue-500/10 shadow-sm";
 
   return {
     trigger: (showForm: boolean, setShowForm: (v: boolean) => void) => (
@@ -110,16 +121,12 @@ export default function ClientForm({ onSubmit, onCancel }: ClientFormProps) {
 
             <div className="space-y-1.5">
               <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider ml-1">Tipo de Negócio</label>
-              <select
-                {...register('client_type')}
-                className={inputClass}
-              >
-                <option value="lead_gen">📋 Geração de Leads</option>
-                <option value="ecommerce">🛒 E-commerce</option>
-                <option value="infoproduct">🎓 Infoproduto</option>
-                <option value="messaging">💬 Mensagens</option>
-                <option value="delivery">🛵 Delivery</option>
-              </select>
+              <NiceSelect
+                value={watch('client_type') || 'lead_gen'}
+                onChange={(v) => setValue('client_type', v as any, { shouldValidate: true })}
+                options={TYPE_OPTIONS}
+                placeholder="Selecione o tipo..."
+              />
             </div>
           </div>
 

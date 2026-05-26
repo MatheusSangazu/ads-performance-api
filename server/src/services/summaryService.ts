@@ -302,7 +302,7 @@ class SummaryService {
     }
 
     lines.push('', `⏳ Dias restantes: ${daysRemaining}`);
-    lines.push('', '_Enviado por Growth Ads_');
+    lines.push('', '_Enviado por GestorFácil_');
 
     const sent = await evoService.sendText(manager.phone, lines.join('\n'));
     if (!sent) throw new Error('Falha ao enviar mensagem pelo WhatsApp.');
