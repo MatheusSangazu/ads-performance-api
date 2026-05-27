@@ -521,4 +521,22 @@ export interface AgencyConsolidated {
   clients: { actId: string; clientName: string; status: string }[];
 }
 
+export interface PlanLimit {
+  maxClients: number | null;
+  currentClients: number;
+  remaining: number | null;
+  planName: string;
+}
+
+export const metaApi = {
+  getAuthorizeUrl: () =>
+    api.get<{ url: string }>('/meta/authorize'),
+  getSetup: (setupId: string) =>
+    api.get<{ setupId: string; accounts: { id: string; name: string }[]; limit: PlanLimit }>('/meta/setup', { params: { setupId } }),
+  importAccounts: (setupId: string, accountIds: string[]) =>
+    api.post<{ imported: number; skipped: number }>('/meta/import', { setupId, accountIds }),
+  getAdAccounts: (actId: string) =>
+    api.get<{ accounts: { id: string; name: string }[] }>('/meta/ad-accounts', { params: { act_id: actId } }),
+};
+
 export default api;

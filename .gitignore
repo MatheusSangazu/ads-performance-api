@@ -38,3 +38,15 @@ desktop.ini
 /server/src/generated/prisma
 ERRORS_REPORT.md
 tsconfig.tsbuildinfo
+
+# Screenshots / Prints
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+*.webp
+*.tiff
+*.ico
+screenshots/
+prints/

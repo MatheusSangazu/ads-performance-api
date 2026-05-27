@@ -1,6 +1,7 @@
-import { useState, useRef, useMemo } from 'react';
-import { Search } from 'lucide-react';
-import { clientApi, syncApi, createProgressStream } from '../lib/api';
+import { useState, useRef, useMemo, useEffect } from 'react';
+import { Search, Link2, Loader2 } from 'lucide-react';
+import { clientApi, syncApi, createProgressStream, metaApi } from '../lib/api';
+import type { PlanLimit } from '../lib/api';
 import type { SyncFormBreakdowns } from '../components/SyncForm';
 import type { LogEntry } from '../components/SyncProgressModal';
 import { useClients, useSync, useDownload } from '../hooks/useClients';
@@ -9,6 +10,7 @@ import ClientForm from '../components/ClientForm';
 import SyncForm from '../components/SyncForm';
 import ClientCard from '../components/ClientCard';
 import SyncProgressModal from '../components/SyncProgressModal';
+import MetaImportModal from '../components/MetaImportModal';
 import ClientHeader from '../components/ClientHeader';
 import ClientTable from '../components/ClientTable';
 import { SkeletonClientList } from '../components/SkeletonClient';
@@ -21,6 +23,46 @@ export default function Clients() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [metaImportModal, setMetaImportModal] = useState<{ setupId: string; accounts: { id: string; name: string }[]; limit: PlanLimit } | null>(null);
+  const [metaConnecting, setMetaConnecting] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const metaSetup = params.get('meta_setup');
+    const metaError = params.get('meta_error');
+
+    if (metaSetup) {
+      window.history.replaceState({}, '', window.location.pathname);
+      metaApi.getSetup(metaSetup).then(({ data }) => {
+        setMetaImportModal({ setupId: data.setupId, accounts: data.accounts, limit: data.limit });
+      }).catch(() => {
+        setMessage({ type: 'error', text: 'Erro ao carregar contas. Tente novamente.' });
+      });
+    } else if (metaError) {
+      setMessage({ type: 'error', text: `Erro ao conectar Meta: ${metaError}` });
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
+
+  const handleMetaConnect = async () => {
+    setMetaConnecting(true);
+    try {
+      const { data } = await metaApi.getAuthorizeUrl();
+      const width = 600;
+      const height = 700;
+      const left = window.screenX + (window.outerWidth - width) / 2;
+      const top = window.screenY + (window.outerHeight - height) / 2;
+      window.open(
+        data.url,
+        'meta-oauth',
+        `width=${width},height=${height},left=${left},top=${top},scrollbars=yes`
+      );
+    } catch {
+      setMessage({ type: 'error', text: 'Erro ao iniciar conexão com Meta.' });
+    } finally {
+      setMetaConnecting(false);
+    }
+  };
 
   // Filtragem derivativa para melhor performance
   const filteredClients = useMemo(() => {
@@ -176,6 +218,17 @@ export default function Clients() {
 
       {message && <Message type={message.type}>{message.text}</Message>}
 
+      <div className="mb-4 flex gap-3">
+        <button
+          onClick={handleMetaConnect}
+          disabled={metaConnecting}
+          className="flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50 dark:bg-indigo-500 dark:hover:bg-indigo-600"
+        >
+          {metaConnecting ? <Loader2 size={16} className="animate-spin" /> : <Link2 size={16} />}
+          Importar do Meta
+        </button>
+      </div>
+
       <div className={`transition-all duration-300 ${showForm ? 'mb-8 opacity-100' : 'h-0 overflow-hidden opacity-0'}`}>
         {form.form(showForm)}
       </div>
@@ -248,6 +301,16 @@ export default function Clients() {
         totalRecords={totalRecords}
         totalErrors={totalErrors}
       />
+
+      {metaImportModal && (
+        <MetaImportModal
+          setupId={metaImportModal.setupId}
+          accounts={metaImportModal.accounts}
+          limit={metaImportModal.limit}
+          onClose={() => setMetaImportModal(null)}
+          onImported={fetchClients}
+        />
+      )}
     </div>
   );
 }
