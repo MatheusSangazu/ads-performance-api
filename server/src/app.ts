@@ -139,18 +139,7 @@ app.use('/api/plans', planRoutes);
 app.use('/api/agency', agencyRoutes);
 app.use('/api/meta', metaRoutes);
 
-// Serve frontend em produção, senão API health check
-const clientDist = path.resolve(__dirname, '../../client/dist');
-if (fsSync.existsSync(clientDist)) {
-  app.use(express.static(clientDist));
-  // Express 5 (path-to-regexp v8) requer named param em vez de '*'
-  app.get('/{*splat}', (_req, res) => {
-    res.sendFile(path.join(clientDist, 'index.html'));
-  });
-  console.log(`[SERVER] Frontend servido de ${clientDist}`);
-} else {
-  app.get('/', (_req, res) => res.send('[GROWTH-ADS] API Online!'));
-}
+app.get('/', (_req, res) => res.send('[GROWTH-ADS] API Online!'));
 
 app.use(errorHandler);
 
