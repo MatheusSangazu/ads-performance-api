@@ -1,0 +1,53 @@
+services:
+  server:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    container_name: growth-server
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - DB_HOST=${DB_HOST}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - DB_DIALECT=${DB_DIALECT}
+      - PORT=3001
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
+      - JWT_REFRESH_EXPIRES_IN=${JWT_REFRESH_EXPIRES_IN}
+      - ADMIN_EMAIL=${ADMIN_EMAIL}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - EVO_API_URL=${EVO_API_URL}
+      - EVO_API_KEY=${EVO_API_KEY}
+      - EVO_INSTANCE_NAME=${EVO_INSTANCE_NAME}
+      - META_APP_ID=${META_APP_ID}
+      - META_APP_SECRET=${META_APP_SECRET}
+      - CORS_ORIGIN=${CORS_ORIGIN}
+      - NODE_ENV=production
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - wget --no-verbose --tries=1 --spider http://localhost:3001/ || exit 1
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 5
+
+  client:
+    build:
+      context: .
+      dockerfile: client/Dockerfile
+      args:
+        - VITE_API_URL=${VITE_API_URL}
+    container_name: growth-client
+    depends_on:
+      - server
+    expose:
+      - "80"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - curl -f http://localhost/health || exit 1
+      interval: 30s
+      timeout: 5s
+      retries: 5
