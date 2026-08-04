@@ -3,6 +3,10 @@ FROM node:20-alpine AS builder
 # Prisma precisa de openssl no Alpine
 RUN apk add --no-cache openssl libc6-compat
 
+# Força NODE_ENV=development durante o build para instalar devDependencies (tsc, types)
+# Sobrescreve o build-arg NODE_ENV=production que o Coolify injeta
+ENV NODE_ENV=development
+
 WORKDIR /app
 
 # Contexto é a raiz do projeto (onde está package.json)
@@ -39,6 +43,7 @@ VOLUME ["/app/server/uploads/creatives"]
 
 EXPOSE 3001
 
+# Em runtime, volta para production
 ENV NODE_ENV=production
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=5 \
