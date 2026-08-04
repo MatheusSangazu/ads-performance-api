@@ -140,7 +140,8 @@ app.use('/api/meta', metaRoutes);
 const clientDist = path.resolve(__dirname, '../../client/dist');
 if (fsSync.existsSync(clientDist)) {
   app.use(express.static(clientDist));
-  app.get('*', (_req, res) => {
+  // Express 5 (path-to-regexp v8) requer named param em vez de '*'
+  app.get('/{*splat}', (_req, res) => {
     res.sendFile(path.join(clientDist, 'index.html'));
   });
   console.log(`[SERVER] Frontend servido de ${clientDist}`);
