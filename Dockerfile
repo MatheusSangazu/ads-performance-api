@@ -1,3 +1,4 @@
+# ============ Stage 1: Build backend ============
 FROM node:20-alpine AS base
 
 RUN apk add --no-cache openssl
@@ -18,6 +19,18 @@ RUN npx prisma generate --schema=server/prisma/schema.prisma
 
 RUN npm run build
 
+# ============ Stage 2: Build frontend ============
+FROM node:20-alpine AS frontend
+
+WORKDIR /app/client
+
+COPY client/package*.json ./
+RUN npm install
+
+COPY client/ ./
+RUN npm run build
+
+# ============ Stage 3: Production ============
 FROM node:20-alpine AS runner
 
 RUN apk add --no-cache openssl
@@ -30,6 +43,7 @@ COPY --from=base /app/server/dist ./server/dist
 COPY --from=base /app/server/prisma ./server/prisma
 COPY --from=base /app/server/prisma.config.ts ./server/
 COPY --from=base /app/server/src/generated ./server/src/generated
+COPY --from=frontend /app/client/dist ./client/dist
 COPY server/start.sh ./server/start.sh
 
 RUN chmod +x server/start.sh
