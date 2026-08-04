@@ -28,6 +28,9 @@ const app = express();
 const port = process.env.PORT || 3001;
 const isProduction = process.env.NODE_ENV === 'production';
 
+// Confia no proxy reverso (Coolify/Traefik/Nginx) - necessário para rate-limit e IP correto
+app.set('trust proxy', 1);
+
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
   crossOriginEmbedderPolicy: false,
