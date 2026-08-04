@@ -9,6 +9,7 @@ import managerRepository from '../repositories/managerRepository.js';
 import balanceService from './balanceService.js';
 import evoService from './evoService.js';
 import prisma from '../config/db.js';
+import alertService from './alertService.js';
 
 const TZ = 'America/Sao_Paulo';
 
@@ -205,25 +206,12 @@ class SchedulerService {
     if (alerts.length === 0) return;
 
     for (const alert of alerts) {
-      const managers = await managerRepository.findManagersForClient(alert.actId);
-      for (const manager of managers) {
-        if (!manager.phone || !manager.whatsappNotify) continue;
-
-        const text = [
-          '🔴 *Saldo Baixo - Conta Boleto*',
-          '',
-          `📱 Cliente: *${alert.clientName}*`,
-          `💰 Saldo atual: R$ ${alert.balance.toFixed(2)}`,
-          `⚠️ Limite configurado: R$ ${alert.threshold.toFixed(2)}`,
-          '',
-          '_Enviado por GestorFácil_',
-        ].join('\n');
-
-        await evoService.sendText(manager.phone, text).catch(() => {});
-      }
+      await alertService.onBalanceLow(alert.actId, alert.balance, alert.threshold).catch((err) => {
+        console.error(`[SCHEDULER] Erro ao criar alerta de saldo para ${alert.clientName}:`, err);
+      });
     }
 
-    console.log(`[SCHEDULER] ${alerts.length} alerta(s) de saldo baixo enviado(s).`);
+    console.log(`[SCHEDULER] ${alerts.length} alerta(s) de saldo baixo verificado(s).`);
   }
 }
 

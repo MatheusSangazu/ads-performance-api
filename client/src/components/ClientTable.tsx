@@ -1,10 +1,11 @@
-import { Download, RefreshCw, Trash2, Pencil, ShieldCheck, ShieldAlert, AlertCircle } from 'lucide-react';
+import { Download, FileText, RefreshCw, Trash2, Pencil, ShieldCheck, ShieldAlert, AlertCircle } from 'lucide-react';
 import type { Client } from '../lib/api';
 
 interface ClientTableProps {
   clients: Client[];
   downloading: string | null;
   onDownload: (actId: string) => void;
+  onDownloadPdf: (actId: string) => void;
   onDelete: (actId: string) => void;
   onEdit: (client: Client) => void;
   onSync: (actId: string) => void;
@@ -14,6 +15,7 @@ export default function ClientTable({
   clients,
   downloading,
   onDownload,
+  onDownloadPdf,
   onDelete,
   onEdit,
   onSync
@@ -95,6 +97,14 @@ export default function ClientTable({
                       title="Download Excel"
                     >
                       <Download size={18} />
+                    </button>
+                    <button
+                      onClick={() => onDownloadPdf(client.actId)}
+                      disabled={downloading === client.actId}
+                      className="rounded-lg p-2 text-gray-400 hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400 transition-all disabled:opacity-30"
+                      title="Download PDF"
+                    >
+                      <FileText size={18} />
                     </button>
                     <button
                       onClick={() => onEdit(client)}

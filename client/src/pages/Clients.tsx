@@ -18,7 +18,7 @@ import { SkeletonClientList } from '../components/SkeletonClient';
 export default function Clients() {
   const { clients, loading, message, setMessage, fetchClients } = useClients();
   const { syncing, syncAccount } = useSync();
-  const { downloading, downloadReport } = useDownload();
+  const { downloading, downloadReport, downloadPdf } = useDownload();
   const [showForm, setShowForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -194,6 +194,10 @@ export default function Clients() {
     downloadReport(actId, (msg) => setMessage({ type: 'error', text: msg }));
   };
 
+  const handleDownloadPdf = (actId: string) => {
+    downloadPdf(actId, (msg) => setMessage({ type: 'error', text: msg }));
+  };
+
   const handleDelete = async (actId: string) => {
     await clientApi.delete(actId);
     setMessage({ type: 'success', text: 'Cliente removido com sucesso!' });
@@ -267,6 +271,7 @@ export default function Clients() {
                 client={client}
                 downloading={downloading}
                 onDownload={handleDownload}
+                onDownloadPdf={handleDownloadPdf}
                 onTokenUpdated={fetchClients}
                 onDelete={handleDelete}
                 onError={(msg) => setMessage({ type: 'error', text: msg })}
@@ -279,6 +284,7 @@ export default function Clients() {
             clients={filteredClients}
             downloading={downloading}
             onDownload={handleDownload}
+            onDownloadPdf={handleDownloadPdf}
             onDelete={handleDelete}
             onSync={(actId) => syncAccount(actId, new Date().toISOString().split('T')[0], new Date().toISOString().split('T')[0])}
             onEdit={(client) => {

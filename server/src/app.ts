@@ -143,10 +143,15 @@ app.use(errorHandler);
 app.listen(port, async () => {
   console.log(`[SERVER] Servidor rodando em http://localhost:${port}`);
 
-  await seedService.seedAdmin();
+  try {
+    await seedService.seedAdmin();
 
-  const autoSync = await settingsRepository.get('auto_sync_enabled');
-  if (autoSync === 'true') {
-    schedulerService.start();
+    const autoSync = await settingsRepository.get('auto_sync_enabled');
+    if (autoSync === 'true') {
+      schedulerService.start();
+    }
+  } catch (err) {
+    console.error('[SERVER] Erro durante inicialização do banco:', err instanceof Error ? err.message : err);
+    console.error('[SERVER] O servidor continuará rodando, mas funções de banco podem falhar até o DB estar disponível.');
   }
 });

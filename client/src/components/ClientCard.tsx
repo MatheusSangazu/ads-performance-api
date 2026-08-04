@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Download, Key, Loader2, RefreshCw, Trash2, X, ShieldCheck, ShieldAlert, AlertCircle, Pencil, Wallet, Plus, Zap, MessageSquare, CheckCircle, ChevronDown } from 'lucide-react';
+import { Download, FileText, Key, Loader2, RefreshCw, Trash2, X, ShieldCheck, ShieldAlert, AlertCircle, Pencil, Wallet, Plus, Zap, MessageSquare, CheckCircle, ChevronDown } from 'lucide-react';
 import { clientApi, syncApi, createProgressStream, type Client, type CustomConversion } from '../lib/api';
 import BudgetCard from './BudgetCard';
 import GoalCard from './GoalCard';
@@ -9,6 +9,7 @@ interface ClientCardProps {
   client: Client;
   downloading: string | null;
   onDownload: (actId: string) => void;
+  onDownloadPdf: (actId: string) => void;
   onTokenUpdated: () => void;
   onDelete: (actId: string) => Promise<void>;
   onError: (msg: string) => void;
@@ -27,7 +28,7 @@ const TYPE_OPTIONS = [
   { value: 'delivery', label: 'Delivery', icon: '🛵' },
 ];
 
-export default function ClientCard({ client, downloading, onDownload, onTokenUpdated, onDelete, onError, onSuccess }: ClientCardProps) {
+export default function ClientCard({ client, downloading, onDownload, onDownloadPdf, onTokenUpdated, onDelete, onError, onSuccess }: ClientCardProps) {
   const [showTokenEdit, setShowTokenEdit] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
@@ -426,6 +427,19 @@ export default function ClientCard({ client, downloading, onDownload, onTokenUpd
             <Download size={14} />
           )}
           Excel
+        </button>
+
+        <button
+          onClick={() => onDownloadPdf(client.actId)}
+          disabled={downloading === client.actId}
+          className="flex items-center justify-center gap-1.5 sm:gap-2 rounded-xl bg-red-600/10 px-2 sm:px-3 py-2 sm:py-2.5 text-[10px] sm:text-xs font-semibold text-red-600 transition-all hover:bg-red-600 hover:text-white disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-600"
+        >
+          {downloading === client.actId ? (
+            <Loader2 size={14} className="animate-spin" />
+          ) : (
+            <FileText size={14} />
+          )}
+          PDF
         </button>
 
         <button

@@ -332,6 +332,8 @@ export const clientApi = {
   delete: (actId: string) => api.delete(`/clients/${actId}`),
   downloadReport: (actId: string) =>
     api.get(`/clients/${actId}/download`, { responseType: 'blob' }),
+  downloadPdf: (actId: string) =>
+    api.get(`/clients/${actId}/download/pdf`, { responseType: 'blob' }),
   metrics: (params?: { since?: string; until?: string; clientId?: string }) => 
     api.get<DashboardMetrics>('/clients/metrics', { params }),
   getBudget: (actId: string) => api.get<Budget | null>(`/clients/${actId}/budget`),

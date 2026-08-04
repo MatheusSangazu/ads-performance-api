@@ -523,10 +523,8 @@ export async function fetchAccountBalance(
 
     let effectiveBalance: number | null = rawBalance;
 
-    if (spendCap !== null && amountSpent > 0) {
+    if (spendCap !== null) {
       effectiveBalance = spendCap - amountSpent;
-    } else if (rawBalance !== null && amountSpent > 0) {
-      effectiveBalance = rawBalance - amountSpent;
     }
 
     console.log(`[BALANCE] ${actId}: spend_cap=${spendCap}, balance=${rawBalance}, amount_spent=${amountSpent} → available=${effectiveBalance}`);

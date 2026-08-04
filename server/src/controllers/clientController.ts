@@ -1,6 +1,7 @@
 import type { Response } from 'express';
 import clientService from '../services/clientService.js';
 import reportService from '../services/reportService.js';
+import pdfService from '../services/pdfService.js';
 import dashboardRepository from '../repositories/dashboardRepository.js';
 import managerRepository from '../repositories/managerRepository.js';
 import type { AuthRequest } from '../middleware/auth.js';
@@ -100,6 +101,19 @@ class ClientController {
 
     await workbook.xlsx.write(res);
     res.end();
+  }
+
+  public async downloadPdf(req: AuthRequest, res: Response): Promise<void> {
+    const { actId } = req.params;
+    const pdfBuffer = await pdfService.generatePdf(actId);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename=relatorio_${actId}.pdf`,
+    );
+
+    res.end(pdfBuffer);
   }
 }
 

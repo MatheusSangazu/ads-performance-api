@@ -65,5 +65,24 @@ export function useDownload() {
     }
   };
 
-  return { downloading, downloadReport };
+  const downloadPdf = async (actId: string, onError: (msg: string) => void) => {
+    setDownloading(actId);
+    try {
+      const res = await clientApi.downloadPdf(actId);
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `relatorio_${actId}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      onError('Erro ao baixar PDF.');
+    } finally {
+      setDownloading(null);
+    }
+  };
+
+  return { downloading, downloadReport, downloadPdf };
 }

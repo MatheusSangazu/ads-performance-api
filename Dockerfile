@@ -30,6 +30,9 @@ COPY --from=base /app/server/dist ./server/dist
 COPY --from=base /app/server/prisma ./server/prisma
 COPY --from=base /app/server/prisma.config.ts ./server/
 COPY --from=base /app/server/src/generated ./server/src/generated
+COPY server/start.sh ./server/start.sh
+
+RUN chmod +x server/start.sh
 
 RUN mkdir -p /app/server/uploads/creatives
 
@@ -38,7 +41,7 @@ VOLUME ["/app/server/uploads/creatives"]
 ENV NODE_ENV=production
 EXPOSE 3001
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:3001/ || exit 1
 
-CMD ["node", "server/dist/app.js"]
+CMD ["sh", "server/start.sh"]

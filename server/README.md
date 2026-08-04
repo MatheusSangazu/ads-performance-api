@@ -396,9 +396,11 @@ Todas as tabelas de performance compartilham as mesmas métricas:
 - **Avaliação pós-sync:** Após cada sincronização, `alertService.evaluate()` verifica orçamento e metas de todos os gestores vinculados ao cliente
 - **Regras de orçamento:** >100% = critical, >=80% = warning, <20% = info
 - **Regras de metas:** >=100% = success, <50% = warning (CPL é inverso — menor é melhor)
+- **Alerta de saldo:** `alertService.onBalanceLow()` verifica saldo de contas boleto 2x/dia, gera alerta `balance_low` com dedup mensal
 - **Dedup mensal:** Mesmo tipo de alerta não é duplicado dentro do mês corrente
 - **Sync events:** `onSyncSuccess` e `onSyncFailed` geram alertas info/critical respectivamente
 - **Tarefas automáticas:** Alertas com severity `critical` criam tarefa automática no backlog via `taskService`
+- **WhatsApp:** Alertas `critical` são enviados via WhatsApp quando gestor tem `whatsappNotify` ativo
 
 ### Kanban de Tarefas
 - **Status:** backlog → todo → in_progress → review → done

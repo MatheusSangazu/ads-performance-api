@@ -288,7 +288,7 @@ client/src/
 | id | String (UUID) | PK |
 | manager_id | String (FK → managers.id) | Gestor destinatário |
 | client_id | String (FK → clients_config.act_id) | Cliente relacionado |
-| type | Enum | Tipo: `budget_warning`, `budget_exceeded`, `budget_underuse`, `goal_behind`, `goal_reached`, `sync_failed`, `sync_success` |
+| type | Enum | Tipo: `budget_warning`, `budget_exceeded`, `budget_underuse`, `goal_behind`, `goal_reached`, `sync_failed`, `sync_success`, `account_issue`, `balance_low` |
 | severity | Enum (`info`, `warning`, `critical`, `success`) | Severidade |
 | title | String | Título curto |
 | message | String | Descrição detalhada |
@@ -649,6 +649,17 @@ JOIN managers m ON mc.manager_id = m.id;
 5. ~~Envio de resumos semanais automáticos para gestores~~
 6. ~~Indicadores visuais de saúde da conta (Ativa, Desativada, Erro de Pagamento)~~
 
+#### Resumo Semanal Enriquecido
+
+O resumo semanal (`sendSummaryToManager`) inclui:
+- **Comparativo período a período**: variação % de investimento, leads, CPL e ROAS vs semana anterior
+- **Indicadores de tendência**: setas ↑↓ com percentual de variação
+- **Desempenho por cliente**: investimento, leads, CPL, ROAS, mensagens com delta vs semana anterior
+- **Alertas de orçamento**: clientes que atingiram ≥80% do orçamento são destacados no resumo
+- **Top performers**: ranking dos 3 melhores clientes da semana (por investimento)
+- **Alertas pendentes**: contagem de alertas não lidos do gestor
+- Execução automática toda segunda-feira às 09:00 (horário de Brasília)
+
 ### Sprint 6 — Monetização [CONCLUIDA]
 1. ~~Configuração centralizada de planos (`plans.ts`) — Starter, Pro, Agency~~
 2. ~~Feature gating via middleware (`planMiddleware.ts`) — limites de clientes, tarefas, seats, features~~
@@ -809,8 +820,9 @@ JOIN managers m ON mc.manager_id = m.id;
 - Monitorar saldo da conta de ads via Meta API (`spend_cap` e `balance`)
 - Campo no cadastro do cliente: **"Essa conta é boleto?"** (flag `is_boleto`)
 - Limiar de alerta **configurável por cliente**: "Alertar quando saldo < R$ X"
-- Alerta via WhatsApp com saldo atual + link para recarregar
+- Alerta via WhatsApp + registro no banco de dados (tipo `balance_low`)
 - Badge visual no dashboard quando saldo está baixo
+- Cálculo de saldo correto: contas com `spend_cap` usam `spend_cap - amount_spent`; contas sem `spend_cap` usam o campo `balance` da API (saldo restante pré-pago, sem subtrair `amount_spent`)
 
 #### 10.2 Modelo de dados — Alterações no Client
 
@@ -832,8 +844,10 @@ JOIN managers m ON mc.manager_id = m.id;
 #### 10.4 Cron de Monitoramento
 
 - Verificar saldo de todas as contas boleto 2x ao dia (8h e 14h)
-- Se saldo < threshold → gerar alerta + notificação WhatsApp
-- Não repetir alerta para mesma conta no mesmo dia (dedup)
+- Se saldo < threshold → gera alerta `balance_low` via `alertService.onBalanceLow()`
+- Alerta é salvo no banco com dedup (mesmo tipo + cliente + mês)
+- Alerta `critical` cria tarefa automática no Kanban
+- Notificação WhatsApp enviada via `alertService.sendWhatsapp()`
 
 #### Considerações
 

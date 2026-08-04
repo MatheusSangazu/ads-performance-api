@@ -197,6 +197,20 @@ class AlertService {
     }
   }
 
+  public async onBalanceLow(clientId: string, balance: number, threshold: number) {
+    const managers = await managerRepository.findManagersForClient(clientId);
+    for (const manager of managers) {
+      await this.dedupCreate(
+        manager.id,
+        clientId,
+        'balance_low',
+        'critical',
+        'Saldo baixo',
+        `Saldo da conta em R$ ${balance.toFixed(2)}, abaixo do limite configurado de R$ ${threshold.toFixed(2)}.`,
+      );
+    }
+  }
+
   private getMetricValue(metric: string, clientMetrics: any, overview: any): number {
     switch (metric) {
       case 'leads': return clientMetrics.leads || 0;

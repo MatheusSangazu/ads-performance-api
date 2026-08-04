@@ -47,6 +47,7 @@ enum AlertType {
   sync_failed
   sync_success
   account_issue
+  balance_low
 }
 
 enum InviteType {

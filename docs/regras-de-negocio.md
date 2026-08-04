@@ -197,19 +197,29 @@
 | `goal_reached` | Meta atingida ou ultrapassada | success |
 | `sync_failed` | Falha na sincronização de um cliente | critical |
 | `sync_success` | Sync completado com sucesso | info |
+| `balance_low` | Saldo da conta boleto abaixo do limite configurado | critical |
 
 ### 8.2 Canais de notificação
 
-- **In-app:** Badge no menu + lista de notificações não lidas
-- **Email:** Enviado para alertas critical e sync_failed (configurável por gestor)
-- Futuro: WhatsApp, Telegram, Slack
+- **In-app:** Badge no menu + lista de alertas não lidos
+- **WhatsApp:** Enviado para alertas `critical` (configurável por gestor via `whatsappNotify` + `phone`)
+- **Email:** (futuro) Enviado para alertas critical e sync_failed (configurável por gestor)
 
 ### 8.3 Regras
 
-- Alertas são gerados automaticamente após cada sync
-- Alertas duplicados não são criados (dedup por tipo + cliente + período)
-- O gestor pode marcar alertas como lidos
+- Alertas são gerados automaticamente após cada sync (orçamento, metas) e em crons periódicos (saldo)
+- Alertas duplicados não são criados (dedup por tipo + cliente + mês)
+- Alertas `critical` criam automaticamente uma tarefa no backlog do Kanban
+- O gestor pode marcar alertas como lidos e descartá-los
 - O admin pode ver alertas de todos os gestores
+
+### 8.4 Alertas de saldo boleto
+
+- Verificação automática 2x ao dia (08:00 e 14:00) via cron
+- Busca saldo atualizado via Meta API para todas as contas com `is_boleto = true`
+- Se saldo < `balance_threshold` → gera alerta `balance_low` (critical) + notificação WhatsApp
+- Utiliza o mesmo sistema de dedup dos demais alertas (não reenvia no mesmo mês)
+- O cálculo de saldo considera: contas com `spend_cap` usam `spend_cap - amount_spent`; contas sem `spend_cap` usam o campo `balance` da API (saldo restante pré-pago)
 
 ---
 

@@ -150,6 +150,10 @@ router.get('/:actId/download', authMiddleware, clientAccess, (req, res, next) =>
   clientController.downloadReport(req, res).catch(next);
 });
 
+router.get('/:actId/download/pdf', authMiddleware, clientAccess, (req, res, next) => {
+  clientController.downloadPdf(req, res).catch(next);
+});
+
 router.post('/:actId/summary', authMiddleware, clientAccess, (req, res, next) => {
   summaryController.sendClientSummary(req, res).catch(next);
 });

@@ -2,6 +2,8 @@ import prisma from '../config/db.js';
 import dashboardRepository from '../repositories/dashboardRepository.js';
 import managerRepository from '../repositories/managerRepository.js';
 import goalRepository from '../repositories/goalRepository.js';
+import budgetRepository from '../repositories/budgetRepository.js';
+import alertRepository from '../repositories/alertRepository.js';
 import evoService from './evoService.js';
 
 class SummaryService {
@@ -20,29 +22,124 @@ class SummaryService {
     const clientIds = await managerRepository.getClientIds(managerId);
     if (clientIds.length === 0) return;
 
-    const performance = await dashboardRepository.getOverview(clientIds);
-    
-    const lines = [
-      '📊 *Resumo Semanal de Performance*',
+    const now = new Date();
+    const fmt = (d: Date) => d.toISOString().split('T')[0];
+
+    const thisWeekEnd = now;
+    const thisWeekStart = new Date(now);
+    thisWeekStart.setDate(thisWeekStart.getDate() - 6);
+
+    const lastWeekEnd = new Date(thisWeekStart);
+    lastWeekEnd.setDate(lastWeekEnd.getDate() - 1);
+    const lastWeekStart = new Date(lastWeekEnd);
+    lastWeekStart.setDate(lastWeekStart.getDate() - 6);
+
+    const [thisWeek, lastWeek] = await Promise.all([
+      dashboardRepository.getOverview(clientIds, { since: fmt(thisWeekStart), until: fmt(thisWeekEnd) }),
+      dashboardRepository.getOverview(clientIds, { since: fmt(lastWeekStart), until: fmt(lastWeekEnd) }),
+    ]);
+
+    const prev = (curr: number, prev: number) => {
+      if (prev === 0) return curr > 0 ? '+∞' : '0';
+      const pct = ((curr - prev) / prev) * 100;
+      if (Math.abs(pct) < 1) return '~';
+      return `${pct > 0 ? '↑' : '↓'}${Math.abs(pct).toFixed(0)}%`;
+    };
+
+    const fmtCurrency = (v: number) => `R$ ${v.toFixed(2)}`;
+
+    const spendVar = prev(thisWeek.totalSpend, lastWeek.totalSpend);
+    const leadsVar = prev(thisWeek.totalLeads, lastWeek.totalLeads);
+    const cplVar = prev(thisWeek.avgCpl, lastWeek.avgCpl);
+    const roasVar = prev(thisWeek.avgRoas, lastWeek.avgRoas);
+
+    const lines: string[] = [
+      '📊 *Resumo Semanal — GestorFácil*',
+      `📅 ${fmt(thisWeekStart).split('-').reverse().join('/')} a ${fmt(thisWeekEnd).split('-').reverse().join('/')}`,
       '',
-      `Período: Últimos 7 dias`,
-      `Total Gasto: R$ ${performance.totalSpend.toFixed(2)}`,
-      `Total Leads: ${performance.totalLeads}`,
-      `CPL Médio: R$ ${performance.avgCpl.toFixed(2)}`,
-      `ROAS Médio: ${performance.avgRoas.toFixed(2)}`,
+      '━━━━━━━━━━━━━━━━━━',
+      '📈 *Visão Geral*',
+      '━━━━━━━━━━━━━━━━━━',
       '',
-      '*Destaque por Cliente:*',
+      `💰 Investimento: *${fmtCurrency(thisWeek.totalSpend)}* (${spendVar} vs semana anterior)`,
+      `🎯 Leads: *${thisWeek.totalLeads}* (${leadsVar})`,
+      `💲 CPL Médio: *${fmtCurrency(thisWeek.avgCpl)}* (${cplVar})`,
+      `📈 ROAS: *${thisWeek.avgRoas.toFixed(2)}x* (${roasVar})`,
     ];
 
-    performance.clientMetrics.slice(0, 5).forEach((m: any) => {
-      lines.push(`- ${m.name}: R$ ${m.spend.toFixed(2)} | ${m.leads} leads | CPL R$ ${m.leads > 0 ? (m.spend/m.leads).toFixed(2) : '0.00'}`);
-    });
-
-    if (performance.clientMetrics.length > 5) {
-      lines.push(`... e mais ${performance.clientMetrics.length - 5} clientes.`);
+    if (thisWeek.totalMessaging > 0) {
+      lines.push(`💬 Mensagens: *${thisWeek.totalMessaging}* (${prev(thisWeek.totalMessaging, lastWeek.totalMessaging)})`);
+    }
+    if (thisWeek.totalPurchases > 0) {
+      lines.push(`🛒 Vendas: *${thisWeek.totalPurchases}* | Faturamento: *${fmtCurrency(thisWeek.totalPurchaseValue)}*`);
     }
 
-    lines.push('', '_Acesse o dashboard para ver o relatório completo._');
+    lines.push(`🖱️ Cliques: ${thisWeek.totalClicks} | 👁️ Impressões: ${thisWeek.totalImpressions.toLocaleString('pt-BR')}`);
+
+    const unreadAlerts = await alertRepository.countUnread(managerId);
+    if (unreadAlerts > 0) {
+      lines.push('', `⚠️ *${unreadAlerts} alerta${unreadAlerts > 1 ? 's' : ''} pendente${unreadAlerts > 1 ? 's' : ''}* — acesse o dashboard para verificar.`);
+    }
+
+    lines.push('', '━━━━━━━━━━━━━━━━━━', '👥 *Desempenho por Cliente*', '━━━━━━━━━━━━━━━━━━', '');
+
+    const sorted = [...thisWeek.clientMetrics].sort((a, b) => b.spend - a.spend);
+
+    const budgetWarnings: string[] = [];
+
+    for (const m of sorted) {
+      const lastM = lastWeek.clientMetrics.find((c: any) => c.actId === m.actId);
+      const spendDelta = lastM ? prev(m.spend, lastM.spend) : 'novo';
+      const leadsDelta = lastM ? prev(m.leads, lastM.leads) : '';
+
+      let line = `*${m.name}*\n  💰 ${fmtCurrency(m.spend)} (${spendDelta}) | 🎯 ${m.leads} leads (${leadsDelta})`;
+
+      if (m.leads > 0) {
+        line += ` | CPL ${fmtCurrency(m.spend / m.leads)}`;
+      }
+      if (m.conversionValue > 0 && m.spend > 0) {
+        line += ` | ROAS ${(m.conversionValue / m.spend).toFixed(1)}x`;
+      }
+      if (m.messaging > 0) {
+        line += ` | 💬 ${m.messaging}`;
+      }
+      lines.push(line);
+
+      const budget = await budgetRepository.findCurrent(managerId, m.actId);
+      if (budget) {
+        const budgetAmount = Number(budget.budgetAmount);
+        const pct = budgetAmount > 0 ? (m.spend / budgetAmount) * 100 : 0;
+        if (pct >= 80) {
+          const icon = pct > 100 ? '🔴' : '🟡';
+          budgetWarnings.push(`${icon} ${m.name}: ${pct.toFixed(0)}% do orçamento (${fmtCurrency(m.spend)} de ${fmtCurrency(budgetAmount)})`);
+        }
+      }
+
+      lines.push('');
+    }
+
+    if (thisWeek.clientMetrics.length > 5) {
+      lines.push(`... e mais ${thisWeek.clientMetrics.length - 5} cliente${thisWeek.clientMetrics.length - 5 > 1 ? 's' : ''}.`);
+    }
+
+    if (budgetWarnings.length > 0) {
+      lines.push('━━━━━━━━━━━━━━━━━━', '⚠️ *Orçamento*', '━━━━━━━━━━━━━━━━━━', '');
+      budgetWarnings.forEach(w => lines.push(w));
+      lines.push('');
+    }
+
+    const topPerformers = sorted.slice(0, 3).filter(m => m.spend > 0);
+    if (topPerformers.length > 0) {
+      lines.push('🏆 *Top Performers da Semana*');
+      topPerformers.forEach((m, i) => {
+        const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉';
+        const metric = m.conversionValue > 0 ? `ROAS ${(m.conversionValue / m.spend).toFixed(1)}x` : `${m.leads} leads`;
+        lines.push(`  ${medal} ${m.name} — ${metric}`);
+      });
+      lines.push('');
+    }
+
+    lines.push('_Acesse o dashboard para detalhes completos._');
 
     await evoService.sendText(phone, lines.join('\n'));
   }
