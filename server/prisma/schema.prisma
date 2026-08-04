@@ -102,10 +102,10 @@ model Manager {
   agencyId         String?      @map("agency_id") @db.Char(36)
   maxSeats         Int?         @map("max_seats")
   subscriptionStatus SubscriptionStatus @default(active) @map("subscription_status")
-  subscriptionEndsAt DateTime?  @map("subscription_ends_at") @db.Timestamp(0)
+  subscriptionEndsAt DateTime?  @map("subscription_ends_at") @db.DateTime(0)
   billingPeriod    String?      @map("billing_period") @db.VarChar(20)
-  createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamp(0)
-  updatedAt    DateTime     @updatedAt @map("updated_at") @db.Timestamp(0)
+  createdAt    DateTime     @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt    DateTime     @updatedAt @map("updated_at") @db.DateTime(0)
 
   refreshTokens RefreshToken[]
   managerClients ManagerClient[]
@@ -129,10 +129,10 @@ model Invite {
   type      InviteType @default(manager)
   used      Boolean  @default(false)
   usedById  String?  @map("used_by") @db.Char(36)
-  usedAt    DateTime? @map("used_at") @db.Timestamp(0)
+  usedAt    DateTime? @map("used_at") @db.DateTime(0)
   createdBy String   @map("created_by") @db.Char(36)
-  expiresAt DateTime @map("expires_at") @db.Timestamp(0)
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+  expiresAt DateTime @map("expires_at") @db.DateTime(0)
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(0)
 
   creator Manager  @relation("CreatedInvites", fields: [createdBy], references: [id], onDelete: Cascade)
   usedBy   Manager? @relation("UsedInvites", fields: [usedById], references: [id], onDelete: SetNull)
@@ -143,7 +143,7 @@ model Invite {
 model ManagerClient {
   managerId String   @map("manager_id") @db.Char(36)
   clientId  String   @map("client_id") @db.VarChar(50)
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(0)
 
   manager Manager @relation(fields: [managerId], references: [id], onDelete: Cascade)
   client  Client  @relation(fields: [clientId], references: [actId], onDelete: Cascade)
@@ -156,8 +156,8 @@ model RefreshToken {
   id        String   @id @db.Char(36)
   managerId String   @map("manager_id") @db.Char(36)
   tokenHash String   @unique @map("token_hash") @db.VarChar(255)
-  expiresAt DateTime @map("expires_at") @db.Timestamp(0)
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+  expiresAt DateTime @map("expires_at") @db.DateTime(0)
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(0)
 
   manager Manager @relation(fields: [managerId], references: [id], onDelete: Cascade)
 
@@ -175,12 +175,12 @@ model Client {
   status          ClientStatus @default(active)
   accountStatus   Int?         @map("account_status")
   disableReason   Int?         @map("disable_reason")
-  healthLastCheck DateTime?    @map("health_last_check") @db.Timestamp(0)
+  healthLastCheck DateTime?    @map("health_last_check") @db.DateTime(0)
   isBoleto        Boolean      @default(false) @map("is_boleto")
   balanceThreshold Decimal?     @map("balance_threshold") @db.Decimal(12,2)
   currentBalance  Decimal?     @map("current_balance") @db.Decimal(12,2)
-  balanceUpdatedAt DateTime?    @map("balance_updated_at") @db.Timestamp(0)
-  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamp(0)
+  balanceUpdatedAt DateTime?    @map("balance_updated_at") @db.DateTime(0)
+  createdAt       DateTime     @default(now()) @map("created_at") @db.DateTime(0)
 
   adsPerformance         AdPerformance[]
   audiencePerformance    AdAudiencePerformance[]
@@ -353,7 +353,7 @@ model Alert {
   message    String        @db.Text
   read       Boolean       @default(false)
   dismissed  Boolean       @default(false)
-  createdAt  DateTime      @default(now()) @map("created_at") @db.Timestamp(0)
+  createdAt  DateTime      @default(now()) @map("created_at") @db.DateTime(0)
 
   manager Manager @relation(fields: [managerId], references: [id], onDelete: Cascade)
   client  Client  @relation(fields: [clientId], references: [actId], onDelete: Cascade)
@@ -374,8 +374,8 @@ model Task {
   dueDate     DateTime?    @map("due_date") @db.Date
   position    Int          @default(0)
   alertId     String?      @map("alert_id") @db.Char(36)
-  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamp(0)
-  updatedAt   DateTime     @updatedAt @map("updated_at") @db.Timestamp(0)
+  createdAt   DateTime     @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt   DateTime     @updatedAt @map("updated_at") @db.DateTime(0)
 
   manager Manager @relation(fields: [managerId], references: [id], onDelete: Cascade)
   client  Client? @relation(fields: [clientId], references: [actId], onDelete: Cascade)
@@ -387,7 +387,7 @@ model Task {
 model AppSettings {
   key       String @id @db.VarChar(100)
   value     String @db.Text
-  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp(0)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.DateTime(0)
 
   @@map("app_settings")
 }
@@ -398,8 +398,8 @@ model ClientBudget {
   clientId     String   @map("client_id") @db.VarChar(50)
   month        DateTime @db.Date
   budgetAmount Decimal  @map("budget_amount") @db.Decimal(15, 4)
-  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamp(0)
-  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamp(0)
+  createdAt    DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.DateTime(0)
 
   manager Manager @relation(fields: [managerId], references: [id], onDelete: Cascade)
   client  Client  @relation(fields: [clientId], references: [actId], onDelete: Cascade)
@@ -415,8 +415,8 @@ model ClientGoal {
   metric       GoalMetric
   targetValue  Decimal     @map("target_value") @db.Decimal(15, 4)
   month        DateTime    @db.Date
-  createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamp(0)
-  updatedAt    DateTime    @updatedAt @map("updated_at") @db.Timestamp(0)
+  createdAt    DateTime    @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt    DateTime    @updatedAt @map("updated_at") @db.DateTime(0)
 
   manager Manager @relation(fields: [managerId], references: [id], onDelete: Cascade)
   client  Client  @relation(fields: [clientId], references: [actId], onDelete: Cascade)
@@ -430,7 +430,7 @@ model ClientCustomConversion {
   clientId      String   @map("client_id") @db.VarChar(50)
   customEventId String   @map("custom_event_id") @db.VarChar(150)
   label         String   @db.VarChar(100)
-  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+  createdAt     DateTime @default(now()) @map("created_at") @db.DateTime(0)
 
   client Client @relation(fields: [clientId], references: [actId], onDelete: Cascade)
 
