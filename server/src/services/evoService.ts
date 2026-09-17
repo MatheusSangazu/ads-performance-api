@@ -20,19 +20,31 @@ class EvoService {
     return !!(this.baseUrl && env.EVO_API_KEY && env.EVO_INSTANCE_NAME);
   }
 
-  public async sendText(phone: string, text: string): Promise<boolean> {
+  private normalizeDestination(destination: string, type: 'phone' | 'group'): string {
+    if (type === 'group') {
+      const groupId = destination.trim().replace(/\s/g, '');
+      return groupId.endsWith('@g.us') ? groupId : `${groupId}@g.us`;
+    }
+
+    const number = destination.replace(/\D/g, '');
+    return `${number}@s.whatsapp.net`;
+  }
+
+  public async sendTextToDestination(
+    destination: string,
+    type: 'phone' | 'group',
+    text: string,
+  ): Promise<boolean> {
     if (!this.isConfigured) return false;
 
     try {
-      const number = phone.replace(/\D/g, '');
-
       const res = await fetch(
         `${this.baseUrl}/message/sendText/${this.instance}`,
         {
           method: 'POST',
           headers: this.headers,
           body: JSON.stringify({
-            number: `${number}@s.whatsapp.net`,
+            number: this.normalizeDestination(destination, type),
             text,
           }),
         },
@@ -49,6 +61,41 @@ class EvoService {
       console.error('[EVO] Falha ao enviar mensagem:', err);
       return false;
     }
+  }
+
+  public async sendText(phone: string, text: string): Promise<boolean> {
+    return this.sendTextToDestination(phone, 'phone', text);
+  }
+
+  public async getGroups(): Promise<{ id: string; name: string }[]> {
+    if (!this.isConfigured) return [];
+
+    const res = await fetch(
+      `${this.baseUrl}/group/fetchAllGroups/${this.instance}?getParticipants=false`,
+      { headers: this.headers },
+    );
+
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`Evolution API retornou ${res.status}: ${body}`);
+    }
+
+    const payload = await res.json() as unknown;
+    const groups = Array.isArray(payload)
+      ? payload
+      : typeof payload === 'object' && payload !== null && Array.isArray((payload as { data?: unknown }).data)
+        ? (payload as { data: unknown[] }).data
+        : [];
+
+    return groups
+      .map((group) => {
+        const item = group as Record<string, unknown>;
+        const id = String(item.id || item.remoteJid || item.jid || '').trim();
+        const name = String(item.subject || item.name || id || 'Grupo sem nome').trim();
+        return { id, name };
+      })
+      .filter((group) => group.id.endsWith('@g.us'))
+      .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
   }
 
   public async getConnectionState(): Promise<{

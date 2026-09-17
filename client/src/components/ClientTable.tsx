@@ -1,4 +1,4 @@
-import { Download, FileText, RefreshCw, Trash2, Pencil, ShieldCheck, ShieldAlert, AlertCircle } from 'lucide-react';
+import { Download, FileText, RefreshCw, Trash2, Pencil, ShieldCheck, ShieldAlert, AlertCircle, BellRing } from 'lucide-react';
 import type { Client } from '../lib/api';
 
 interface ClientTableProps {
@@ -9,6 +9,7 @@ interface ClientTableProps {
   onDelete: (actId: string) => void;
   onEdit: (client: Client) => void;
   onSync: (actId: string) => void;
+  onManageAutomations: (client: Client) => void;
 }
 
 export default function ClientTable({
@@ -18,7 +19,8 @@ export default function ClientTable({
   onDownloadPdf,
   onDelete,
   onEdit,
-  onSync
+  onSync,
+  onManageAutomations,
 }: ClientTableProps) {
   const renderStatus = (status: number) => {
     const labels: Record<number, string> = {
@@ -105,6 +107,13 @@ export default function ClientTable({
                       title="Download PDF"
                     >
                       <FileText size={18} />
+                    </button>
+                    <button
+                      onClick={() => onManageAutomations(client)}
+                      className="rounded-lg p-2 text-gray-400 hover:bg-green-500/10 hover:text-green-600 dark:hover:text-green-400 transition-all"
+                      title="Avisos automáticos"
+                    >
+                      <BellRing size={18} />
                     </button>
                     <button
                       onClick={() => onEdit(client)}

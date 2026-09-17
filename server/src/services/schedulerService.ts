@@ -10,6 +10,7 @@ import balanceService from './balanceService.js';
 import evoService from './evoService.js';
 import prisma from '../config/db.js';
 import alertService from './alertService.js';
+import summaryAutomationService from './summaryAutomationService.js';
 
 const TZ = 'America/Sao_Paulo';
 
@@ -19,6 +20,7 @@ class SchedulerService {
   private healthSummaryTask: cron.ScheduledTask | null = null;
   private weeklyTask: cron.ScheduledTask | null = null;
   private balanceTask: cron.ScheduledTask | null = null;
+  private summaryAutomationTask: cron.ScheduledTask | null = null;
 
   public start() {
     if (this.task) return;
@@ -44,7 +46,11 @@ class SchedulerService {
       await this.runBalanceCheck();
     }, { timezone: TZ });
 
-    console.log('[SCHEDULER] Scheduler iniciado (America/Sao_Paulo): sync 02:00, health 08/12/18:00, resumo saúde 08:30, semanal seg 09:00, saldo boleto 08/14:00');
+    this.summaryAutomationTask = cron.schedule('* * * * *', async () => {
+      await summaryAutomationService.runDueSchedules();
+    }, { timezone: TZ });
+
+    console.log('[SCHEDULER] Scheduler iniciado: sync 02:00, health 08/12/18:00, resumo saúde 08:30, semanal seg 09:00, saldo 08/14:00, automações a cada minuto');
   }
 
   public stop() {
@@ -67,6 +73,10 @@ class SchedulerService {
     if (this.balanceTask) {
       this.balanceTask.stop();
       this.balanceTask = null;
+    }
+    if (this.summaryAutomationTask) {
+      this.summaryAutomationTask.stop();
+      this.summaryAutomationTask = null;
     }
     console.log('[SCHEDULER] Scheduler parado.');
   }

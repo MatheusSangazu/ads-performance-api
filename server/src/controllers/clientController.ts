@@ -62,6 +62,13 @@ class ClientController {
     res.json(result);
   }
 
+  public async updateTokenForAll(req: AuthRequest, res: Response): Promise<void> {
+    const { access_token } = req.body;
+    const clientIds = await this.getAccessibleClientIds(req);
+    const result = await clientService.updateTokenForClients(clientIds, access_token);
+    res.json(result);
+  }
+
   public async updateType(req: AuthRequest, res: Response): Promise<void> {
     const { actId } = req.params;
     const { clientType } = req.body;

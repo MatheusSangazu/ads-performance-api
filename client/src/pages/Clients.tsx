@@ -1,6 +1,6 @@
 import { useState, useRef, useMemo, useEffect } from 'react';
-import { Search, Link2, Loader2 } from 'lucide-react';
-import { clientApi, syncApi, createProgressStream, metaApi } from '../lib/api';
+import { Search, Link2, Loader2, KeyRound } from 'lucide-react';
+import { clientApi, syncApi, createProgressStream, metaApi, type Client } from '../lib/api';
 import type { PlanLimit } from '../lib/api';
 import type { SyncFormBreakdowns } from '../components/SyncForm';
 import type { LogEntry } from '../components/SyncProgressModal';
@@ -14,6 +14,8 @@ import MetaImportModal from '../components/MetaImportModal';
 import ClientHeader from '../components/ClientHeader';
 import ClientTable from '../components/ClientTable';
 import { SkeletonClientList } from '../components/SkeletonClient';
+import BulkTokenModal from '../components/BulkTokenModal';
+import SummaryAutomationModal from '../components/SummaryAutomationModal';
 
 export default function Clients() {
   const { clients, loading, message, setMessage, fetchClients } = useClients();
@@ -25,6 +27,8 @@ export default function Clients() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [metaImportModal, setMetaImportModal] = useState<{ setupId: string; accounts: { id: string; name: string }[]; limit: PlanLimit } | null>(null);
   const [metaConnecting, setMetaConnecting] = useState(false);
+  const [showBulkTokenModal, setShowBulkTokenModal] = useState(false);
+  const [automationClient, setAutomationClient] = useState<Client | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -222,7 +226,7 @@ export default function Clients() {
 
       {message && <Message type={message.type}>{message.text}</Message>}
 
-      <div className="mb-4 flex gap-3">
+      <div className="mb-4 flex flex-wrap gap-3">
         <button
           onClick={handleMetaConnect}
           disabled={metaConnecting}
@@ -230,6 +234,14 @@ export default function Clients() {
         >
           {metaConnecting ? <Loader2 size={16} className="animate-spin" /> : <Link2 size={16} />}
           Importar do Meta
+        </button>
+        <button
+          onClick={() => setShowBulkTokenModal(true)}
+          disabled={clients.length === 0}
+          className="flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-800 shadow-sm transition-colors hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300 dark:hover:bg-amber-500/20"
+        >
+          <KeyRound size={16} />
+          Atualizar token de todas
         </button>
       </div>
 
@@ -276,6 +288,7 @@ export default function Clients() {
                 onDelete={handleDelete}
                 onError={(msg) => setMessage({ type: 'error', text: msg })}
                 onSuccess={(msg) => setMessage({ type: 'success', text: msg })}
+                onManageAutomations={setAutomationClient}
               />
             ))}
           </div>
@@ -291,6 +304,7 @@ export default function Clients() {
               // Aqui poderíamos abrir o formulário de edição pré-preenchido
               setMessage({ type: 'success', text: `Editando ${client.clientName}` });
             }}
+            onManageAutomations={setAutomationClient}
           />
         )}
       </div>
@@ -315,6 +329,26 @@ export default function Clients() {
           limit={metaImportModal.limit}
           onClose={() => setMetaImportModal(null)}
           onImported={fetchClients}
+        />
+      )}
+
+      {showBulkTokenModal && (
+        <BulkTokenModal
+          accountCount={clients.length}
+          onClose={() => setShowBulkTokenModal(false)}
+          onSuccess={(text) => {
+            setMessage({ type: 'success', text });
+            fetchClients();
+          }}
+          onError={(text) => setMessage({ type: 'error', text })}
+        />
+      )}
+
+      {automationClient && (
+        <SummaryAutomationModal
+          client={automationClient}
+          onClose={() => setAutomationClient(null)}
+          onNotify={(type, text) => setMessage({ type, text })}
         />
       )}
     </div>

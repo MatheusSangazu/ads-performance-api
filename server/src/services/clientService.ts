@@ -22,6 +22,18 @@ class ClientService {
     return { success: true, message: 'Token atualizado com sucesso!' };
   }
 
+  public async updateTokenForClients(actIds: string[], token: string) {
+    const uniqueActIds = [...new Set(actIds)];
+    const result = await clientRepository.updateTokenForClients(uniqueActIds, token.trim());
+    const accountLabel = result.count === 1 ? 'conta' : 'contas';
+
+    return {
+      success: true,
+      updated: result.count,
+      message: `Token atualizado em ${result.count} ${accountLabel}.`,
+    };
+  }
+
   public async updateType(actId: string, clientType: string) {
     await clientRepository.updateType(actId, clientType);
     const labels: Record<string, string> = {

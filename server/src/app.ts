@@ -18,7 +18,6 @@ import agencyRoutes from './routes/agencyRoutes.js';
 import metaRoutes from './routes/metaRoutes.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import schedulerService from './services/schedulerService.js';
-import settingsRepository from './repositories/settingsRepository.js';
 import seedService from './services/seedService.js';
 import { getCreativesDir, downloadCreativeOnDemand } from './services/creativeDownloadService.js';
 import './config/env.js';
@@ -149,10 +148,7 @@ app.listen(port, async () => {
   try {
     await seedService.seedAdmin();
 
-    const autoSync = await settingsRepository.get('auto_sync_enabled');
-    if (autoSync === 'true') {
-      schedulerService.start();
-    }
+    schedulerService.start();
   } catch (err) {
     console.error('[SERVER] Erro durante inicialização do banco:', err instanceof Error ? err.message : err);
     console.error('[SERVER] O servidor continuará rodando, mas funções de banco podem falhar até o DB estar disponível.');

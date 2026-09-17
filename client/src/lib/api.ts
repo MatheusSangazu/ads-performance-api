@@ -103,6 +103,40 @@ export interface CustomConversion {
   createdAt: string;
 }
 
+export type SummaryFrequency = 'daily' | 'weekly' | 'monthly';
+export type SummaryPeriod = 'yesterday' | 'previous_week' | 'previous_month' | 'month_to_date' | 'last_7_days';
+export type SummaryDestinationType = 'phone' | 'group';
+
+export interface SummarySchedulePayload {
+  name: string;
+  enabled: boolean;
+  frequency: SummaryFrequency;
+  sendTime: string;
+  weekDay: number | null;
+  monthDay: number | null;
+  period: SummaryPeriod;
+  destinationType: SummaryDestinationType;
+  destination: string;
+  template: string;
+}
+
+export interface SummarySchedule extends SummarySchedulePayload {
+  id: string;
+  managerId: string;
+  clientId: string;
+  nextRunAt: string;
+  lastSentAt: string | null;
+  lastAttemptAt: string | null;
+  lastError: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WhatsappGroup {
+  id: string;
+  name: string;
+}
+
 export interface GoalProjectionItem {
   metric: string;
   target: number;
@@ -327,6 +361,8 @@ export const clientApi = {
   create: (data: CreateClientPayload) => api.post('/clients', data),
   updateToken: (actId: string, access_token: string) =>
     api.patch(`/clients/${actId}/token`, { access_token }),
+  updateTokenForAll: (access_token: string) =>
+    api.patch<{ success: boolean; updated: number; message: string }>('/clients/tokens/all', { access_token }),
   update: (actId: string, data: { name?: string; act_id?: string; custom_event_id?: string }) =>
     api.patch(`/clients/${actId}`, data),
   delete: (actId: string) => api.delete(`/clients/${actId}`),
@@ -359,6 +395,18 @@ export const clientApi = {
   refreshAccountStatus: (actId: string) => api.post<AccountStatus>(`/clients/${actId}/status/refresh`),
   sendSummary: (actId: string) => api.post<{ success: boolean; message: string }>(`/clients/${actId}/summary`),
   updateClientType: (actId: string, clientType: string) => api.patch(`/clients/${actId}/type`, { clientType }),
+  listSummarySchedules: (actId: string) =>
+    api.get<SummarySchedule[]>(`/clients/${actId}/summary-automations`),
+  createSummarySchedule: (actId: string, data: SummarySchedulePayload) =>
+    api.post<SummarySchedule>(`/clients/${actId}/summary-automations`, data),
+  updateSummarySchedule: (actId: string, scheduleId: string, data: SummarySchedulePayload) =>
+    api.put<SummarySchedule>(`/clients/${actId}/summary-automations/${scheduleId}`, data),
+  deleteSummarySchedule: (actId: string, scheduleId: string) =>
+    api.delete<{ success: boolean }>(`/clients/${actId}/summary-automations/${scheduleId}`),
+  previewSummarySchedule: (actId: string, data: Pick<SummarySchedulePayload, 'period' | 'template'>) =>
+    api.post<{ text: string; range: { since: string; until: string; label: string } }>(`/clients/${actId}/summary-automations/preview`, data),
+  testSummarySchedule: (actId: string, data: SummarySchedulePayload) =>
+    api.post<{ success: boolean; message: string }>(`/clients/${actId}/summary-automations/test`, data),
 };
 
 export const syncApi = {
@@ -375,6 +423,7 @@ export const settingsApi = {
   getWhatsappStatus: () => api.get<{ state: string; instance?: string }>('/settings/whatsapp/status'),
   getWhatsappQRCode: () => api.get<{ qrcode?: string; base64?: string; state: string }>('/settings/whatsapp/qrcode'),
   whatsappLogout: () => api.post<{ success: boolean }>('/settings/whatsapp/logout'),
+  getWhatsappGroups: () => api.get<{ groups: WhatsappGroup[] }>('/settings/whatsapp/groups'),
 };
 
 export const authApi = {

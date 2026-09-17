@@ -52,6 +52,15 @@ class ClientRepository {
     });
   }
 
+  public async updateTokenForClients(actIds: string[], token: string) {
+    if (actIds.length === 0) return { count: 0 };
+
+    return prisma.client.updateMany({
+      where: { actId: { in: actIds } },
+      data: { accessToken: token },
+    });
+  }
+
   public async updateType(actId: string, clientType: string) {
     return prisma.client.update({
       where: { actId },
@@ -78,6 +87,7 @@ class ClientRepository {
         await tx.clientGoal.updateMany({ where: { clientId: oldActId }, data: { clientId: newActId } });
         await tx.alert.updateMany({ where: { clientId: oldActId }, data: { clientId: newActId } });
         await tx.task.updateMany({ where: { clientId: oldActId }, data: { clientId: newActId } });
+        await tx.clientSummarySchedule.updateMany({ where: { clientId: oldActId }, data: { clientId: newActId } });
 
         await tx.client.update({
           where: { actId: oldActId },
@@ -107,6 +117,7 @@ class ClientRepository {
       await tx.task.deleteMany({ where: { clientId: actId } });
       await tx.clientGoal.deleteMany({ where: { clientId: actId } });
       await tx.clientBudget.deleteMany({ where: { clientId: actId } });
+      await tx.clientSummarySchedule.deleteMany({ where: { clientId: actId } });
       await tx.managerClient.deleteMany({ where: { clientId: actId } });
       await tx.adAudiencePerformance.deleteMany({ where: { clientId: actId } });
       await tx.adPlacementPerformance.deleteMany({ where: { clientId: actId } });

@@ -14,11 +14,7 @@ class SettingsController {
   public async setAutoSync(req: Request, res: Response): Promise<void> {
     const { enabled } = req.body;
     const result = await settingsService.setAutoSync(enabled);
-    if (enabled) {
-      schedulerService.start();
-    } else {
-      schedulerService.stop();
-    }
+    schedulerService.start();
     res.json(result);
   }
 

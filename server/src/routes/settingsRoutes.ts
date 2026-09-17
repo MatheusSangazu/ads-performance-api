@@ -38,4 +38,13 @@ router.post('/whatsapp/logout', authMiddleware, async (_req, res) => {
   res.json({ success: ok });
 });
 
+router.get('/whatsapp/groups', authMiddleware, async (_req, res, next) => {
+  try {
+    const groups = await evoService.getGroups();
+    res.json({ groups });
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router;

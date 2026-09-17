@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Download, FileText, Key, Loader2, RefreshCw, Trash2, X, ShieldCheck, ShieldAlert, AlertCircle, Pencil, Wallet, Plus, Zap, MessageSquare, CheckCircle, ChevronDown } from 'lucide-react';
+import { Download, FileText, Key, Loader2, RefreshCw, Trash2, X, ShieldCheck, ShieldAlert, AlertCircle, Pencil, Wallet, Plus, Zap, MessageSquare, CheckCircle, ChevronDown, BellRing } from 'lucide-react';
 import { clientApi, syncApi, createProgressStream, type Client, type CustomConversion } from '../lib/api';
 import BudgetCard from './BudgetCard';
 import GoalCard from './GoalCard';
@@ -14,6 +14,7 @@ interface ClientCardProps {
   onDelete: (actId: string) => Promise<void>;
   onError: (msg: string) => void;
   onSuccess: (msg: string) => void;
+  onManageAutomations: (client: Client) => void;
 }
 
 function getToday(): string {
@@ -28,7 +29,7 @@ const TYPE_OPTIONS = [
   { value: 'delivery', label: 'Delivery', icon: '🛵' },
 ];
 
-export default function ClientCard({ client, downloading, onDownload, onDownloadPdf, onTokenUpdated, onDelete, onError, onSuccess }: ClientCardProps) {
+export default function ClientCard({ client, downloading, onDownload, onDownloadPdf, onTokenUpdated, onDelete, onError, onSuccess, onManageAutomations }: ClientCardProps) {
   const [showTokenEdit, setShowTokenEdit] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
@@ -390,7 +391,14 @@ export default function ClientCard({ client, downloading, onDownload, onDownload
             {renderBalanceBadge()}
           </div>
         </div>
-        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex gap-1 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
+          <button
+            onClick={() => onManageAutomations(client)}
+            className="p-2 rounded-lg text-gray-400 hover:bg-green-100 hover:text-green-700 transition-colors dark:hover:bg-green-500/10 dark:hover:text-green-400"
+            title="Gerenciar avisos automáticos"
+          >
+            <BellRing size={16} />
+          </button>
            <button
             onClick={() => { setShowEdit(!showEdit); setShowTokenEdit(false); setShowDeleteConfirm(false); }}
             className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-900 transition-colors dark:hover:bg-gray-800 dark:hover:text-white"
