@@ -22,33 +22,34 @@ class SchedulerService {
   private balanceTask: cron.ScheduledTask | null = null;
   private summaryAutomationTask: cron.ScheduledTask | null = null;
 
+  // Rejection não tratada em callback do cron derruba o processo no Node 20+
+  private safeTask(name: string, fn: () => Promise<void>) {
+    return async () => {
+      try {
+        await fn();
+      } catch (err) {
+        console.error(`[SCHEDULER] Erro em ${name}:`, err instanceof Error ? err.stack ?? err.message : err);
+      }
+    };
+  }
+
   public start() {
     if (this.task) return;
 
-    this.task = cron.schedule('0 2 * * *', async () => {
-      await this.runDailySync();
-    }, { timezone: TZ });
+    this.task = cron.schedule('0 2 * * *', this.safeTask('sync diário', () => this.runDailySync()), { timezone: TZ });
 
-    this.healthTask = cron.schedule('0 8,12,18 * * *', async () => {
+    this.healthTask = cron.schedule('0 8,12,18 * * *', this.safeTask('health checks', async () => {
       const hour = new Date().toLocaleString('en-US', { timeZone: TZ, hour: '2-digit', hour12: false });
       await this.runScheduledHealthChecks(hour);
-    }, { timezone: TZ });
+    }), { timezone: TZ });
 
-    this.healthSummaryTask = cron.schedule('30 8 * * *', async () => {
-      await this.runHealthSummary();
-    }, { timezone: TZ });
+    this.healthSummaryTask = cron.schedule('30 8 * * *', this.safeTask('resumo de saúde', () => this.runHealthSummary()), { timezone: TZ });
 
-    this.weeklyTask = cron.schedule('0 9 * * 1', async () => {
-      await summaryService.sendWeeklySummaryToAllManagers();
-    }, { timezone: TZ });
+    this.weeklyTask = cron.schedule('0 9 * * 1', this.safeTask('resumo semanal', () => summaryService.sendWeeklySummaryToAllManagers()), { timezone: TZ });
 
-    this.balanceTask = cron.schedule('0 8,14 * * *', async () => {
-      await this.runBalanceCheck();
-    }, { timezone: TZ });
+    this.balanceTask = cron.schedule('0 8,14 * * *', this.safeTask('verificação de saldo', () => this.runBalanceCheck()), { timezone: TZ });
 
-    this.summaryAutomationTask = cron.schedule('* * * * *', async () => {
-      await summaryAutomationService.runDueSchedules();
-    }, { timezone: TZ });
+    this.summaryAutomationTask = cron.schedule('* * * * *', this.safeTask('automações de resumo', () => summaryAutomationService.runDueSchedules()), { timezone: TZ });
 
     console.log('[SCHEDULER] Scheduler iniciado: sync 02:00, health 08/12/18:00, resumo saúde 08:30, semanal seg 09:00, saldo 08/14:00, automações a cada minuto');
   }

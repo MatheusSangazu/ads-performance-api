@@ -59,7 +59,7 @@ const addCustomConversionSchema = z.object({
   label: z.string().min(1, 'Label é obrigatório'),
 });
 
-const summaryScheduleSchema = z.object({
+const summaryScheduleBaseSchema = z.object({
   name: z.string().trim().min(1, 'Nome da rotina é obrigatório').max(100),
   enabled: z.boolean(),
   frequency: z.enum(['daily', 'weekly', 'monthly']),
@@ -70,7 +70,9 @@ const summaryScheduleSchema = z.object({
   destinationType: z.enum(['phone', 'group']),
   destination: z.string().trim().min(1, 'Destino é obrigatório').max(160),
   template: z.string().trim().min(1, 'Mensagem é obrigatória').max(10000),
-}).superRefine((data, ctx) => {
+});
+
+const summaryScheduleSchema = summaryScheduleBaseSchema.superRefine((data, ctx) => {
   if (data.frequency === 'weekly' && data.weekDay == null) {
     ctx.addIssue({ code: 'custom', path: ['weekDay'], message: 'Escolha o dia da semana' });
   }
@@ -85,7 +87,7 @@ const summaryScheduleSchema = z.object({
   }
 });
 
-const summaryPreviewSchema = summaryScheduleSchema.pick({
+const summaryPreviewSchema = summaryScheduleBaseSchema.pick({
   period: true,
   template: true,
 });
