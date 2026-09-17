@@ -18,6 +18,7 @@ import agencyRoutes from './routes/agencyRoutes.js';
 import metaRoutes from './routes/metaRoutes.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import schedulerService from './services/schedulerService.js';
+import evoService from './services/evoService.js';
 import seedService from './services/seedService.js';
 import { getCreativesDir, downloadCreativeOnDemand } from './services/creativeDownloadService.js';
 import './config/env.js';
@@ -153,4 +154,7 @@ app.listen(port, async () => {
     console.error('[SERVER] Erro durante inicialização do banco:', err instanceof Error ? err.message : err);
     console.error('[SERVER] O servidor continuará rodando, mas funções de banco podem falhar até o DB estar disponível.');
   }
+
+  // Renova a lista de grupos do WhatsApp em background se estiver vazia ou estale (> 24h)
+  evoService.refreshGroupsIfStale(24 * 60 * 60 * 1000);
 });

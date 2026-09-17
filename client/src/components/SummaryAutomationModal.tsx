@@ -126,6 +126,8 @@ function scheduleDescription(schedule: SummarySchedule): string {
 export default function SummaryAutomationModal({ client, onClose, onNotify }: SummaryAutomationModalProps) {
   const [schedules, setSchedules] = useState<SummarySchedule[]>([]);
   const [groups, setGroups] = useState<WhatsappGroup[]>([]);
+  const [groupsSyncedAt, setGroupsSyncedAt] = useState<string | null>(null);
+  const [refreshingGroups, setRefreshingGroups] = useState(false);
   const [loading, setLoading] = useState(true);
   const [groupsLoading, setGroupsLoading] = useState(true);
   const [groupsError, setGroupsError] = useState('');
@@ -140,6 +142,7 @@ export default function SummaryAutomationModal({ client, onClose, onNotify }: Su
   const [localError, setLocalError] = useState('');
   const [localSuccess, setLocalSuccess] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const groupsPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -156,7 +159,10 @@ export default function SummaryAutomationModal({ client, onClose, onNotify }: Su
 
     settingsApi.getWhatsappGroups()
       .then(({ data }) => {
-        if (active) setGroups(data.groups);
+        if (active) {
+          setGroups(data.groups);
+          setGroupsSyncedAt(data.syncedAt);
+        }
       })
       .catch(() => {
         if (active) setGroupsError('Não foi possível carregar os grupos. Você ainda pode informar o ID manualmente.');
@@ -165,7 +171,10 @@ export default function SummaryAutomationModal({ client, onClose, onNotify }: Su
         if (active) setGroupsLoading(false);
       });
 
-    return () => { active = false; };
+    return () => {
+      active = false;
+      if (groupsPollRef.current) clearInterval(groupsPollRef.current);
+    };
   }, [client.actId]);
 
   useEffect(() => {
@@ -179,6 +188,42 @@ export default function SummaryAutomationModal({ client, onClose, onNotify }: Su
   const refreshSchedules = async () => {
     const { data } = await clientApi.listSummarySchedules(client.actId);
     setSchedules(data);
+  };
+
+  // O refresh na Evolution API pode demorar ~1 min: dispara em background e faz
+  // polling no GET até o syncedAt mudar (ou timeout).
+  const handleRefreshGroups = async () => {
+    if (refreshingGroups) return;
+    setGroupsError('');
+    try {
+      setRefreshingGroups(true);
+      const previousSyncedAt = groupsSyncedAt;
+      await settingsApi.refreshWhatsappGroups();
+
+      const startedAt = Date.now();
+      groupsPollRef.current = setInterval(async () => {
+        try {
+          const { data } = await settingsApi.getWhatsappGroups();
+          setGroups(data.groups);
+          setGroupsSyncedAt(data.syncedAt);
+          const changed = data.syncedAt !== null && data.syncedAt !== previousSyncedAt;
+          const timedOut = Date.now() - startedAt > 4 * 60 * 1000;
+          if (changed || timedOut) {
+            if (groupsPollRef.current) clearInterval(groupsPollRef.current);
+            groupsPollRef.current = null;
+            setRefreshingGroups(false);
+            if (timedOut && !changed) {
+              setGroupsError('A atualização está demorando mais que o esperado. Tente novamente em instantes.');
+            }
+          }
+        } catch {
+          // mantém o polling até o timeout
+        }
+      }, 5000);
+    } catch (error: unknown) {
+      setRefreshingGroups(false);
+      setGroupsError(errorMessage(error, 'Não foi possível atualizar os grupos.'));
+    }
   };
 
   const requestPreview = async (payload: SummarySchedulePayload) => {
@@ -527,10 +572,18 @@ export default function SummaryAutomationModal({ client, onClose, onNotify }: Su
 
                     {form.destinationType === 'group' && (
                       <div className="mb-2">
+                        <div className="mb-1 flex items-center justify-between gap-2">
+                          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Grupo</label>
+                          <button type="button" onClick={() => void handleRefreshGroups()} disabled={refreshingGroups} className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 disabled:opacity-50 dark:text-blue-400">
+                            {refreshingGroups ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
+                            {refreshingGroups ? 'Atualizando...' : 'Atualizar grupos'}
+                          </button>
+                        </div>
                         <select value={groups.some((group) => group.id === form.destination) ? form.destination : ''} onChange={(event) => setForm({ ...form, destination: event.target.value })} disabled={groupsLoading || groups.length === 0} className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-green-500 disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
                           <option value="">{groupsLoading ? 'Carregando grupos...' : groups.length ? 'Selecione um grupo' : 'Nenhum grupo carregado'}</option>
                           {groups.map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}
                         </select>
+                        {refreshingGroups && <p className="mt-1 text-xs text-blue-600 dark:text-blue-400">Sincronizando com o WhatsApp — a lista será atualizada automaticamente (pode levar ~1 min).</p>}
                         {groupsError && <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">{groupsError}</p>}
                       </div>
                     )}

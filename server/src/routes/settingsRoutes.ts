@@ -40,8 +40,22 @@ router.post('/whatsapp/logout', authMiddleware, async (_req, res) => {
 
 router.get('/whatsapp/groups', authMiddleware, async (_req, res, next) => {
   try {
-    const groups = await evoService.getGroups();
-    res.json({ groups });
+    const [groups, syncedAt] = await Promise.all([
+      evoService.listGroups(),
+      evoService.getLastSyncedAt(),
+    ]);
+    res.json({ groups, syncedAt });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// A listagem na Evolution API pode demorar ~1 min: o refresh roda em background
+// e o frontend faz polling no GET até o syncedAt mudar.
+router.post('/whatsapp/groups/refresh', authMiddleware, async (_req, res, next) => {
+  try {
+    const started = await evoService.refreshGroups();
+    res.json({ started });
   } catch (error) {
     next(error);
   }

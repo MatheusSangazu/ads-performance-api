@@ -423,7 +423,8 @@ export const settingsApi = {
   getWhatsappStatus: () => api.get<{ state: string; instance?: string }>('/settings/whatsapp/status'),
   getWhatsappQRCode: () => api.get<{ qrcode?: string; base64?: string; state: string }>('/settings/whatsapp/qrcode'),
   whatsappLogout: () => api.post<{ success: boolean }>('/settings/whatsapp/logout'),
-  getWhatsappGroups: () => api.get<{ groups: WhatsappGroup[] }>('/settings/whatsapp/groups'),
+  getWhatsappGroups: () => api.get<{ groups: WhatsappGroup[]; syncedAt: string | null }>('/settings/whatsapp/groups'),
+  refreshWhatsappGroups: () => api.post<{ started: boolean }>('/settings/whatsapp/groups/refresh'),
 };
 
 export const authApi = {

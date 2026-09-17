@@ -1,4 +1,5 @@
 import { env } from '../config/env.js';
+import prisma from '../config/db.js';
 
 class EvoService {
   private get baseUrl(): string {
@@ -67,6 +68,10 @@ class EvoService {
     return this.sendTextToDestination(phone, 'phone', text);
   }
 
+  // A Evolution API pode levar mais de 1 minuto para listar grupos — a lista fica no banco
+  // e só é renovada explicitamente (refresh) ou quando estiver estale no boot.
+  private refreshingGroups = false;
+
   public async getGroups(): Promise<{ id: string; name: string }[]> {
     if (!this.isConfigured) return [];
 
@@ -87,7 +92,7 @@ class EvoService {
         ? (payload as { data: unknown[] }).data
         : [];
 
-    return groups
+    const mapped = groups
       .map((group) => {
         const item = group as Record<string, unknown>;
         const id = String(item.id || item.remoteJid || item.jid || '').trim();
@@ -96,6 +101,58 @@ class EvoService {
       })
       .filter((group) => group.id.endsWith('@g.us'))
       .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+
+    return mapped;
+  }
+
+  public async listGroups(): Promise<{ id: string; name: string }[]> {
+    const rows = await prisma.whatsappGroup.findMany({ orderBy: { name: 'asc' } });
+    return rows.map((row) => ({ id: row.id, name: row.name }));
+  }
+
+  public async getLastSyncedAt(): Promise<Date | null> {
+    const row = await prisma.whatsappGroup.findFirst({
+      orderBy: { syncedAt: 'desc' },
+      select: { syncedAt: true },
+    });
+    return row?.syncedAt ?? null;
+  }
+
+  // Dispara o refresh em background (a listagem na Evolution pode demorar ~1 min).
+  // Retorna false se já houver um refresh em andamento.
+  public async refreshGroups(): Promise<boolean> {
+    if (this.refreshingGroups) return false;
+    if (!this.isConfigured) return false;
+
+    this.refreshingGroups = true;
+    void (async () => {
+      try {
+        const groups = await this.getGroups();
+        await prisma.$transaction([
+          prisma.whatsappGroup.deleteMany(),
+          prisma.whatsappGroup.createMany({
+            data: groups.map((group) => ({ id: group.id, name: group.name })),
+          }),
+        ]);
+        console.log(`[EVO] ${groups.length} grupos sincronizados no banco.`);
+      } catch (err) {
+        console.error('[EVO] Falha ao sincronizar grupos:', err instanceof Error ? err.message : err);
+      } finally {
+        this.refreshingGroups = false;
+      }
+    })();
+
+    return true;
+  }
+
+  public async refreshGroupsIfStale(maxAgeMs: number): Promise<void> {
+    try {
+      const lastSync = await this.getLastSyncedAt();
+      const stale = !lastSync || Date.now() - lastSync.getTime() > maxAgeMs;
+      if (stale) await this.refreshGroups();
+    } catch (err) {
+      console.error('[EVO] Falha ao verificar sincronia de grupos:', err instanceof Error ? err.message : err);
+    }
   }
 
   public async getConnectionState(): Promise<{
